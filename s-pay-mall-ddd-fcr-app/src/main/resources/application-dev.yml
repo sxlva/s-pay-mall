@@ -40,6 +40,9 @@ weixin:
   config:
     originalid: gh_b10e448c9117
     token: b8b6
+    app-id: wxdce92b6187c545ed
+    app-secret: d33783cadf36b0cfa3854f26b4b74448
+    template_id: -JfVkAq_upTA-eSPA5kU6sLq-8s_3r8oibULNMEoLo8
 
 # 日志
 logging:
