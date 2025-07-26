@@ -40,6 +40,9 @@ weixin:
   config:
     originalid: ***REMOVED***
     token: ***REMOVED***
+    app-id: ***REMOVED***
+    app-secret: ***REMOVED***
+    template_id: ***REMOVED***
 
 # 日志
 logging:
