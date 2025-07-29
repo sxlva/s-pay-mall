@@ -8,6 +8,7 @@ import cn.bugstack.domain.order.model.entity.ShopCartEntity;
 import cn.bugstack.domain.order.model.valobj.OrderStatusVO;
 import cn.bugstack.infrastructure.dao.IOrderDao;
 import cn.bugstack.infrastructure.dao.po.PayOrder;
+import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
 
@@ -16,6 +17,7 @@ import javax.annotation.Resource;
  * @date 2025/7/28 22:27
  * @description
  */
+@Repository
 public class OrderRepository implements IOrderRepository {
 
     @Resource

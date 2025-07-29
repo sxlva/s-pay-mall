@@ -4,12 +4,14 @@ import cn.bugstack.domain.order.adapter.port.IProductPort;
 import cn.bugstack.domain.order.model.entity.ProductEntity;
 import cn.bugstack.infrastructure.gateway.ProductRPC;
 import cn.bugstack.infrastructure.gateway.dto.ProductDTO;
+import org.springframework.stereotype.Component;
 
 /**
  * @author xiaolv
  * @date 2025/7/28 22:27
  * @description
  */
+@Component
 public class ProductPort implements IProductPort {
 
     private final ProductRPC productRPC;
