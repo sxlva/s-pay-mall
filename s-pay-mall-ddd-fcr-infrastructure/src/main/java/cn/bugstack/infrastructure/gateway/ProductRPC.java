@@ -1,6 +1,7 @@
 package cn.bugstack.infrastructure.gateway;
 
 import cn.bugstack.infrastructure.gateway.dto.ProductDTO;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
@@ -9,6 +10,7 @@ import java.math.BigDecimal;
  * @date 2025/7/28 22:37
  * @description
  */
+@Service
 public class ProductRPC {
 
     public ProductDTO queryProductByProductId(String productId){
