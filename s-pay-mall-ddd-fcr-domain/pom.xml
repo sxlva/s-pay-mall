@@ -43,6 +43,10 @@
             <groupId>cn.bugstack</groupId>
             <artifactId>s-pay-mall-ddd-fcr-types</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.alipay.sdk</groupId>
+            <artifactId>alipay-sdk-java</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

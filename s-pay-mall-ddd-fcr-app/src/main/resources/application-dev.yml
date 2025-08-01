@@ -47,14 +47,15 @@ weixin:
     app-secret: ***REMOVED***
     template_id: ***REMOVED***
 
-# 微信公众号对接
-weixin:
-  config:
-    originalid: ***REMOVED***
-    token: ***REMOVED***
-    app-id: ***REMOVED***
-    app-secret: ***REMOVED***
-    template_id: ***REMOVED***
+# 支付宝支付 - 沙箱 https://opendocs.alipay.com/common/02kkv7
+alipay:
+  enabled: true
+  app_id: ***REMOVED***
+  merchant_private_key: ***REMOVED***
+  alipay_public_key: ***REMOVED***
+  notify_url: http://***REMOVED***/api/v1/alipay/alipay_notify_url
+  return_url: https://www.apple.com/shop/buy-iphone/iphone-16-pro
+  gatewayUrl: https://openapi-sandbox.dl.alipaydev.com/gateway.do
 
 # 日志
 logging:

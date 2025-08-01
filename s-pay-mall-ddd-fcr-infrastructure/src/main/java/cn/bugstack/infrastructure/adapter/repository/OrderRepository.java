@@ -3,11 +3,13 @@ package cn.bugstack.infrastructure.adapter.repository;
 import cn.bugstack.domain.order.adapter.repository.IOrderRepository;
 import cn.bugstack.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.bugstack.domain.order.model.entity.OrderEntity;
+import cn.bugstack.domain.order.model.entity.PayOrderEntity;
 import cn.bugstack.domain.order.model.entity.ProductEntity;
 import cn.bugstack.domain.order.model.entity.ShopCartEntity;
 import cn.bugstack.domain.order.model.valobj.OrderStatusVO;
 import cn.bugstack.infrastructure.dao.IOrderDao;
 import cn.bugstack.infrastructure.dao.po.PayOrder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
@@ -17,6 +19,7 @@ import javax.annotation.Resource;
  * @date 2025/7/28 22:27
  * @description
  */
+@Slf4j
 @Repository
 public class OrderRepository implements IOrderRepository {
 
@@ -39,6 +42,21 @@ public class OrderRepository implements IOrderRepository {
         order.setStatus(orderEntity.getOrderStatusVO().getCode());
 
         orderDao.insert(order);
+    }
+
+    @Override
+    public void updateOrderPayInfo(PayOrderEntity payOrderEntity) {
+        PayOrder payOrderReq = PayOrder.builder()
+                .userId(payOrderEntity.getUserId())
+                .orderId(payOrderEntity.getOrderId())
+                .status(payOrderEntity.getOrderStatus().getCode())
+                .payUrl(payOrderEntity.getPayUrl())
+                .build();
+        orderDao.updateOrderPayInfo(payOrderReq);
+        log.info("更新支付信息: userId={} orderId={} payUrl={}",
+                payOrderEntity.getUserId(),
+                payOrderEntity.getOrderId(),
+                payOrderEntity.getPayUrl());
     }
 
     @Override
