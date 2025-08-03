@@ -2,6 +2,9 @@ package cn.bugstack.infrastructure.dao;
 
 import cn.bugstack.infrastructure.dao.po.PayOrder;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
 /**
  * @author xiaolv
  * @date 2025/7/20 18:50
@@ -16,4 +19,11 @@ public interface IOrderDao {
 
     void updateOrderPayInfo(PayOrder payOrderReq);
 
+    void changeOrderPaySuccess(PayOrder payOrderReq);
+
+    List<String> queryNoPayNotifyOrder();
+
+    List<String> queryTimeoutCloseOrderList();
+
+    boolean changeOrderClose();
 }
