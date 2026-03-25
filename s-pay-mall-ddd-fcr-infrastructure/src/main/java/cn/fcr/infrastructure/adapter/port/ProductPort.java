@@ -7,7 +7,7 @@ import cn.fcr.infrastructure.gateway.dto.ProductDTO;
 import org.springframework.stereotype.Component;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/7/28 22:27
  * @description
  */

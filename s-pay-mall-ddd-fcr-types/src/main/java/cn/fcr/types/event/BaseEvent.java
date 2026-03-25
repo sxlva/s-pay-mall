@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/8/2 17:15
  * @description 构建MQ消息类
  */

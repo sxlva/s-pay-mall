@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/7/21 07:09
  * @description 用户下单，买一个商品
  */

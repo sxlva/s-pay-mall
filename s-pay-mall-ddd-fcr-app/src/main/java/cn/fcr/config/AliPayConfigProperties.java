@@ -4,7 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/7/22 10:46
  * @description 封装配置参数
  */

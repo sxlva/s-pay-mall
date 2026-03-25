@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/7/21 07:13
  * @description 订单创建后返回给支付模块的响应对象
  */
