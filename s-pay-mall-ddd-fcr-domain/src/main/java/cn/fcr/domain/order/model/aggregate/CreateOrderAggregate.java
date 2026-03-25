@@ -12,7 +12,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import java.util.Date;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/7/28 21:35
  * @description 订单聚合对象
  */

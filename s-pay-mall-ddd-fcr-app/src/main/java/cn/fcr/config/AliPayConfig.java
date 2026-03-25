@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/7/22 10:46
  * @description 配置类
  */

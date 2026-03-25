@@ -30,11 +30,10 @@ spring:
     connection-test-query: SELECT 1
   type: com.zaxxer.hikari.HikariDataSource
 
-# Mybatis 配置
+# MyBatis配置
 mybatis:
   mapper-locations: classpath:/mybatis/mapper/*.xml
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  config-location:  classpath:/mybatis/config/mybatis-config.xml
 
 # Redis
 redis:

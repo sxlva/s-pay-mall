@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/7/26 15:11
  * @description 微信登陆外部接口实现类
  */

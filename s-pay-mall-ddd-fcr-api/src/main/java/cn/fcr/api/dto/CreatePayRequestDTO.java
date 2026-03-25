@@ -3,7 +3,7 @@ package cn.fcr.api.dto;
 import lombok.Data;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/8/1 08:08
  * @description
  */

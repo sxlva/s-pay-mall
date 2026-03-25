@@ -5,7 +5,6 @@ import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.valobj.OrderStatusVO;
-import cn.fcr.types.common.Constants;
 import com.alibaba.fastjson.JSONObject;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
@@ -16,11 +15,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * @author xiaolv
+ * @author 傅崇睿
  * @date 2025/7/28 22:23
  * @description
  */
