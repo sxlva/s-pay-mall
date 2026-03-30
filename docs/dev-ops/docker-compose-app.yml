@@ -1,7 +1,5 @@
-# /usr/local/bin/docker-compose -f /docs/dev-ops/environment/environment-docker-compose-2.4.yml up -d
 version: '3.8'
 # docker-compose -f docker-compose-app.yml up -d
-# 你需要修改system为你自身系统的仓库名
 services:
   # 部署前端项目
   nginx:
@@ -24,6 +22,8 @@ services:
     environment:
       - TZ=PRC
       - SERVER_PORT=8091
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - ./log:/data/log
     logging:

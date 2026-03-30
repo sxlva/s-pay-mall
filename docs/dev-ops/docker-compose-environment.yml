@@ -1,60 +1,60 @@
 # 命令执行 docker-compose -f docker-compose-environment.yml up -d
-# 云服务器；https://618.gaga.plus 本项目2c2g可云服务器部署
 version: '3.9'
+
 services:
   # mysql
-  mysql:
+  mysql-spay:
     image: mysql:8.0.32
-    container_name: mysql
+    container_name: mysql-spay
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
       TZ: Asia/Shanghai
-      MYSQL_ROOT_PASSWORD: ***REMOVED***
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      - "13306:3306"
+      - "23306:3306"
     volumes:
+      # 挂载本地初始化脚本
       - ./mysql/sql:/docker-entrypoint-initdb.d
+      # 修改：使用独立的命名卷
+      - mysql-spay-data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "mysql***REMOVED***" ,"ping", "-h", "localhost" ]
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
       interval: 5s
       timeout: 10s
       retries: 10
       start_period: 15s
     networks:
-      - my-network
+      - spay-network
 
-  # phpmy***REMOVED*** https://hub.docker.com/_/phpmy***REMOVED***
-  phpmy***REMOVED***:
-    image: phpmy***REMOVED***:5.2.1
-    container_name: phpmy***REMOVED***
-    hostname: phpmy***REMOVED***
+  # phpmyadmin https://hub.docker.com/_/phpmyadmin
+  phpmyadmin-spay:
+    image: phpmyadmin:5.2.1
+    container_name: phpmyadmin-spay
     ports:
-      - 8899:80
+      - 8898:80
     environment:
-      - PMA_HOST=mysql
+      - PMA_HOST=mysql-spay
       - PMA_PORT=3306
-      - MYSQL_ROOT_PASSWORD=***REMOVED***
+      - MYSQL_ROOT_PASSWORD= ${MYSQL_ROOT_PASSWORD}
     depends_on:
-      mysql:
+      mysql-spay:
         condition: service_healthy
     networks:
-      - my-network
+      - spay-network
 
   # Redis
-  redis:
+  redis-spay:
     image: redis:6.2
-    container_name: redis
+    container_name: redis-spay
     restart: always
-    hostname: redis
-    privileged: true
     ports:
-      - 16379:6379
+      - 26379:6379
     volumes:
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
-    command: redis-server /usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
     networks:
-      - my-network
+      - spay-network
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
@@ -62,27 +62,30 @@ services:
       retries: 3
 
   # RedisAdmin https://github.com/joeferner/redis-commander
-  # 账密 ***REMOVED***/***REMOVED***
-  redis-***REMOVED***:
+  redis-admin-spay:
     image: spryker/redis-commander:0.8.0
-    container_name: redis-***REMOVED***
+    container_name: redis-admin
     hostname: redis-commander
     restart: always
     ports:
-      - 8081:8081
+      - 8082:8081
     environment:
-      - REDIS_HOSTS=local:redis:6379
-      - HTTP_USER=***REMOVED***
-      - HTTP_PASSWORD=***REMOVED***
+      - REDIS_HOSTS=local:redis-spay:6379:${REDIS_PASSWORD}
+      - HTTP_USER=${ADMIN_USER}
+      - HTTP_PASSWORD=${ADMIN_PASSWORD}
       - LANG=C.UTF-8
       - LANGUAGE=C.UTF-8
       - LC_ALL=C.UTF-8
     networks:
-      - my-network
+      - spay-network
     depends_on:
-      redis:
+      redis-spay:
         condition: service_healthy
 
+# 声明顶级网络和数据卷
 networks:
-  my-network:
+  spay-network:
     driver: bridge
+
+volumes:
+    mysql-spay-data:

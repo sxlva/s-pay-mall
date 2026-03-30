@@ -1,0 +1,12 @@
+spring:
+  config:
+    name: s-pay-mall-app
+    import: optional:file:.env[.properties]
+  profiles:
+    active: dev
+
+logging:
+  file:
+    path: ${APP_LOG_PATH:./data/log}
+  config: classpath:logback-spring.xml
+

@@ -3,17 +3,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cn.fcr</groupId>
-    <artifactId>s-pay-mall-ddd-fcr</artifactId>
+    <artifactId>s-pay-mall</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
-        <module>s-pay-mall-ddd-fcr-api</module>
-        <module>s-pay-mall-ddd-fcr-app</module>
-        <module>s-pay-mall-ddd-fcr-domain</module>
-        <module>s-pay-mall-ddd-fcr-trigger</module>
-        <module>s-pay-mall-ddd-fcr-infrastructure</module>
-        <module>s-pay-mall-ddd-fcr-types</module>
+        <module>s-pay-mall-api</module>
+        <module>s-pay-mall-app</module>
+        <module>s-pay-mall-domain</module>
+        <module>s-pay-mall-trigger</module>
+        <module>s-pay-mall-infrastructure</module>
+        <module>s-pay-mall-types</module>
     </modules>
 
     <repositories>
@@ -31,10 +31,10 @@
     </repositories>
 
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -134,27 +134,27 @@
             <!-- 工程模块 -->
             <dependency>
                 <groupId>cn.fcr</groupId>
-                <artifactId>s-pay-mall-ddd-fcr-api</artifactId>
+                <artifactId>s-pay-mall-api</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>cn.fcr</groupId>
-                <artifactId>s-pay-mall-ddd-fcr-domain</artifactId>
+                <artifactId>s-pay-mall-domain</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>cn.fcr</groupId>
-                <artifactId>s-pay-mall-ddd-fcr-infrastructure</artifactId>
+                <artifactId>s-pay-mall-infrastructure</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>cn.fcr</groupId>
-                <artifactId>s-pay-mall-ddd-fcr-types</artifactId>
+                <artifactId>s-pay-mall-types</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>cn.fcr</groupId>
-                <artifactId>s-pay-mall-ddd-fcr-trigger</artifactId>
+                <artifactId>s-pay-mall-trigger</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <!-- 支付宝沙箱支付对接文档：https://opendocs.alipay.com/common/02kkv7 -->
@@ -201,21 +201,21 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <java_jvm>-Xms1G -Xmx1G -server  -XX:MaxPermSize=256M -Xss256K -Dspring.profiles.active=test -XX:+DisableExplicitGC -XX:+UseG1GC  -XX:LargePageSizeInBytes=128m -XX:+UseFastAccessorMethods -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/export/Logs/s-pay-mall-ddd-fcr-boot -Xloggc:/export/Logs/s-pay-mall-ddd-fcr-boot/gc-s-pay-mall-ddd-fcr-boot.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps</java_jvm>
+                <java_jvm>-Xms1G -Xmx1G -server  -XX:MaxMetaspaceSize=256M -Xss256K -Dspring.profiles.active=test -XX:+DisableExplicitGC -XX:+UseG1GC  -XX:LargePageSizeInBytes=128m -XX:+UseFastAccessorMethods -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/export/Logs/s-pay-mall-ddd-fcr-boot -Xloggc:/export/Logs/s-pay-mall-ddd-fcr-boot/gc-s-pay-mall-ddd-fcr-boot.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps</java_jvm>
                 <profileActive>dev</profileActive>
             </properties>
         </profile>
         <profile>
             <id>test</id>
             <properties>
-                <java_jvm>-Xms1G -Xmx1G -server  -XX:MaxPermSize=256M -Xss256K -Dspring.profiles.active=test -XX:+DisableExplicitGC -XX:+UseG1GC  -XX:LargePageSizeInBytes=128m -XX:+UseFastAccessorMethods -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/export/Logs/s-pay-mall-ddd-fcr-boot -Xloggc:/export/Logs/s-pay-mall-ddd-fcr-boot/gc-s-pay-mall-ddd-fcr-boot.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps</java_jvm>
+                <java_jvm>-Xms1G -Xmx1G -server  -XX:MaxMetaspaceSize=256M -Xss256K -Dspring.profiles.active=test -XX:+DisableExplicitGC -XX:+UseG1GC  -XX:LargePageSizeInBytes=128m -XX:+UseFastAccessorMethods -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/export/Logs/s-pay-mall-ddd-fcr-boot -Xloggc:/export/Logs/s-pay-mall-ddd-fcr-boot/gc-s-pay-mall-ddd-fcr-boot.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps</java_jvm>
                 <profileActive>test</profileActive>
             </properties>
         </profile>
         <profile>
             <id>prod</id>
             <properties>
-                <java_jvm>-Xms6G -Xmx6G -server  -XX:MaxPermSize=256M -Xss256K -Dspring.profiles.active=release -XX:+DisableExplicitGC -XX:+UseG1GC  -XX:LargePageSizeInBytes=128m -XX:+UseFastAccessorMethods -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/export/Logs/fq-mall-activity-app -Xloggc:/export/Logs/s-pay-mall-ddd-fcr-boot/gc-s-pay-mall-ddd-fcr-boot.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps</java_jvm>
+                <java_jvm>-Xms6G -Xmx6G -server  -XX:MaxMetaspaceSize=256M -Xss256K -Dspring.profiles.active=release -XX:+DisableExplicitGC -XX:+UseG1GC  -XX:LargePageSizeInBytes=128m -XX:+UseFastAccessorMethods -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/export/Logs/fq-mall-activity-app -Xloggc:/export/Logs/s-pay-mall-ddd-fcr-boot/gc-s-pay-mall-ddd-fcr-boot.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps</java_jvm>
                 <profileActive>prod</profileActive>
             </properties>
         </profile>
