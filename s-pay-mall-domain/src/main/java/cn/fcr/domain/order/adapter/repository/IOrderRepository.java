@@ -4,6 +4,7 @@ import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.OrderEntity;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
+import cn.fcr.types.event.BaseEvent;
 
 import java.util.List;
 
@@ -27,4 +28,8 @@ public interface IOrderRepository {
     List<String> queryTimeoutCloseOrderList();
 
     boolean changeOrderClose(String orderId);
+
+    PayOrderEntity queryOrderById(String orderId);
+
+    void publishEvent(BaseEvent.EventMessage<?> eventMessage);
 }

@@ -1,5 +1,5 @@
-# 命令执行 docker-compose -f docker-compose-environment.yml up -d
-version: '3.9'
+# 命令执行（建议从仓库根目录）：docker compose --env-file ./.env -f docs/dev-ops/docker-compose-environment.yml up -d
+name: s-pay-mall
 
 services:
   # mysql
@@ -36,7 +36,7 @@ services:
     environment:
       - PMA_HOST=mysql-spay
       - PMA_PORT=3306
-      - MYSQL_ROOT_PASSWORD= ${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     depends_on:
       mysql-spay:
         condition: service_healthy
@@ -64,13 +64,13 @@ services:
   # RedisAdmin https://github.com/joeferner/redis-commander
   redis-admin-spay:
     image: spryker/redis-commander:0.8.0
-    container_name: redis-admin
+    container_name: redis-admin-spay
     hostname: redis-commander
     restart: always
     ports:
       - 8082:8081
     environment:
-      - REDIS_HOSTS=local:redis-spay:6379:${REDIS_PASSWORD}
+      - REDIS_HOSTS=local:redis-spay:6379:0:${REDIS_PASSWORD}
       - HTTP_USER=${ADMIN_USER}
       - HTTP_PASSWORD=${ADMIN_PASSWORD}
       - LANG=C.UTF-8
@@ -81,6 +81,61 @@ services:
     depends_on:
       redis-spay:
         condition: service_healthy
+
+  # 1. NameServer: 注册中心
+  namesrv-spay:
+    image: apache/rocketmq:5.1.0
+    platform: linux/amd64
+    container_name: rmqnamesrv-spay
+    ports:
+      - 9876:9876
+    command: sh mqnamesrv
+    networks:
+      - spay-network
+
+  # 2. Broker: 消息存储（这里是难点）
+  broker-spay:
+    image: apache/rocketmq:5.1.0
+    platform: linux/amd64
+    container_name: rmqbroker-spay
+    ports:
+      - 10909:10909
+      - 10911:10911
+      - 10912:10912
+    environment:
+      - NAMESRV_ADDR=namesrv-spay:9876
+      - ROCKETMQ_ACCESS_KEY=${ROCKETMQ_ACCESS_KEY}
+      - ROCKETMQ_SECRET_KEY=${ROCKETMQ_SECRET_KEY}
+    volumes:
+      # 配置文件映射
+      - ./rocketmq/conf/broker.conf:/home/rocketmq/rocketmq-5.1.0/conf/broker.conf
+      - ./rocketmq/conf/plain_acl.yml:/home/rocketmq/rocketmq-5.1.0/conf/plain_acl.yml
+      - ./rocketmq/start-broker.sh:/home/rocketmq/start-broker.sh
+      # 数据与日志映射
+      - ./rocketmq/logs:/home/rocketmq/logs
+      - ./rocketmq/store:/home/rocketmq/store
+    command: sh /home/rocketmq/start-broker.sh
+    depends_on:
+      - namesrv-spay
+    networks:
+      - spay-network
+
+  # 3. Dashboard: 可视化界面
+  rmqdashboard-spay:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    platform: linux/amd64
+    container_name: rmqdashboard-spay
+    ports:
+      - 9009:8082
+    environment:
+      JAVA_OPTS: >-
+        -Drocketmq.namesrv.addr=namesrv-spay:9876
+        -Drocketmq.config.isVIPChannel=false
+        -Drocketmq.config.loginRequired=false
+        -Drocketmq.config.accessKey=${ROCKETMQ_ACCESS_KEY}
+        -Drocketmq.config.secretKey=${ROCKETMQ_SECRET_KEY}
+    networks:
+      - spay-network
 
 # 声明顶级网络和数据卷
 networks:

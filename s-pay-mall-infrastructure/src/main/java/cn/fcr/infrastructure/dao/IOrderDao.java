@@ -21,6 +21,8 @@ public interface IOrderDao {
 
     void changeOrderPaySuccess(PayOrder payOrderReq);
 
+    PayOrder queryOrderById(String orderId);
+
     List<String> queryNoPayNotifyOrder();
 
     List<String> queryTimeoutCloseOrderList();

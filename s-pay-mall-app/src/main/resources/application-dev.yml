@@ -31,18 +31,18 @@ spring:
   datasource:
     username: root
     password: ${MYSQL_ROOT_PASSWORD}
-    url: jdbc:mysql://127.0.0.1:23306/s-pay-mall?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=true
+    url: jdbc:mysql://127.0.0.1:23306/s-pay-mall?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false
     driver-class-name: com.mysql.cj.jdbc.Driver
-  hikari:
-    pool-name: Retail_HikariCP
-    minimum-idle: 15 #最小空闲连接数量
-    idle-timeout: 180000 #空闲连接存活最大时间，默认600000（10分钟）
-    maximum-pool-size: 25 #连接池最大连接数，默认是10
-    auto-commit: true  #此属性控制从池返回的连接的默认自动提交行为,默认值：true
-    max-lifetime: 1800000 #此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
-    connection-timeout: 30000 #数据库连接超时时间,默认30秒，即30000
-    connection-test-query: SELECT 1
-  type: com.zaxxer.hikari.HikariDataSource
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      pool-name: Retail_HikariCP
+      minimum-idle: 15 #最小空闲连接数量
+      idle-timeout: 180000 #空闲连接存活最大时间，默认600000（10分钟）
+      maximum-pool-size: 25 #连接池最大连接数，默认是10
+      auto-commit: true  #此属性控制从池返回的连接的默认自动提交行为,默认值：true
+      max-lifetime: 1800000 #此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认1800000即30分钟
+      connection-timeout: 30000 #数据库连接超时时间,默认30秒，即30000
+      connection-test-query: SELECT 1
 
 # MyBatis配置
 mybatis:
@@ -65,6 +65,34 @@ redis:
       retry-interval: 1000
       ping-interval: 60000
       keep-alive: true
+
+# RocketMQ 配置
+rocketmq:
+  name-server: 127.0.0.1:9876
+  consumer:
+    group: fcr-customer-group
+    access-key: ${ROCKETMQ_ACCESS_KEY}
+    secret-key: ${ROCKETMQ_SECRET_KEY}
+    # 一次拉取消息最大值，注意是拉取消息的最大值而非消费最大值
+    pull-batch-size: 10
+  producer:
+    # 发送同一类消息的设置为同一个group，保证唯一
+    group: fcr-group
+    access-key: ${ROCKETMQ_ACCESS_KEY}
+    secret-key: ${ROCKETMQ_SECRET_KEY}
+    # 发送消息超时时间
+    send-message-timeout: 10000
+    # 发送失败重试次数
+    retry-times-when-send-failed: 2
+    # 异步消息重试此处，默认2
+    retry-times-when-send-async-failed: 2
+    # 消息最大长度改为 128KB，防止支付报文溢出
+    max-message-size: 131072
+    # 压缩消息阈值 4KB
+    compress-message-body-threshold: 4096
+    # 是否在内部发送失败时重试另一个broker，默认false
+    retry-next-server: false
+
 
 # 微信公众号对接
 weixin:

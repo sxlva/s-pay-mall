@@ -9,5 +9,7 @@ import cn.fcr.api.response.Response;
  * @description
  */
 public interface IPayService {
+
     Response<String> createPayOrder(CreatePayRequestDTO createPayRequestDTO);
+
 }

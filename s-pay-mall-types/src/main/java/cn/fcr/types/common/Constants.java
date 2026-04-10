@@ -7,6 +7,18 @@ import lombok.NoArgsConstructor;
 public class Constants {
 
     public final static String SPLIT = ",";
+    public final static String COLON = ":";
+    public final static String SPACE = " ";
+    public final static String UNDERLINE = "_";
+
+    public static class RedisKey {
+        public static  String WEIXIN_ACCESS_TOKEN_KEY_PREFIX = "weixin_access_token_";
+        public static  String WEIXIN_LOGIN_STATE_KEY_PREFIX = "weixin_login_state_";
+        // access_token 过期时间 2小时
+        public static  long ACCESS_TOKEN_EXPIRE_TIME = 7200 * 1000;
+        // 登录状态过期时间 5分钟
+        public static  long LOGIN_STATE_EXPIRE_TIME = 5 * 60 * 1000;
+    }
 
     @AllArgsConstructor
     @NoArgsConstructor

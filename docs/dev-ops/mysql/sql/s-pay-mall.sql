@@ -3,7 +3,7 @@
 -- https://sequel-ace.com/
 -- https://github.com/Sequel-Ace/Sequel-Ace
 -- 主机: 127.0.0.1 (MySQL 8.0.32)
--- 数据库: xfg-dev-tech-alipay-sandbox
+-- 数据库: fcr-dev-tech-alipay-sandbox
 -- 生成时间: 2023-12-13 12:02:08 +0000
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;

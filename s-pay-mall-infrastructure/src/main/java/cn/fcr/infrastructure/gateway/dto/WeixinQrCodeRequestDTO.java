@@ -3,7 +3,7 @@ package cn.fcr.infrastructure.gateway.dto;
 import lombok.*;
 
 /**
- * @author Fuzhengwei fcr.cn @小傅哥
+ * @author 傅崇睿
  * @description 获取微信登录二维码请求对象
  * @create 2024-02-25 09:32
  */

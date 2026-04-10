@@ -7,8 +7,9 @@ import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -22,7 +23,7 @@ public class LoginController implements IAuthService {
     @Resource
     private ILoginService loginService;
 
-    @RequestMapping(value = "weixin_qrcode_ticket", method = RequestMethod.GET)
+    @GetMapping("weixin_qrcode_ticket")
     @Override
     public Response<String> weixinQrCodeTicket() {
         try {
@@ -42,9 +43,9 @@ public class LoginController implements IAuthService {
         }
     }
 
-    @RequestMapping(value = "check_login", method = RequestMethod.GET)
+    @GetMapping("check_login")
     @Override
-    public Response<String> checkLogin(String ticket) {
+    public Response<String> checkLogin(@RequestParam("ticket") String ticket) {
         try {
             String openidToken = loginService.checkLogin(ticket);
             log.info("扫码检测登录结果 ticket:{} openidToken:{}", ticket, openidToken);

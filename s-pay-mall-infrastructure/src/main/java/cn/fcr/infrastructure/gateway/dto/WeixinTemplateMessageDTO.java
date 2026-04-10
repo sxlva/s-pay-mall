@@ -4,14 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author Fuzhengwei fcr.cn @小傅哥
+ * @author 傅崇睿
  * @description 微信模板消息
  * @create 2024-07-23 07:49
  */
 public class WeixinTemplateMessageDTO {
 
-    private String touser = "or0Ab6ivwmypESVp_bYuk92T6SvU";
-    private String template_id = "GLlAM-Q4jdgsktdNd35hnEbHVam2mwsW2YWuxDhpQkU";
+    private String touser;
+    private String template_id;
     private String url = "https://weixin.qq.com";
     private Map<String, Map<String, String>> data = new HashMap<>();
 

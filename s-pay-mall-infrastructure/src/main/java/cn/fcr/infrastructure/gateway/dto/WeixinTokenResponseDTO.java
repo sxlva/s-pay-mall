@@ -3,7 +3,7 @@ package cn.fcr.infrastructure.gateway.dto;
 import lombok.Data;
 
 /**
- * @author Fuzhengwei fcr.cn @小傅哥
+ * @author 傅崇睿
  * @description 获取 Access token DTO 对象
  * @create 2024-02-25 09:21
  */

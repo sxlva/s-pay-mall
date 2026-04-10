@@ -1,10 +1,12 @@
 package cn.fcr.domain.order.service;
 
+import cn.fcr.domain.order.adapter.event.PaySuccessMessageEvent;
 import cn.fcr.domain.order.adapter.port.IProductPort;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.valobj.OrderStatusVO;
+import cn.fcr.types.event.BaseEvent;
 import com.alibaba.fastjson.JSONObject;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
@@ -32,6 +34,9 @@ public class OrderService extends AbstractOrderService{
     private String returnUrl;
     @Resource
     private AlipayClient alipayClient;
+
+    @Resource
+    private PaySuccessMessageEvent paySuccessMessageEvent;
 
     public OrderService(IOrderRepository repository, IProductPort port) {
         super(repository, port);
@@ -70,7 +75,19 @@ public class OrderService extends AbstractOrderService{
 
     @Override
     public void changeOrderPaySuccess(String orderId) {
+        // 1. 更新订单状态
         repository.changeOrderPaySuccess(orderId);
+
+        // 2. 发送 MQ 消息
+        PayOrderEntity payOrderEntity = repository.queryOrderById(orderId);
+        if (null == payOrderEntity) return;
+
+        PaySuccessMessageEvent.PaySuccessMessage paySuccessMessage = new PaySuccessMessageEvent.PaySuccessMessage();
+        paySuccessMessage.setUserId(payOrderEntity.getUserId());
+        paySuccessMessage.setTradeNo(payOrderEntity.getOrderId());
+
+        BaseEvent.EventMessage<PaySuccessMessageEvent.PaySuccessMessage> eventMessage = paySuccessMessageEvent.buildEventMessage(paySuccessMessage);
+        repository.publishEvent(eventMessage);
     }
 
     @Override

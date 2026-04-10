@@ -8,7 +8,12 @@ import java.io.IOException;
  * @description 定义微信登陆外部接口实现标准
  */
 public interface ILoginPort {
+
     String createQrCodeTicket() throws IOException;
 
     void sendLoginTemplate(String openid) throws IOException;
+
+    void saveLoginState(String ticket, String openid);
+
+    String checkLogin(String ticket);
 }

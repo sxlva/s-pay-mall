@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.util.Date;
+
 /**
  * @author 傅崇睿
  * @date 2025/7/21 07:13
@@ -18,7 +21,11 @@ import lombok.NoArgsConstructor;
 public class PayOrderEntity {
 
     private String userId;
+    private String productId;
+    private String productName;
     private String orderId;
+    private Date orderTime;
+    private BigDecimal totalAmount;
     private String payUrl; // 支付的链
     private OrderStatusVO orderStatus; // order状态枚举
 

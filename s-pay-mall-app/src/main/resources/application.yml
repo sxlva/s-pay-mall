@@ -1,7 +1,7 @@
 spring:
   config:
     name: s-pay-mall-app
-    import: optional:file:.env[.properties]
+    import: optional:file:../.env[.properties]
   profiles:
     active: dev
 

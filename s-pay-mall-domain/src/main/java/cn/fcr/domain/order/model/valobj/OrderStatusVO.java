@@ -22,4 +22,11 @@ public enum OrderStatusVO {
     private final String code;
     private final String desc;
 
+    public static OrderStatusVO getVO(String code) {
+        for (OrderStatusVO value : OrderStatusVO.values()) {
+            if (value.getCode().equals(code)) return value;
+        }
+        return null;
+    }
+
 }

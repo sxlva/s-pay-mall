@@ -43,6 +43,12 @@
         where order_id = #{orderId}
     </update>
 
+    <select id="queryOrderById" parameterType="java.lang.String" resultMap="dataMap">
+        SELECT user_id, product_id, product_name, order_id, order_time, total_amount, status, pay_url, pay_time, create_time, update_time
+        FROM pay_order
+        WHERE order_id = #{orderId}
+    </select>
+
     <update id="changeOrderClose" parameterType="java.lang.String">
         update pay_order set status = 'CLOSE', pay_time = now(), update_time = now()
         where order_id = #{orderId}
