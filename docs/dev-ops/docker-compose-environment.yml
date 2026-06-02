@@ -1,3 +1,4 @@
+# 环境编排文件：本地一键启动 MySQL、Redis、RocketMQ 等依赖服务
 # 命令执行 docker-compose -f docker-compose-environment.yml up -d
 version: '3.9'
 
@@ -36,7 +37,7 @@ services:
     environment:
       - PMA_HOST=mysql-spay
       - PMA_PORT=3306
-      - MYSQL_ROOT_PASSWORD= ${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     depends_on:
       mysql-spay:
         condition: service_healthy
@@ -56,7 +57,7 @@ services:
     networks:
       - spay-network
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -70,7 +71,9 @@ services:
     ports:
       - 8082:8081
     environment:
-      - REDIS_HOSTS=local:redis-spay:6379:${REDIS_PASSWORD}
+      - REDIS_HOST=redis-spay
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - HTTP_USER=${ADMIN_USER}
       - HTTP_PASSWORD=${ADMIN_PASSWORD}
       - LANG=C.UTF-8
@@ -82,10 +85,53 @@ services:
       redis-spay:
         condition: service_healthy
 
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.3.2
+    container_name: rocketmq-namesrv
+    command: sh mqnamesrv
+    ports:
+      - "9876:9876"
+    networks:
+      - spay-network
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.3.2
+    container_name: rocketmq-broker
+    command: sh mqbroker -n rocketmq-namesrv:9876 -c /home/rocketmq/conf/broker.conf
+    depends_on:
+      - rocketmq-namesrv
+    environment:
+      TZ: Asia/Shanghai
+      NAMESRV_ADDR: rocketmq-namesrv:9876
+    ports:
+      - "10911:10911"
+      - "10909:10909"
+    volumes:
+      - ./rocketmq/store:/home/rocketmq/store
+      - ./rocketmq/logs:/home/rocketmq/logs
+      - ./rocketmq/conf:/home/rocketmq/conf
+    networks:
+        - spay-network
+
+  rocketmq-dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rmqdashboard
+    ports:
+      - "8080:8080" 
+    environment:
+      - NAMESRV_ADDR=rocketmq-namesrv:9876 
+      - ROCKETMQ_CONFIG_IS_ACL_ENABLED=true
+      - ROCKETMQ_CONFIG_ACCESS_KEY=${ROCKETMQ_ACCESS_KEY}
+      - ROCKETMQ_CONFIG_SECRET_KEY=${ROCKETMQ_SECRET_KEY}
+    depends_on:
+      - rocketmq-namesrv
+    networks:
+      - spay-network
+
 # 声明顶级网络和数据卷
 networks:
   spay-network:
     driver: bridge
 
 volumes:
-    mysql-spay-data:
+  mysql-spay-data:

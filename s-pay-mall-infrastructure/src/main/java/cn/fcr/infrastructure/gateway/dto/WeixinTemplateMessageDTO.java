@@ -4,9 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author Fuzhengwei fcr.cn @小傅哥
+ * @author 傅崇睿
  * @description 微信模板消息
- * @create 2024-07-23 07:49
  */
 public class WeixinTemplateMessageDTO {
 
@@ -42,7 +41,11 @@ public class WeixinTemplateMessageDTO {
 
 
     public enum TemplateKey {
-        USER("user","用户ID")
+        USER("user","用户ID"),
+        PRODUCT("product","商品名称"),
+        ORDER_ID("orderId","订单号"),
+        AMOUNT("amount","金额"),
+        PAY_TIME("payTime","支付时间")
         ;
 
         private String code;

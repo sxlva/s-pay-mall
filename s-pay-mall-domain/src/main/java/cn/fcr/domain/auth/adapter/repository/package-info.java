@@ -1,1 +1,0 @@
-package cn.fcr.domain.auth.adapter.repository;
