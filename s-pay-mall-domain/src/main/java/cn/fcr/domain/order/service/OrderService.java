@@ -1,40 +1,23 @@
 package cn.fcr.domain.order.service;
 
+import cn.fcr.domain.order.adapter.port.IPaymentPort;
 import cn.fcr.domain.order.adapter.port.IProductPort;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
-import cn.fcr.domain.order.model.valobj.OrderStatusVO;
-import com.alibaba.fastjson.JSONObject;
-import com.alipay.api.AlipayApiException;
-import com.alipay.api.AlipayClient;
-import com.alipay.api.request.AlipayTradePagePayRequest;
+import cn.fcr.domain.order.model.valobj.PayStatus;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * @author 傅崇睿
- * @date 2025/7/28 22:23
- * @description
- */
 @Slf4j
 @Service
-public class OrderService extends AbstractOrderService{
+public class OrderService extends AbstractOrderService {
 
-    @Value("${alipay.notify_url}")
-    private String notifyUrl;
-    @Value("${alipay.return_url}")
-    private String returnUrl;
-    @Resource
-    private AlipayClient alipayClient;
-
-    public OrderService(IOrderRepository repository, IProductPort port) {
-        super(repository, port);
+    public OrderService(IOrderRepository repository, IProductPort productPort, IPaymentPort paymentPort) {
+        super(repository, productPort, paymentPort);
     }
 
     @Override
@@ -43,25 +26,18 @@ public class OrderService extends AbstractOrderService{
     }
 
     @Override
-    protected PayOrderEntity doPrepayOrder(String userId, String productId, String productName, String orderId, BigDecimal totalAmount) throws AlipayApiException {
-        AlipayTradePagePayRequest request = new AlipayTradePagePayRequest();
-        request.setNotifyUrl(notifyUrl);
-        request.setReturnUrl(returnUrl);
+    protected PayOrderEntity doPrepayOrder(String userId, String productId, String productName, String orderId, BigDecimal totalAmount) throws Exception {
+        PayOrderEntity payOrderEntity = PayOrderEntity.builder()
+                .userId(userId)
+                .orderNo(orderId)
+                .productId(productId)
+                .productName(productName)
+                .totalAmount(totalAmount)
+                .status(PayStatus.WAIT_PAY)
+                .build();
 
-        JSONObject bizContent = new JSONObject();
-        bizContent.put("out_trade_no", orderId);
-        bizContent.put("total_amount", totalAmount.toString());
-        bizContent.put("subject", productName);
-        bizContent.put("product_code", "FAST_INSTANT_TRADE_PAY");
-        request.setBizContent(bizContent.toString());
-
-        String form = alipayClient.pageExecute(request).getBody();
-
-        PayOrderEntity payOrderEntity = new PayOrderEntity();
-        payOrderEntity.setUserId(userId);
-        payOrderEntity.setOrderId(orderId);
-        payOrderEntity.setPayUrl(form);
-        payOrderEntity.setOrderStatus(OrderStatusVO.PAY_WAIT);
+        String payUrl = paymentPort.generatePayUrl(payOrderEntity);
+        payOrderEntity.setPayUrl(payUrl);
 
         repository.updateOrderPayInfo(payOrderEntity);
 

@@ -1,9 +1,7 @@
 package cn.fcr.config;
 
-import cn.fcr.trigger.listener.OrderPaySuccessListener;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.eventbus.EventBus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,13 +23,5 @@ public class GuavaConfig {
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .build();
     }
-
-    @Bean
-    public EventBus eventBusListener(OrderPaySuccessListener listener){
-        EventBus eventBus = new EventBus();
-        eventBus.register(listener);
-        return eventBus;
-    }
-
 
 }
