@@ -1,3 +1,4 @@
+# 开发环境配置：包含数据源、鉴权、支付与消息队列等参数
 server:
   port: 8092
   tomcat:
@@ -46,7 +47,7 @@ spring:
 
 # MyBatis配置
 mybatis:
-  mapper-locations: classpath:/mybatis/mapper/*.xml
+  mapper-locations: classpath*:/mybatis/mapper/*.xml
   config-location:  classpath:/mybatis/config/mybatis-config.xml
 
 # Redis
@@ -74,6 +75,7 @@ weixin:
     app-id: ${WEIXIN_APP_ID}
     app-secret: ${WEIXIN_APP_SECRET}
     template_id: ${WEIXIN_TEMPLATE_ID}
+    template_id_pay_success: ${WECHAT_TEMPLATE_ID_PAY_SUCCESS}
 
 # 支付宝支付 - 沙箱 https://opendocs.alipay.com/common/02kkv7
 alipay:
@@ -90,3 +92,13 @@ logging:
   level:
     root: info
   config: classpath:logback-spring.xml
+
+security:
+  jwt:
+    secret: REPLACED_COURSE_JWT_SECRET
+    expire-ms: 86400000
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:s-pay-mall-group}

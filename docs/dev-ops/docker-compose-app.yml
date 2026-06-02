@@ -24,6 +24,9 @@ services:
       - SERVER_PORT=8091
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - ROCKETMQ_ACCESS_KEY=${ROCKETMQ_ACCESS_KEY}
+      - ROCKETMQ_SECRET_KEY=${ROCKETMQ_SECRET_KEY}
+      - ROCKETMQ_NAMESRV_ADDR=rocketmq-namesrv:9876
     volumes:
       - ./log:/data/log
     logging:
@@ -32,8 +35,8 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - my-network
+      - spay-network
 
 networks:
-  my-network:
-    driver: bridge
+  spay-network:
+    external: true

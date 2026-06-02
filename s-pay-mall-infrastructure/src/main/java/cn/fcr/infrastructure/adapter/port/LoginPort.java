@@ -30,6 +30,8 @@ public class LoginPort implements ILoginPort {
     private String appSecret;
     @Value("${weixin.config.template_id}")
     private String template_id;
+    @Value("${weixin.config.template_id_pay_success}")
+    private String templateIdPaySuccess;
 
     @Qualifier("weixinAccessToken")
     @Resource
@@ -84,7 +86,30 @@ public class LoginPort implements ILoginPort {
         WeixinTemplateMessageDTO.put(data, WeixinTemplateMessageDTO.TemplateKey.USER, openid);
 
         WeixinTemplateMessageDTO templateMessageDTO = new WeixinTemplateMessageDTO(openid, template_id);
-        templateMessageDTO.setUrl("https://gaga.plus");
+        templateMessageDTO.setUrl("https://fuchongrui.me");
+        templateMessageDTO.setData(data);
+
+        Call<Void> call = weixinApiService.sendMessage(accessToken, templateMessageDTO);
+        call.execute();
+    }
+
+    public void sendPaySuccessTemplate(String openid, String productName, String orderId, String amount, String payTime) throws IOException {
+        String accessToken = weixinAccessToken.getIfPresent(appid);
+        if (null == accessToken) {
+            Call<WeixinTokenResponseDTO> call = weixinApiService.getToken("client_credential", appid, appSecret);
+            WeixinTokenResponseDTO weixinTokenRes = call.execute().body();
+            assert weixinTokenRes != null;
+            accessToken = weixinTokenRes.getAccess_token();
+            weixinAccessToken.put(appid, accessToken);
+        }
+
+        Map<String, Map<String, String>> data = new HashMap<>();
+        WeixinTemplateMessageDTO.put(data, WeixinTemplateMessageDTO.TemplateKey.PRODUCT, productName);
+        WeixinTemplateMessageDTO.put(data, WeixinTemplateMessageDTO.TemplateKey.ORDER_ID, orderId);
+        WeixinTemplateMessageDTO.put(data, WeixinTemplateMessageDTO.TemplateKey.AMOUNT, amount);
+        WeixinTemplateMessageDTO.put(data, WeixinTemplateMessageDTO.TemplateKey.PAY_TIME, payTime);
+
+        WeixinTemplateMessageDTO templateMessageDTO = new WeixinTemplateMessageDTO(openid, templateIdPaySuccess);
         templateMessageDTO.setData(data);
 
         Call<Void> call = weixinApiService.sendMessage(accessToken, templateMessageDTO);
