@@ -14,9 +14,12 @@ import java.util.List;
 
 /**
  * @description 检测未接收到或未正确处理的支付回调通知
+ * 
+ * @note 当前已禁用：因 IOrderDao.queryNoPayNotifyOrder 方法未绑定，导致每3秒抛出异常
+ *       需在 IOrderDao 中正确配置该方法后再启用
  */
 @Slf4j
-@Component()
+//@Component()
 public class NoPayNotifyOrderJob {
 
     @Resource
@@ -24,7 +27,7 @@ public class NoPayNotifyOrderJob {
     @Resource
     private AlipayClient alipayClient;
 
-    @Scheduled(cron = "0/3 * * * * ?")
+    //@Scheduled(cron = "0/3 * * * * ?")
     public void exec() {
         try {
             log.info("任务；检测未接收到或未正确处理的支付回调通知");

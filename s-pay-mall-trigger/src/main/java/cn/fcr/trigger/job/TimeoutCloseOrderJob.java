@@ -9,16 +9,16 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * @description 超时关单
+ * @description 超时关单（已废弃，改用 RocketMQ 延时消息）
  */
 @Slf4j
-@Component()
+//@Component()
 public class TimeoutCloseOrderJob {
 
     @Resource
     private IOrderService orderService;
 
-    @Scheduled(cron = "0 0/10 * * * ?")
+    //@Scheduled(cron = "0 0/10 * * * ?")
     public void exec() {
         try {
             log.info("任务；超时30分钟订单关闭");

@@ -1,0 +1,9 @@
+# 全局白名单 IP
+globalWhiteRemoteAddrs:
+
+# 用户列表
+accounts:
+  - accessKey: fcradmin
+    secretKey: Fcradmin006
+    whiteRemoteAddress:
+    admin: true
