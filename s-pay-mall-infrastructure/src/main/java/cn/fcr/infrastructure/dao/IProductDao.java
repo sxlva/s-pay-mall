@@ -70,7 +70,7 @@ public interface IProductDao extends BaseMapper<Product> {
             "<if test='minPrice != null'> AND p.price &gt;= #{minPrice}</if>" +
             "<if test='maxPrice != null'> AND p.price &lt;= #{maxPrice}</if>" +
             "<if test='status != null'> AND p.status = #{status}</if>" +
-            " ORDER BY p.id ASC</script>")
+            " ORDER BY p.id DESC</script>")
     List<ProductVO> selectProductsWithCategory(
             @Param("categoryId") Long categoryId,
             @Param("keyword") String keyword,

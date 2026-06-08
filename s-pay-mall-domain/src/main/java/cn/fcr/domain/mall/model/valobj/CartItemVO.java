@@ -27,4 +27,6 @@ public class CartItemVO {
 
     private BigDecimal itemAmount;
 
+    private Integer stock;
+
 }

@@ -6,6 +6,7 @@ export interface CartItem {
   quantity: number;
   selected: boolean;
   itemAmount: number;
+  stock: number;
 }
 
 export interface CartState {
