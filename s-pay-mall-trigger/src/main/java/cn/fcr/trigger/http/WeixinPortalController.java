@@ -76,10 +76,20 @@ public class WeixinPortalController {
             log.info("接收微信公众号信息请求{}开始 {}", openid, requestBody);
             // 消息转换
             MessageTextEntity message = XmlUtil.xmlToBean(requestBody, MessageTextEntity.class);
+            
+            log.info("解析后的消息对象: MsgType={}, Event={}, EventKey={}, Ticket={}, Content={}", 
+                message.getMsgType(), message.getEvent(), message.getEventKey(), 
+                message.getTicket(), message.getContent());
 
             if ("event".equals(message.getMsgType()) && "SCAN".equals(message.getEvent())) {
-                loginService.saveLoginState(message.getTicket(), openid);
-                return buildMessageTextEntity(openid, "登录成功");
+                log.info("处理 SCAN 事件 - Ticket={}, EventKey={}", message.getTicket(), message.getEventKey());
+                try {
+                    loginService.handleWechatScanLogin(message.getTicket(), openid);
+                    return buildMessageTextEntity(openid, "登录成功");
+                } catch (Exception e) {
+                    log.error("微信扫码登录处理失败: ticket={}, openid={}", message.getTicket(), openid, e);
+                    return buildMessageTextEntity(openid, "登录失败，请重试");
+                }
             }
             
             // 处理绑定消息

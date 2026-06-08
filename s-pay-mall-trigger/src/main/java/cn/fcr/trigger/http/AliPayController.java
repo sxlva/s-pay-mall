@@ -67,6 +67,12 @@ public class AliPayController implements IPayService {
 
     @RequestMapping(value = "alipay_notify_url", method = RequestMethod.POST)
     public String payNotify(HttpServletRequest request) {
+        try {
+            request.setCharacterEncoding("UTF-8");
+        } catch (Exception e) {
+            log.warn("设置请求编码失败", e);
+        }
+        
         log.info("支付回调，消息接收 trade_status:{}", request.getParameter("trade_status"));
 
         if (!"TRADE_SUCCESS".equals(request.getParameter("trade_status"))
@@ -78,7 +84,10 @@ public class AliPayController implements IPayService {
 
         boolean signVerified = payOrderService.verifyCallbackSign(params, alipayPublicKey);
         if (!signVerified) {
-            log.error("支付回调，签名验证失败");
+            log.error("支付回调，签名验证失败。公钥长度: {}, 公钥前100字符: {}, 接收参数: {}", 
+                    alipayPublicKey != null ? alipayPublicKey.length() : 0,
+                    alipayPublicKey != null && alipayPublicKey.length() > 100 ? alipayPublicKey.substring(0, 100) : alipayPublicKey,
+                    params);
             return "false";
         }
 

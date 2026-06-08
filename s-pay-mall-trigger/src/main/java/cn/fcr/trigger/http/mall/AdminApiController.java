@@ -6,6 +6,7 @@ import cn.fcr.api.dto.ProductSaveRequest;
 import cn.fcr.api.dto.UserSaveRequest;
 import cn.fcr.api.response.Response;
 import cn.fcr.domain.mall.model.command.ProductSaveCommand;
+import cn.fcr.domain.mall.model.entity.UserEntity;
 import cn.fcr.domain.mall.model.valobj.CategoryVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
 import cn.fcr.domain.mall.model.valobj.ProductVO;
@@ -50,15 +51,31 @@ public class AdminApiController extends BaseController implements IAdminService 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     public Response<List<Map<String, Object>>> listUsers(String username, Integer status, String roleCode) {
-        List<Map<String, Object>> users = mallUserService.listUsers(username, status, roleCode);
-        return success(users);
+        List<UserEntity> users = mallUserService.listUsers(username, status, roleCode);
+        List<Map<String, Object>> result = users.stream().map(u -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", u.getId());
+            map.put("username", u.getUsername());
+            map.put("status", u.getStatus());
+            map.put("roleCode", u.getRoleCode());
+            map.put("createTime", u.getCreateTime());
+            map.put("updateTime", u.getUpdateTime());
+            return map;
+        }).collect(Collectors.toList());
+        return success(result);
     }
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> saveUser(UserSaveRequest request) {
         log.info("保存用户: username={}", request.getUsername());
-        int result = mallUserService.saveUser(toMap(request));
+        UserEntity user = UserEntity.builder()
+                .id(request.getId())
+                .username(request.getUsername())
+                .password(request.getPassword())
+                .status(request.getStatus())
+                .build();
+        int result = mallUserService.saveUser(user);
         return success(result);
     }
 

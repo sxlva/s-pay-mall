@@ -27,14 +27,20 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeRequests(auth -> auth
+                .antMatchers("/orders", "/orders/**").permitAll()
                 .antMatchers(
+                    "/",
+                    "/index.html",
+                    "/static/**",
+                    "/*.js",
+                    "/*.css",
+                    "/*.html",
                     "/pay-api/v1/login/**",
                     "/pay-api/v1/weixin/**",
                     "/pay-api/v1/alipay/**",
                     "/mall-api/v1/auth/**",
                     "/mall-api/v1/mall/user/**",
                     "/mall-api/v1/products/**",
-                    "/mall-api/v1/categories/**",
                     "/mall-api/v1/orders/**",
                     "/mall-api/v1/cart/**",
                     "/mall-api/v1/admin/**",

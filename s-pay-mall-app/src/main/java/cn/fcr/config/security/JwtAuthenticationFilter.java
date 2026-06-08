@@ -33,9 +33,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader("Authorization");
+        
         if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
             try {
                 String token = header.substring(7);
+                log.debug("JWT Token解析前 - Authorization header: {}", header);
                 Claims claims = jwtTokenProvider.parse(token);
                 String username = (String) claims.get("username");
                 String role = (String) claims.get("role");
@@ -47,8 +49,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
-                log.warn("JWT鉴权失败: {}", e.getMessage());
+                log.warn("JWT鉴权失败 - Authorization header: {}, 错误: {}", header, e.getMessage());
             }
+        } else {
+            log.debug("JWT鉴权跳过 - Authorization header: {}", header != null ? header : "请求头为空");
         }
         filterChain.doFilter(request, response);
     }

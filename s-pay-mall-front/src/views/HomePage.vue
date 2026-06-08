@@ -127,10 +127,7 @@ const router = useRouter()
 const products = ref<Array<any>>([])
 const loading = ref<boolean>(true)
 const categories = ref<Array<{ name: string; id: number | null }>>([
-  { name: '全部', id: null },
-  { name: '数码产品', id: 1 },
-  { name: '服装配饰', id: 2 },
-  { name: '食品饮料', id: 3 }
+  { name: '全部', id: null }
 ])
 const activeCategory = ref<string>('全部')
 const activeCategoryId = ref<number | null>(null)
@@ -143,6 +140,25 @@ const getProductImage = (product: { id: number; name: string; image_url?: string
   const color = colors[product.id % colors.length]
   const text = encodeURIComponent(product.name.substring(0, 6))
   return `https://via.placeholder.com/400x400/${color}/ffffff?text=${text}`
+}
+
+const fetchCategories = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch('/mall-api/v1/categories', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    })
+    const data = await response.json()
+    if (data.code === '0000') {
+      const fetchedCategories = data.data.map((cat: any) => ({
+        name: cat.name,
+        id: cat.id
+      }))
+      categories.value = [{ name: '全部', id: null }, ...fetchedCategories]
+    }
+  } catch (error) {
+    console.error('获取分类失败:', error)
+  }
 }
 
 const fetchProducts = async (categoryId: number | null = null) => {
@@ -203,12 +219,13 @@ const addToCart = async (productId: number): Promise<void> => {
   }
 }
 
-const buyNow = (product: { id: number }): void => {
-  addToCart(product.id)
+const buyNow = async (product: { id: number }): Promise<void> => {
+  await addToCart(product.id)
   router.push('/cart')
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchCategories()
   fetchProducts()
 })
 </script>

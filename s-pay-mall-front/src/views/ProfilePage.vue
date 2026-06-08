@@ -73,8 +73,8 @@ const avatarText = computed(() => {
 })
 
 const formattedCreateTime = computed(() => {
-  if (!profile.value.create_time) return '-'
-  const time = profile.value.create_time
+  if (!profile.value.createTime) return '-'
+  const time = profile.value.createTime
   if (time.includes('T')) {
     return time.slice(0, 19).replace('T', ' ')
   }
