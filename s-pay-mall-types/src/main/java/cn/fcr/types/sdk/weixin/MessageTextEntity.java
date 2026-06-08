@@ -1,38 +1,39 @@
 package cn.fcr.types.sdk.weixin;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
-@XStreamAlias("xml")
+@JacksonXmlRootElement(localName = "xml")
 public class MessageTextEntity {
 
-    @XStreamAlias("ToUserName")
+    @JacksonXmlProperty(localName = "ToUserName")
     private String toUserName;
 
-    @XStreamAlias("FromUserName")
+    @JacksonXmlProperty(localName = "FromUserName")
     private String fromUserName;
 
-    @XStreamAlias("CreateTime")
+    @JacksonXmlProperty(localName = "CreateTime")
     private String createTime;
 
-    @XStreamAlias("MsgType")
+    @JacksonXmlProperty(localName = "MsgType")
     private String msgType;
 
-    @XStreamAlias("Event")
+    @JacksonXmlProperty(localName = "Event")
     private String event;
 
-    @XStreamAlias("EventKey")
+    @JacksonXmlProperty(localName = "EventKey")
     private String eventKey;
 
-    @XStreamAlias("MsgID")
+    @JacksonXmlProperty(localName = "MsgID")
     private String msgId;
 
-    @XStreamAlias("Status")
+    @JacksonXmlProperty(localName = "Status")
     private String status;
 
-    @XStreamAlias("Ticket")
+    @JacksonXmlProperty(localName = "Ticket")
     private String ticket;
 
-    @XStreamAlias("Content")
+    @JacksonXmlProperty(localName = "Content")
     private String content;
 
     // Getters and Setters

@@ -10,15 +10,16 @@ import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.model.valobj.OrderStatusVO;
 import cn.fcr.infrastructure.dao.IOrderDao;
 import cn.fcr.infrastructure.dao.po.PayOrder;
-import cn.fcr.types.event.BaseEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author 傅崇睿
@@ -77,7 +78,6 @@ public class OrderRepository implements IOrderRepository {
         orderDao.changeOrderPaySuccess(payOrderReq);
         log.info("pay_order 表状态已更新为 PAY_SUCCESS: orderId={}", orderId);
 
-        // 使用 RocketMQ 投递支付成功消息，替代原有的 EventBus
         PaySuccessMessageEvent.PaySuccessMessage paySuccessMessage = PaySuccessMessageEvent.PaySuccessMessage.builder()
                 .tradeNo(orderId)
                 .orderNo(orderId)
@@ -85,7 +85,7 @@ public class OrderRepository implements IOrderRepository {
         
         if (rocketMQTemplate != null) {
             try {
-                rocketMQTemplate.convertAndSend("order.paid", paySuccessMessage);
+                rocketMQTemplate.convertAndSend("order_paid", paySuccessMessage);
                 log.info("已发送支付成功消息到 RocketMQ: orderId={}", orderId);
             } catch (Exception e) {
                 log.error("发送支付成功消息失败，但不影响订单状态更新: orderId={}, error={}", orderId, e.getMessage());
@@ -111,16 +111,13 @@ public class OrderRepository implements IOrderRepository {
 
     @Override
     public OrderEntity queryUnPayOrder(ShopCartEntity shopCartEntity) {
-        // 1. 封装参数
         PayOrder orderReq = new PayOrder();
         orderReq.setUserId(shopCartEntity.getUserId());
         orderReq.setProductId(shopCartEntity.getProductId());
 
-        // 2. 查询到订单
         PayOrder order = orderDao.queryUnPayOrder(orderReq);
         if (null == order) return null;
 
-        // 3. 返回结果
         return OrderEntity.builder()
                 .productId(order.getProductId())
                 .productName(order.getProductName())
@@ -130,5 +127,28 @@ public class OrderRepository implements IOrderRepository {
                 .totalAmount(order.getTotalAmount())
                 .payUrl(order.getPayUrl())
                 .build();
+    }
+
+    @Override
+    public String queryOrderStatus(String orderNo) {
+        return orderDao.queryOrderStatus(orderNo);
+    }
+
+    @Override
+    public List<Map<String, Object>> queryOrderItems(String orderNo) {
+        List<PayOrder> orders = orderDao.queryOrderByOrderNo(orderNo);
+        return orders.stream()
+                .map(order -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("productId", order.getProductId());
+                    item.put("quantity", 1);
+                    return item;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean closeOrderWithOptimisticLock(String orderNo, String expectStatus) {
+        return orderDao.closeOrderWithOptimisticLock(orderNo, expectStatus) > 0;
     }
 }

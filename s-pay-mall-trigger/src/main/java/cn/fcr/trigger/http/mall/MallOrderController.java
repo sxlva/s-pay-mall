@@ -7,11 +7,7 @@ import cn.fcr.domain.mall.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
 import cn.fcr.domain.mall.service.IMallCartService;
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
-import cn.fcr.domain.order.service.PayOrderService;
-import cn.fcr.domain.order.model.valobj.PayStatus;
-import cn.fcr.infrastructure.dao.IOrderDao;
-import cn.fcr.infrastructure.dao.po.PayOrder;
+import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.trigger.http.BaseController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -37,13 +33,7 @@ public class MallOrderController extends BaseController {
     private IMallCartService mallCartService;
 
     @Resource
-    private cn.fcr.domain.mall.service.IMallOrderService mallOrderService;
-
-    @Resource
-    private IOrderDao orderDao;
-
-    @Resource
-    private PayOrderService payOrderService;
+    private IMallOrderService mallOrderService;
 
     @PostMapping("/cart")
     public Response<Integer> addCart(@RequestBody CartAddRequest request, HttpServletRequest httpRequest) {
@@ -108,46 +98,6 @@ public class MallOrderController extends BaseController {
             result.put("_html", orderVO.getPayUrl());
         }
 
-        return success(result);
-    }
-
-    @GetMapping("/orders/{orderNo}/continue-pay")
-    public Response<Map<String, Object>> continuePay(@PathVariable("orderNo") String orderNo) {
-        log.info("继续支付: orderNo={}", orderNo);
-
-        PayOrder payOrder = orderDao.queryByOrderNo(orderNo);
-        if (payOrder == null) {
-            log.error("订单不存在: orderNo={}", orderNo);
-            return fail("订单不存在");
-        }
-
-        if (!"WAIT_PAY".equals(payOrder.getStatus()) && !"CREATED".equals(payOrder.getStatus())) {
-            log.error("订单状态不允许支付: orderNo={}, status={}", orderNo, payOrder.getStatus());
-            return fail("当前订单状态不允许支付: " + payOrder.getStatus());
-        }
-
-        PayOrderEntity payOrderEntity = PayOrderEntity.builder()
-                .orderNo(payOrder.getOrderId())
-                .userId(payOrder.getUserId())
-                .productId(payOrder.getProductId())
-                .productName(payOrder.getProductName())
-                .totalAmount(payOrder.getTotalAmount())
-                .status(PayStatus.WAIT_PAY)
-                .build();
-
-        String payUrl = payOrderService.generatePayUrl(payOrderEntity);
-
-        payOrder.setPayUrl(payUrl);
-        payOrder.setStatus(PayStatus.WAIT_PAY.getCode());
-        orderDao.updateOrderPayInfo(payOrder);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("orderId", orderNo);
-        result.put("payUrl", payUrl);
-        result.put("totalAmount", payOrder.getTotalAmount());
-        result.put("_html", payUrl);
-
-        log.info("继续支付成功: orderNo={}", orderNo);
         return success(result);
     }
 

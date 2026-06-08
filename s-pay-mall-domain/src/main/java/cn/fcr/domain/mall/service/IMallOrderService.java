@@ -21,4 +21,6 @@ public interface IMallOrderService {
     int cancelOrder(Long orderId);
 
     void paySuccess(String orderNo);
+
+    OrderVO getOrderByNo(String orderNo);
 }

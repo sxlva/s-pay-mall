@@ -46,7 +46,12 @@
                     :disabled="(item.quantity || 0) <= 1"
                   />
                   <span class="quantity">{{ item.quantity || 0 }}</span>
-                  <el-button size="small" :icon="Plus" @click="handleUpdateQuantity(item, 1)" />
+                  <el-button 
+                    size="small" 
+                    :icon="Plus" 
+                    @click="handleUpdateQuantity(item, 1)" 
+                    :disabled="(item.quantity || 0) >= (item.stock || 0)"
+                  />
                 </div>
                 <!-- null 安全访问：小计兜底为 0 -->
                 <span class="item-amount">小计: ¥{{ ((item.itemAmount || 0)).toFixed(2) }}</span>
@@ -147,10 +152,6 @@ watch(() => route.path, (newPath) => {
     loadCart()
   }
 }, { immediate: true })
-
-onMounted(() => {
-  loadCart()
-})
 </script>
 
 <style scoped>
