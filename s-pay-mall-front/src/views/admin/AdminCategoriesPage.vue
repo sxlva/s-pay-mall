@@ -46,7 +46,7 @@
       </div>
     </el-card>
     
-    <el-dialog :title="editMode ? '编辑分类' : '新增分类'" :visible.sync="showModal" width="400px">
+    <el-dialog :title="editMode ? '编辑分类' : '新增分类'" v-model="showModal" width="400px">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
         <el-form-item label="分类名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入分类名称" />

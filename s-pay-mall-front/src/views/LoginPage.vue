@@ -217,7 +217,7 @@ const generateQrCode = async () => {
   try {
     const response = await fetch('/pay-api/v1/login/weixin_qrcode_ticket')
     const data = await response.json()
-    if (data.code === 0 && data.data) {
+    if (data.code === '0000' && data.data) {
       qrCodeUrl.value = `https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket=${encodeURIComponent(data.data)}`
       startPolling(data.data)
     }
@@ -231,7 +231,7 @@ const startPolling = (ticket) => {
     try {
       const response = await fetch(`/pay-api/v1/login/check_login?ticket=${ticket}`)
       const data = await response.json()
-      if (data.code === 0 && data.data) {
+      if (data.code === '0000' && data.data) {
         localStorage.setItem('token', data.data)
         localStorage.setItem('username', 'wechat_user')
         localStorage.setItem('role', 'MEMBER')

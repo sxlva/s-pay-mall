@@ -1,7 +1,7 @@
 package cn.fcr.domain.order.service;
 
-import cn.fcr.domain.order.adapter.port.IPaymentPort;
-import cn.fcr.domain.order.adapter.port.IProductPort;
+import cn.fcr.domain.order.gateway.IPaymentGateway;
+import cn.fcr.domain.order.gateway.IProductGateway;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.OrderEntity;
@@ -12,18 +12,20 @@ import cn.fcr.domain.order.model.valobj.OrderStatusVO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public abstract class AbstractOrderService implements IOrderService {
 
     protected final IOrderRepository repository;
-    protected final IProductPort productPort;
-    protected final IPaymentPort paymentPort;
+    protected final IProductGateway productGateway;
+    protected final IPaymentGateway paymentGateway;
 
-    public AbstractOrderService(IOrderRepository repository, IProductPort productPort, IPaymentPort paymentPort) {
+    public AbstractOrderService(IOrderRepository repository, IProductGateway productGateway, IPaymentGateway paymentGateway) {
         this.repository = repository;
-        this.productPort = productPort;
-        this.paymentPort = paymentPort;
+        this.productGateway = productGateway;
+        this.paymentGateway = paymentGateway;
     }
 
     @Override
@@ -44,7 +46,7 @@ public abstract class AbstractOrderService implements IOrderService {
                     .build();
         }
 
-        ProductEntity productEntity = productPort.queryProductByProductId(shopCartEntity.getProductId());
+        ProductEntity productEntity = productGateway.queryProductByProductId(shopCartEntity.getProductId());
         OrderEntity orderEntity = CreateOrderAggregate.buildOrderEntity(productEntity.getProductId(), productEntity.getProductName());
         CreateOrderAggregate orderAggregate = CreateOrderAggregate.builder()
                 .userId(shopCartEntity.getUserId())
@@ -61,6 +63,39 @@ public abstract class AbstractOrderService implements IOrderService {
                 .orderNo(orderEntity.getOrderId())
                 .payUrl(payOrderEntity.getPayUrl())
                 .build();
+    }
+
+    @Override
+    public boolean handleTimeoutCloseOrder(String orderNo) {
+        log.info("处理超时关单: orderNo={}", orderNo);
+
+        String currentStatus = repository.queryOrderStatus(orderNo);
+        if (currentStatus == null) {
+            log.warn("订单不存在，可能已被删除: orderNo={}", orderNo);
+            return false;
+        }
+
+        if (!OrderStatusVO.CREATE.getCode().equals(currentStatus)) {
+            log.info("订单状态已变更，无需关单: orderNo={}, status={}", orderNo, currentStatus);
+            return false;
+        }
+
+        boolean closed = repository.closeOrderWithOptimisticLock(orderNo, OrderStatusVO.CREATE.getCode());
+        if (!closed) {
+            log.info("订单状态已被其他线程修改，关单失败: orderNo={}", orderNo);
+            return false;
+        }
+
+        List<Map<String, Object>> orderItems = repository.queryOrderItems(orderNo);
+        for (Map<String, Object> item : orderItems) {
+            String productId = (String) item.get("productId");
+            Integer quantity = (Integer) item.get("quantity");
+            productGateway.restoreStock(productId, quantity);
+            log.info("已恢复库存: productId={}, quantity={}", productId, quantity);
+        }
+
+        log.info("超时关单成功: orderNo={}", orderNo);
+        return true;
     }
 
     protected abstract void doSaveOrder(CreateOrderAggregate orderAggregate);

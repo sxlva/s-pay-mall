@@ -62,7 +62,8 @@ export const useCartStore = defineStore('cart', () => {
             productPrice: safePrice,
             quantity: safeQuantity,
             selected: item.selected === undefined ? false : Boolean(item.selected),
-            itemAmount: Number(item.itemAmount || (safePrice * safeQuantity) || 0)
+            itemAmount: Number(item.itemAmount || (safePrice * safeQuantity) || 0),
+            stock: Number(item.stock || 0)
           }
         });
         console.log('【购物车清洗后数据】', items.value) // 调试日志

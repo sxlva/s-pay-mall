@@ -96,7 +96,34 @@ public interface IOrderDao {
      *
      * @param orderId 订单ID
      */
-    // 将状态修改为 PayStatus.CLOSED（与 domain 层枚举保持一致）
     @Update("update pay_order set status = 'CLOSED', pay_time = now(), update_time = now() where order_id = #{orderId}")
     void changeOrderClose(@Param("orderId") String orderId);
+
+    /**
+     * 查询订单状态
+     *
+     * @param orderNo 订单号
+     * @return 订单状态，如果订单不存在返回null
+     */
+    @Select("select status from pay_order where order_id = #{orderNo}")
+    String queryOrderStatus(@Param("orderNo") String orderNo);
+
+    /**
+     * 根据订单号查询订单列表
+     *
+     * @param orderNo 订单号
+     * @return 订单列表
+     */
+    @Select("select product_id, product_name, order_id, total_amount, status from pay_order where order_id = #{orderNo}")
+    List<PayOrder> queryOrderByOrderNo(@Param("orderNo") String orderNo);
+
+    /**
+     * 乐观锁方式关闭订单
+     *
+     * @param orderNo      订单号
+     * @param expectStatus 期望状态
+     * @return 影响行数
+     */
+    @Update("update pay_order set status = 'CLOSED', pay_time = now(), update_time = now() where order_id = #{orderNo} and status = #{expectStatus}")
+    int closeOrderWithOptimisticLock(@Param("orderNo") String orderNo, @Param("expectStatus") String expectStatus);
 }

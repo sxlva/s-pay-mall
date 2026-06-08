@@ -1,5 +1,6 @@
 package cn.fcr.domain.mall.service;
 
+import cn.fcr.domain.mall.model.entity.UserEntity;
 import cn.fcr.domain.mall.model.valobj.UserLoginVO;
 
 import java.util.List;
@@ -16,9 +17,9 @@ public interface IMallUserService {
     
     UserLoginVO login(String username, String password);
     
-    List<Map<String, Object>> listUsers(String username, Integer status, String roleCode);
+    List<UserEntity> listUsers(String username, Integer status, String roleCode);
     
-    int saveUser(Map<String, Object> user);
+    int saveUser(UserEntity user);
     
     int updateUserStatus(Long userId, Integer status);
     
