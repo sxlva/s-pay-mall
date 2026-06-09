@@ -1,5 +1,6 @@
 package cn.fcr.infrastructure.gateway;
 
+import cn.fcr.domain.mall.gateway.IStockGateway;
 import cn.fcr.domain.order.gateway.IProductGateway;
 import cn.fcr.domain.order.model.entity.ProductEntity;
 import cn.fcr.infrastructure.dao.IProductDao;
@@ -7,6 +8,7 @@ import cn.fcr.infrastructure.gateway.dto.ProductDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.Resource;
 
 /**
@@ -22,6 +24,10 @@ public class ProductGatewayImpl implements IProductGateway {
     @Resource
     private IProductDao productDao;
 
+    @Resource
+    private IStockGateway stockGateway;
+
+    @Autowired
     public ProductGatewayImpl(ProductRPC productRPC) {
         this.productRPC = productRPC;
     }
@@ -41,8 +47,14 @@ public class ProductGatewayImpl implements IProductGateway {
     public void restoreStock(String productId, Integer quantity) {
         try {
             Long id = Long.parseLong(productId);
+            
+            // 1. 恢复 MySQL 库存
             productDao.increaseStock(id, quantity);
-            log.info("库存恢复成功: productId={}, quantity={}", productId, quantity);
+            log.info("MySQL 库存恢复成功: productId={}, quantity={}", productId, quantity);
+            
+            // 2. 恢复 Redis 库存（兜底方案）
+            stockGateway.restoreStock(id, quantity);
+            
         } catch (NumberFormatException e) {
             log.error("商品ID格式错误: productId={}", productId, e);
             throw new RuntimeException("商品ID格式错误: " + productId, e);

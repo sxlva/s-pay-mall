@@ -77,4 +77,23 @@ public interface IProductDao extends BaseMapper<Product> {
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
             @Param("status") Integer status);
+
+    /**
+     * 查询所有上架商品的ID列表
+     * 用于库存预热时批量同步
+     *
+     * @return 上架商品ID列表（status=1）
+     */
+    @Select("SELECT id FROM product WHERE status = 1")
+    List<Long> selectAllActiveProductIds();
+
+    /**
+     * 查询单个商品的库存数量
+     * 用于库存同步时从数据库获取最新库存
+     *
+     * @param productId 商品ID
+     * @return 库存数量，若商品不存在或已下架返回 null
+     */
+    @Select("SELECT stock FROM product WHERE id = #{productId} AND status = 1")
+    Integer selectStockByProductId(@Param("productId") Long productId);
 }

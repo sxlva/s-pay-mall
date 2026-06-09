@@ -1,15 +1,26 @@
+/**
+ * 购物车状态管理 Store
+ * 职责：状态管理、计算属性、业务逻辑编排
+ * DDD 分层：Application/Domain Layer（应用层/领域层）
+ * 
+ * 架构原则：
+ * - 不直接处理 HTTP 请求（委托给 cartRepository）
+ * - 不处理数据清洗（由 cartRepository 完成）
+ * - 只关注状态变化和用户交互逻辑
+ */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { cartRepository } from '../repositories/cartRepository'
 import type { CartItem } from '../types/cart'
 
-const API_BASE = '/mall-api/v1'
-
 export const useCartStore = defineStore('cart', () => {
+  // ==================== 状态定义 ====================
   const items = ref<CartItem[]>([])
   const loading = ref(false)
   const updatingProductIds = ref<Set<number>>(new Set())
 
+  // ==================== 计算属性 ====================
   const totalAmount = computed(() => {
     return items.value
       .filter(item => item.selected)
@@ -26,50 +37,24 @@ export const useCartStore = defineStore('cart', () => {
     return items.value.length > 0 && items.value.every(item => item.selected)
   })
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token')
-    return token ? { 'Authorization': `Bearer ${token}` } : {}
-  }
-
+  // ==================== 业务方法 ====================
+  
+  /**
+   * 加载购物车数据
+   * - 未登录时清空购物车
+   * - 调用仓储层获取数据
+   * - 异常时兜底为空数组
+   */
   const loadCart = async (): Promise<void> => {
     const token = localStorage.getItem('token')
     if (!token) {
       items.value = []
       return
     }
+    
     try {
       loading.value = true
-      const response = await fetch(`${API_BASE}/cart`, {
-        headers: getAuthHeaders()
-      })
-      const data = await response.json()
-      console.log('【购物车原始数据】', data) // 调试日志
-      if (data.code === '0000') {
-        const rawItems = data.data || []
-        // 全兼容防守模式：深度追踪字段，避免 undefined
-        items.value = rawItems.map((item: any) => {
-          // 1. 深度追踪主键 ID（兼容 id, cartId, itemId）
-          const safeId = Number(item.id || item.cartId || item.itemId || 0);
-          // 2. 深度追踪商品单价（兼容 price, productPrice, skuPrice）
-          const safePrice = Number(item.price || item.productPrice || item.skuPrice || 0);
-          // 3. 深度追踪购买数量（兼容 quantity, count, num）
-          const safeQuantity = Number(item.quantity || item.count || item.num || 0);
-          
-          return {
-            id: safeId,
-            productId: Number(item.productId || 0),
-            productName: String(item.productName || item.title || '未知商品'),
-            productPrice: safePrice,
-            quantity: safeQuantity,
-            selected: item.selected === undefined ? false : Boolean(item.selected),
-            itemAmount: Number(item.itemAmount || (safePrice * safeQuantity) || 0),
-            stock: Number(item.stock || 0)
-          }
-        });
-        console.log('【购物车清洗后数据】', items.value) // 调试日志
-      } else {
-        items.value = []
-      }
+      items.value = await cartRepository.fetchItems()
     } catch (error) {
       console.error('获取购物车失败:', error)
       items.value = [] // 异常时兜底为空数组，避免白屏
@@ -78,42 +63,43 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  /**
+   * 添加商品到购物车
+   * - 检查登录状态
+   * - 调用仓储层添加
+   * - 成功后刷新购物车
+   */
   const addToCart = async (productId: number, quantity: number = 1): Promise<boolean> => {
     const token = localStorage.getItem('token')
     if (!token) {
       ElMessage.warning('请先登录')
       return false
     }
+    
     try {
       loading.value = true
-      const response = await fetch(`${API_BASE}/cart`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ productId, quantity })
-      })
-      const data = await response.json()
-      if (data.code === '0000') {
-        ElMessage.success('商品已成功加入购物车')
-        await loadCart()
-        return true
-      } else {
-        ElMessage.error(data.info || '添加失败')
-        return false
-      }
+      await cartRepository.add({ productId, quantity })
+      ElMessage.success('商品已成功加入购物车')
+      await loadCart()
+      return true
     } catch (error) {
-      ElMessage.error('添加失败')
+      ElMessage.error(error instanceof Error ? error.message : '添加失败')
       return false
     } finally {
       loading.value = false
     }
   }
 
+  /**
+   * 更新购物车商品数量
+   * - 参数校验
+   * - 防止重复更新
+   * - 调用仓储层更新
+   */
   const updateQuantity = async (productId: number, quantity: number): Promise<void> => {
-    const token = localStorage.getItem('token')
     const safeQuantity = Number(quantity)
+    const token = localStorage.getItem('token')
+    
     if (!token || isNaN(safeQuantity) || safeQuantity < 1) {
       throw new Error('参数无效')
     }
@@ -124,20 +110,8 @@ export const useCartStore = defineStore('cart', () => {
     
     updatingProductIds.value.add(productId)
     try {
-      const response = await fetch(`${API_BASE}/cart/quantity`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ productId, quantity: safeQuantity })
-      })
-      const data = await response.json()
-      if (data.code === '0000') {
-        await loadCart()
-      } else {
-        throw new Error(data.info || '更新失败')
-      }
+      await cartRepository.updateQuantity({ productId, quantity: safeQuantity })
+      await loadCart()
     } catch (error) {
       throw error
     } finally {
@@ -145,29 +119,30 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  /**
+   * 删除购物车项
+   * - 调用仓储层删除
+   * - 成功后刷新购物车
+   */
   const removeItem = async (cartItemId: number): Promise<void> => {
     const token = localStorage.getItem('token')
     if (!token) return
+    
     try {
-      console.log('【删除购物车项】itemId:', cartItemId) // 调试日志
-      const response = await fetch(`${API_BASE}/cart/delete?itemId=${cartItemId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      })
-      const data = await response.json()
-      console.log('【删除响应】', data) // 调试日志
-      if (data.code === '0000') {
-        ElMessage.success('删除成功')
-        await loadCart()
-      } else {
-        ElMessage.error(data.info || '删除失败')
-      }
+      console.log('【删除购物车项】itemId:', cartItemId)
+      await cartRepository.delete(cartItemId)
+      ElMessage.success('删除成功')
+      await loadCart()
     } catch (error) {
-      console.error('删除失败:', error) // 调试日志
-      ElMessage.error('删除失败')
+      console.error('删除失败:', error)
+      ElMessage.error(error instanceof Error ? error.message : '删除失败')
     }
   }
 
+  /**
+   * 切换商品选中状态
+   * - 纯内存操作，无需调用 API
+   */
   const toggleSelect = (cartItemId: number): void => {
     const item = items.value.find(i => i.id === cartItemId)
     if (item) {
@@ -175,6 +150,10 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  /**
+   * 全选/取消全选
+   * - 纯内存操作，无需调用 API
+   */
   const toggleAll = (): void => {
     const newSelected = !allSelected.value
     items.value.forEach(item => {
@@ -182,34 +161,44 @@ export const useCartStore = defineStore('cart', () => {
     })
   }
 
+  /**
+   * 清空购物车
+   * - 调用仓储层清空
+   * - 成功后刷新购物车
+   */
   const clearCart = async (): Promise<void> => {
     const token = localStorage.getItem('token')
     if (!token) return
+    
     try {
-      const response = await fetch(`${API_BASE}/cart`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      })
-      const data = await response.json()
-      if (data.code === '0000') {
-        ElMessage.success('购物车已清空')
-        await loadCart()
-      }
+      await cartRepository.clear()
+      ElMessage.success('购物车已清空')
+      await loadCart()
     } catch (error) {
-      ElMessage.error('清空失败')
+      ElMessage.error(error instanceof Error ? error.message : '清空失败')
     }
   }
 
+  /**
+   * 获取已选中的商品
+   * - 纯计算逻辑，无需调用 API
+   */
   const getSelectedItems = (): CartItem[] => {
     return items.value.filter(item => item.selected)
   }
 
+  // ==================== 导出接口 ====================
   return {
+    // 状态
     items,
     loading,
+    
+    // 计算属性
     totalAmount,
     totalCount,
     allSelected,
+    
+    // 业务方法
     loadCart,
     addToCart,
     updateQuantity,

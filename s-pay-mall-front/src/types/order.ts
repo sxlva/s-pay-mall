@@ -1,4 +1,4 @@
-export type OrderStatus = 'INIT' | 'PAID' | 'SHIPPED' | 'DONE' | 'CANCELED';
+export type OrderStatus = 'CREATED' | 'INIT' | 'WAIT_PAY' | 'PAID' | 'SHIPPED' | 'DONE' | 'CANCELED';
 
 export interface OrderItem {
   id: number;
@@ -28,6 +28,8 @@ export interface OrderCreateResult {
   totalAmount: number;
   status: string;
   payUrl: string | null;
+  _html?: string;
+  html?: string;
 }
 
 export interface OrderState {
