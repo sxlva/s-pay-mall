@@ -185,6 +185,12 @@
                 <artifactId>alipay-sdk-java</artifactId>
                 <version>4.38.157.ALL</version>
             </dependency>
+            <!-- Redisson 分布式锁与原子操作 -->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>3.23.4</version>
+            </dependency>
             <!-- JAXB API for Java 9+ compatibility -->
             <dependency>
                 <groupId>javax.xml.bind</groupId>

@@ -5,6 +5,7 @@ import { Search, ShoppingCart } from '@element-plus/icons-vue'
 import { useProduct } from '@/hooks/useProduct'
 import { useCart } from '@/hooks/useCart'
 import type { ProductVO } from '@/types/product'
+import { isSoldOut } from '@/utils/product'
 
 const router = useRouter()
 const { products, categories, loading, queryParams, setCategory, loadData } = useProduct()
@@ -32,8 +33,9 @@ const handleCategoryChange = (categoryId: number | null) => {
   setCategory(categoryId)
 }
 
-const handleAddToCart = async (productId: number) => {
-  const success = await addToCart(productId)
+const handleAddToCart = async (product: ProductVO) => {
+  if (isSoldOut(product.stock)) return
+  const success = await addToCart(product.id)
   if (!success) {
     router.push('/login')
   }
@@ -113,14 +115,18 @@ const handleAddToCart = async (productId: number) => {
                 <div class="product-price">
                   <span class="price">¥{{ product.price }}</span>
                   <span class="stock">库存 {{ product.stock }} 件</span>
+                  <el-tag v-if="isSoldOut(product.stock)" type="danger" size="small" class="sold-out-tag">售罄</el-tag>
                 </div>
-                <el-button 
-                  type="primary" 
-                  size="small" 
+                <el-button
+                  type="primary"
+                  size="small"
                   icon="ShoppingCart"
-                  @click="handleAddToCart(product.id)"
+                  class="cart-btn"
+                  :class="{ 'is-sold-out': isSoldOut(product.stock) }"
+                  :disabled="isSoldOut(product.stock)"
+                  @click="handleAddToCart(product)"
                 >
-                  加入购物车
+                  {{ isSoldOut(product.stock) ? '已售罄' : '加入购物车' }}
                 </el-button>
               </div>
             </div>
@@ -311,8 +317,17 @@ const handleAddToCart = async (productId: number) => {
 }
 
 .stock {
-  font-size: 12px;
-  color: #909399;
+    font-size: 12px;
+    color: #909399;
+  }
+
+  .sold-out-tag {
+    margin-left: 8px;
+  }
+
+.cart-btn.is-sold-out {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

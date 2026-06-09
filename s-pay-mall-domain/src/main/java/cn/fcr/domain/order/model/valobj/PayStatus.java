@@ -4,6 +4,7 @@ public enum PayStatus {
     WAIT_PAY("WAIT_PAY", "待支付"),
     PAYING("PAYING", "支付中"),
     PAID("PAID", "已支付"),
+    TRADE_DONE("TRADE_DONE", "交易完成"),
     CLOSED("CLOSED", "已关闭"),
     FAILED("FAILED", "支付失败");
 

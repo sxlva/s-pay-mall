@@ -23,4 +23,22 @@ public interface IMallOrderService {
     void paySuccess(String orderNo);
 
     OrderVO getOrderByNo(String orderNo);
+
+    /**
+     * 继续支付订单
+     * 根据订单号重新生成支付链接，用于未支付订单的继续支付场景
+     *
+     * @param orderNo 订单号
+     * @return 订单创建结果（包含支付链接）
+     */
+    OrderCreateVO continuePay(String orderNo);
+
+    /**
+     * 检查订单商品库存
+     * 用于继续支付前的库存同步校验
+     *
+     * @param orderNo 订单号
+     * @return true=库存充足，false=库存不足
+     */
+    boolean checkOrderStock(String orderNo);
 }

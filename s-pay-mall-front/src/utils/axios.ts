@@ -1,20 +1,21 @@
 import axios from 'axios'
+import type { AxiosInstance } from 'axios'
 import { ElMessage } from 'element-plus'
 
 // 商城端 API (mall-api)
-const mallInstance = axios.create({
+const mallInstance: AxiosInstance = axios.create({
   baseURL: '/mall-api/v1',
   timeout: 10000
 })
 
 // 管理端 API (mall-api) - 统一使用 mall-api 前缀
-const adminInstance = axios.create({
+const adminInstance: AxiosInstance = axios.create({
   baseURL: '/mall-api/v1',
   timeout: 10000
 })
 
 // 请求拦截器：自动添加 Authorization token
-const setupRequestInterceptor = (instance) => {
+const setupRequestInterceptor = (instance: AxiosInstance) => {
   instance.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('token')
@@ -30,12 +31,12 @@ const setupRequestInterceptor = (instance) => {
 }
 
 // 响应拦截器：统一处理响应格式
-const setupResponseInterceptor = (instance) => {
+const setupResponseInterceptor = (instance: AxiosInstance) => {
   instance.interceptors.response.use(
     (response) => {
       const data = response.data
       // 后端成功状态码是字符串 "0000"，同时兼容数字 0 和 200
-      const successCodes = ['0000', '0', 0, 200, '200']
+      const successCodes: (string | number)[] = ['0000', '0', 0, 200, '200']
       if (successCodes.includes(data.code)) {
         // 成功响应，不弹出提示（避免频繁弹窗）
         return data.data
