@@ -9,7 +9,9 @@ import cn.fcr.domain.order.model.entity.ProductEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.model.valobj.OrderStatusVO;
 import cn.fcr.infrastructure.dao.IOrderDao;
+import cn.fcr.infrastructure.dao.IOrderMainDao;
 import cn.fcr.infrastructure.dao.po.PayOrder;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,8 @@ public class OrderRepository implements IOrderRepository {
 
     @Resource
     private IOrderDao orderDao;
+    @Resource
+    private IOrderMainDao orderMainDao;
     @Resource
     private PaySuccessMessageEvent paySuccessMessageEvent;
     @Autowired(required = false)
@@ -150,5 +154,12 @@ public class OrderRepository implements IOrderRepository {
     @Override
     public boolean closeOrderWithOptimisticLock(String orderNo, String expectStatus) {
         return orderDao.closeOrderWithOptimisticLock(orderNo, expectStatus) > 0;
+    }
+
+    @Override
+    public long countByUserId(Long userId) {
+        LambdaQueryWrapper<cn.fcr.infrastructure.dao.po.OrderMain> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(cn.fcr.infrastructure.dao.po.OrderMain::getUserId, userId);
+        return orderMainDao.selectCount(wrapper);
     }
 }

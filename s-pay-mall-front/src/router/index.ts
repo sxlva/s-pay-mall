@@ -1,5 +1,6 @@
 // 路由配置：定义页面访问路径与权限守卫
 import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 
 import Layout from '../layout/Layout.vue'
 import HomePage from '../views/HomePage.vue'
@@ -18,7 +19,12 @@ import AdminCategoriesPage from '../views/admin/AdminCategoriesPage.vue'
 import AdminProductsPage from '../views/admin/AdminProductsPage.vue'
 import AdminOrdersPage from '../views/admin/AdminOrdersPage.vue'
 
-const routes = [
+interface CustomRouteMeta extends Record<string | symbol, unknown> {
+  requiresAuth?: boolean
+  role?: string
+}
+
+const routes: RouteRecordRaw[] = [
   // 登录/注册页面（独立，无布局）
   { path: '/login', component: LoginPage },
   { path: '/register', component: RegisterPage },
@@ -31,10 +37,10 @@ const routes = [
       { path: '', component: HomePage },
       { path: 'products', component: ProductListPage },
       { path: 'products/:id', component: ProductDetailPage },
-      { path: 'cart', component: CartPage, meta: { requiresAuth: true } },
-      { path: 'checkout', component: CheckoutPage, meta: { requiresAuth: true } },
-      { path: 'orders', component: OrderListPage, meta: { requiresAuth: true } },
-      { path: 'profile', component: ProfilePage, meta: { requiresAuth: true } }
+      { path: 'cart', component: CartPage, meta: { requiresAuth: true } as unknown as CustomRouteMeta },
+      { path: 'checkout', component: CheckoutPage, meta: { requiresAuth: true } as unknown as CustomRouteMeta },
+      { path: 'orders', component: OrderListPage, meta: { requiresAuth: true } as unknown as CustomRouteMeta },
+      { path: 'profile', component: ProfilePage, meta: { requiresAuth: true } as unknown as CustomRouteMeta }
     ]
   },
   
@@ -42,7 +48,7 @@ const routes = [
   {
     path: '/admin',
     component: AdminLayout,
-    meta: { requiresAuth: true, role: 'ADMIN' },
+    meta: { requiresAuth: true, role: 'ADMIN' } as unknown as CustomRouteMeta,
     children: [
       { path: '', component: AdminDashboardPage },
       { path: 'users', component: AdminUsersPage },
@@ -74,13 +80,14 @@ router.beforeEach((to, from, next) => {
   
   // 其余任何页面，只要没有 Token，一律强制重定向到 /login
   if (!token) {
-    console.log('【路由守卫】没有token，重定向到 /login')
+    console.log('【路由守卫】没有 token，重定向到 /login')
     next('/login')
     return
   }
   
   // 需要特定角色但角色不匹配
-  if (to.meta.role && to.meta.role !== role) {
+  const meta = to.meta as unknown as CustomRouteMeta
+  if (meta.role && meta.role !== role) {
     console.log('【路由守卫】角色不匹配，重定向到 /')
     next('/')
     return

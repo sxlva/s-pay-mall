@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler", // 必须设为 bundler 适配 Vite
+    "strict": true,
+    "jsx": "preserve",             // Vue 使用 preserve，让 Vue 插件处理 JSX
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noUncheckedIndexedAccess": true,
+    "types": ["vite/client"],      // 必须包含此项以识别 .vue 文件
+    "paths": {
+      "@/*": ["./src/*"]           // 推荐配置路径别名
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
+  "exclude": ["node_modules", "dist"]
+}

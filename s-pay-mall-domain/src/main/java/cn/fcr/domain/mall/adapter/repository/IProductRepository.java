@@ -28,4 +28,21 @@ public interface IProductRepository {
     int decreaseStock(Long id, Integer quantity);
 
     int increaseStock(Long id, Integer quantity);
+
+    /**
+     * 查询所有上架商品的ID列表
+     * 用于库存预热时批量同步
+     *
+     * @return 上架商品ID列表（status=1）
+     */
+    List<Long> queryAllActiveProductIds();
+
+    /**
+     * 查询单个商品的库存数量
+     * 用于库存同步时从数据库获取最新库存
+     *
+     * @param productId 商品ID
+     * @return 库存数量，若商品不存在返回 null
+     */
+    Integer queryStockByProductId(Long productId);
 }

@@ -1,5 +1,15 @@
 <template>
   <div class="orders-container">
+    <!-- 支付表单提交器组件 -->
+    <PaymentSubmitter
+      v-if="showPaymentSubmitter"
+      :pay-html="currentPayHtml"
+      :auto-submit="true"
+      :keep-visible="false"
+      @submitted="handlePaymentSubmitted"
+      @error="handlePaymentError"
+    />
+
     <el-card class="header-card" shadow="hover">
       <template #header>
         <div class="header-content">
@@ -27,7 +37,7 @@
         <div class="order-info">
           <div class="order-no-row">
             <el-icon class="order-icon"><Ticket /></el-icon>
-            <span class="order-no">订单号：{{ order.orderId }}</span>
+            <span class="order-no">订单号：{{ order.orderNo }}</span>
           </div>
           <span class="create-time">{{ formatTime(order.createTime) }}</span>
         </div>
@@ -71,17 +81,23 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { Box, Ticket } from '@element-plus/icons-vue';
 import { useOrder } from '../hooks/useOrder';
 import { usePayment } from '../hooks/usePayment';
+import { orderRepository } from '../repositories/orderRepository';
+import { checkStock, type StockCheckResult } from '../api/order';
+import PaymentSubmitter from '../components/PaymentSubmitter.vue';
 import type { OrderStatus } from '../types/order';
+import type { Order } from '../types/order';
 
 const router = useRouter();
 const { orders, loading, loadOrders } = useOrder();
-const { initPayOrder, redirectToPay, startPolling } = usePayment();
+const { initPayOrder, startPolling, extractPaymentForm } = usePayment();
 
 const payingOrderId = ref<number | null>(null);
+const showPaymentSubmitter = ref(false);
+const currentPayHtml = ref<string | null>(null);
 
 const isWaitPay = (status: OrderStatus) => {
   return status === 'CREATED' || status === 'INIT' || status === 'WAIT_PAY';
@@ -110,38 +126,80 @@ const formatAmount = (amount: number) => {
   return amount.toFixed(2);
 };
 
-const handleContinuePay = async (order: any) => {
+/**
+ * 处理支付表单提交完成事件
+ */
+const handlePaymentSubmitted = () => {
+  ElMessage.success('正在跳转至支付宝安全支付页面...');
+};
+
+/**
+ * 处理支付表单错误事件
+ */
+const handlePaymentError = (error: string) => {
+  ElMessage.error(error || '支付处理失败');
+};
+
+/**
+ * 继续支付处理函数
+ * - 先调用 checkStock 接口进行后端库存同步校验
+ * - 如果库存不足，弹窗提示用户
+ * - 如果库存充足，继续执行支付流程
+ */
+const handleContinuePay = async (order: Order) => {
   if (payingOrderId.value) return;
 
   payingOrderId.value = order.id;
 
   try {
-    const response = await fetch(`/mall-api/v1/orders/${order.orderId}/continue-pay`);
-    const result = await response.json();
+    console.log('【继续支付】order 对象:', order);
+    console.log('【继续支付】orderNo:', order.orderNo);
 
-    if (result.code === 200 && result.data) {
-      const payUrl = result.data.payUrl || result.data._html;
+    if (!order.orderNo) {
+      ElMessage.error('订单号无效，无法继续支付');
+      return;
+    }
 
-      if (payUrl && typeof payUrl === 'string' && payUrl.includes('<form')) {
-        initPayOrder({
-          orderNo: order.orderId,
-          totalAmount: order.totalAmount,
-          status: 'PAYING',
-          payUrl: payUrl
-        });
+    ElMessage.info('正在校验库存...');
 
-        ElMessage.success('正在跳转至支付宝安全支付页面...');
-        redirectToPay(payUrl);
-        startPolling(order.orderId, 180);
-      } else {
-        ElMessage.error('支付链接无效');
-      }
+    const stockResult: StockCheckResult = await checkStock(order.orderNo);
+
+    if (!stockResult.success) {
+      await ElMessageBox.alert(
+        stockResult.message || '库存不足，无法继续支付',
+        '库存校验失败',
+        {
+          confirmButtonText: '确定',
+          type: 'warning'
+        }
+      );
+      return;
+    }
+
+    const result = await orderRepository.continuePay(order.orderNo);
+
+    const payHtml = result.payUrl || result._html || result.html;
+
+    if (payHtml && typeof payHtml === 'string' && payHtml.includes('<form')) {
+      initPayOrder({
+        orderNo: order.orderNo,
+        totalAmount: order.totalAmount,
+        status: 'PAYING',
+        payUrl: payHtml
+      });
+
+      currentPayHtml.value = payHtml;
+      showPaymentSubmitter.value = true;
+
+      startPolling(order.orderNo, 180);
     } else {
-      ElMessage.error(result.message || '支付失败');
+      ElMessage.error('支付链接无效');
     }
   } catch (error) {
-    console.error('继续支付失败:', error);
-    ElMessage.error('支付跳转失败，请稍后重试');
+    if (error !== 'cancel') {
+      console.error('继续支付失败:', error);
+      ElMessage.error(error instanceof Error ? error.message : '支付请求失败');
+    }
   } finally {
     payingOrderId.value = null;
   }
