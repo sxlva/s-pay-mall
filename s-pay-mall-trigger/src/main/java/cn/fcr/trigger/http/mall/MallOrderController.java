@@ -111,7 +111,7 @@ public class MallOrderController extends BaseController {
         List<Map<String, Object>> result = orders.stream().map(order -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", order.getId());
-            map.put("orderId", order.getOrderNo());
+            map.put("orderNo", order.getOrderNo());
             map.put("status", order.getStatus());
             map.put("statusDesc", order.getStatusDesc());
             map.put("totalAmount", order.getTotalAmount());
@@ -119,6 +119,42 @@ public class MallOrderController extends BaseController {
             map.put("address", order.getAddress());
             return map;
         }).collect(Collectors.toList());
+        return success(result);
+    }
+
+    @GetMapping("/orders/{orderNo}/continue-pay")
+    public Response<Map<String, Object>> continuePay(@PathVariable("orderNo") String orderNo, HttpServletRequest httpRequest) {
+        Long userId = currentUserId(httpRequest);
+        log.info("继续支付订单: userId={}, orderNo={}", userId, orderNo);
+
+        OrderCreateVO orderVO = mallOrderService.continuePay(orderNo);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("orderNo", orderVO.getOrderNo());
+        result.put("payUrl", orderVO.getPayUrl());
+        result.put("totalAmount", orderVO.getTotalAmount());
+
+        if (orderVO.getPayUrl() != null && !orderVO.getPayUrl().isEmpty()) {
+            result.put("_html", orderVO.getPayUrl());
+        }
+
+        return success(result);
+    }
+
+    @GetMapping("/orders/{orderNo}/check-stock")
+    public Response<Map<String, Object>> checkStock(@PathVariable("orderNo") String orderNo, HttpServletRequest httpRequest) {
+        Long userId = currentUserId(httpRequest);
+        log.info("检查订单库存: userId={}, orderNo={}", userId, orderNo);
+
+        boolean stockOk = mallOrderService.checkOrderStock(orderNo);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", stockOk);
+        
+        if (!stockOk) {
+            result.put("message", "库存不足，无法继续支付");
+        }
+
         return success(result);
     }
 }

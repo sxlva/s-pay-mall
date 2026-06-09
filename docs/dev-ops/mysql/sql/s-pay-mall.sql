@@ -42,7 +42,7 @@ CREATE TABLE `pay_order`
     `order_id`     varchar(32) CHARACTER SET utf8mb4 NOT NULL COMMENT '关联订单ID',
     `order_time`   datetime NOT NULL COMMENT '下单时间',
     `total_amount` decimal(8, 2) unsigned DEFAULT NULL COMMENT '订单金额',
-    `status`       varchar(32) CHARACTER SET utf8mb4 NOT NULL COMMENT '订单状态；create-创建完成、pay_wait-等待支付、pay_success-支付成功、deal_done-交易完成、close-订单关单',
+    `status`       varchar(32) CHARACTER SET utf8mb4 NOT NULL COMMENT '订单状态；create-创建完成、pay_wait-等待支付、pay_success-支付成功、trade_done-交易完成、close-订单关单',
     `pay_url`      varchar(2014) CHARACTER SET utf8mb4 DEFAULT NULL COMMENT '支付信息',
     `pay_time`     datetime DEFAULT NULL COMMENT '支付时间',
     `create_time`  datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -223,7 +223,7 @@ INSERT INTO `role`(`id`, `role_code`, `role_name`) VALUES
 
 -- 用户数据 - 管理员账号：admin / 123456
 INSERT INTO `mall_user`(`id`, `username`, `password`, `status`) VALUES
-(1, 'admin', '123456', 1);
+(1, 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', 1);
 
 -- 用户角色关联
 INSERT INTO `user_role`(`user_id`, `role_id`) VALUES

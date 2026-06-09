@@ -118,6 +118,16 @@ public class ProductRepository implements IProductRepository {
         return productDao.increaseStock(id, quantity);
     }
 
+    @Override
+    public List<Long> queryAllActiveProductIds() {
+        return productDao.selectAllActiveProductIds();
+    }
+
+    @Override
+    public Integer queryStockByProductId(Long productId) {
+        return productDao.selectStockByProductId(productId);
+    }
+
     private CategoryVO toCategoryVO(Category cat) {
         return CategoryVO.builder()
                 .id(cat.getId())

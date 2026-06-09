@@ -5,6 +5,7 @@ import cn.fcr.domain.mall.gateway.IAuthTokenGateway;
 import cn.fcr.domain.mall.model.entity.UserEntity;
 import cn.fcr.domain.mall.model.valobj.UserLoginVO;
 import cn.fcr.domain.mall.service.IMallUserService;
+import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.types.common.Constants;
 import cn.fcr.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,9 @@ public class MallUserServiceImpl implements IMallUserService {
 
     @Resource
     private IAuthTokenGateway authTokenGateway;
+
+    @Resource
+    private IOrderRepository orderRepository;
 
     @Override
     public UserLoginVO register(String username, String password) {
@@ -121,6 +125,14 @@ public class MallUserServiceImpl implements IMallUserService {
     @Override
     public int deleteUser(Long id) {
         log.info("【级联删除】开始删除用户: userId={}", id);
+
+        // 检查用户是否存在关联订单，若存在则禁止删除
+        long orderCount = orderRepository.countByUserId(id);
+        if (orderCount > 0) {
+            log.warn("【级联删除拦截】用户 {} 存在 {} 个关联订单，禁止删除", id, orderCount);
+            throw new AppException(Constants.ResponseCode.UN_ERROR.getCode(), "该用户存在关联订单，无法删除");
+        }
+
         int deleted = 0;
 
         deleted += userRepository.deleteUserRoleByUserId(id);

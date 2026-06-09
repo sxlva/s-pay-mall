@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { PayOrder, PollingState, PayResult } from '../types/payment';
-import { getOrderList } from '../api/order';
+import { orderRepository } from '../repositories/orderRepository';
 import type { Order } from '../types/order';
 
 const POLLING_INTERVAL = 3000;
@@ -70,7 +70,7 @@ export const usePaymentStore = defineStore('payment', () => {
         return;
       }
 
-      const orders = await getOrderList();
+      const orders = await orderRepository.getOrderList();
       const paidOrder = orders.find(
         (o: Order) => o.orderNo === orderNo && o.status === 'PAID'
       );
@@ -131,6 +131,26 @@ export const usePaymentStore = defineStore('payment', () => {
     pollingState.value = 'idle';
   };
 
+  /**
+   * 重定向到支付页面
+   * @param payUrl 支付 URL 或表单 HTML
+   */
+  const redirectToPay = (payUrl: string) => {
+    // 如果是表单 HTML，动态创建并提交
+    if (payUrl.includes('<form')) {
+      const tempContainer = document.createElement('div');
+      tempContainer.innerHTML = payUrl;
+      const form = tempContainer.querySelector('form');
+      if (form) {
+        document.body.appendChild(form);
+        form.submit();
+      }
+    } else {
+      // 如果是普通 URL，直接跳转
+      window.location.href = payUrl;
+    }
+  };
+
   return {
     currentPayOrder,
     payUrl,
@@ -147,6 +167,7 @@ export const usePaymentStore = defineStore('payment', () => {
     handlePaymentFailed,
     setPayUrl,
     initPayOrder,
-    resetPayment
+    resetPayment,
+    redirectToPay
   };
 });

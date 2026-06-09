@@ -53,4 +53,13 @@ public interface IOrderRepository {
      * @return 是否成功关闭
      */
     boolean closeOrderWithOptimisticLock(String orderNo, String expectStatus);
+
+    /**
+     * 统计指定用户的订单数量
+     * 用于删除用户前检查关联订单
+     *
+     * @param userId 用户ID
+     * @return 订单数量
+     */
+    long countByUserId(Long userId);
 }

@@ -87,14 +87,29 @@
               <p class="product-desc">{{ product.description || '暂无描述' }}</p>
               <div class="product-price">
                 <span class="price">¥{{ product.price }}</span>
-                <span class="stock">库存 {{ product.stock }} 件</span>
+                <div class="stock-row">
+                  <span class="stock">库存 {{ product.stock }} 件</span>
+                  <el-tag v-if="isSoldOut(product.stock)" type="danger" size="small">售罄</el-tag>
+                </div>
               </div>
               <div class="product-actions">
-                <el-button type="info" plain size="small" @click="addToCart(product.id)">
-                  <el-icon><ShoppingCart /></el-icon> 加入购物车
+                <el-button
+                  type="info"
+                  plain
+                  size="small"
+                  :disabled="isSoldOut(product.stock)"
+                  @click="addToCart(product)"
+                >
+                  <el-icon><ShoppingCart /></el-icon>
+                  {{ isSoldOut(product.stock) ? '已售罄' : '加入购物车' }}
                 </el-button>
-                <el-button type="primary" size="small" @click="buyNow(product)">
-                  立即购买
+                <el-button
+                  type="primary"
+                  size="small"
+                  :disabled="isSoldOut(product.stock)"
+                  @click="buyNow(product)"
+                >
+                  {{ isSoldOut(product.stock) ? '已售罄' : '立即购买' }}
                 </el-button>
               </div>
             </div>
@@ -122,8 +137,11 @@ import {
   Lock,
   Connection
 } from '@element-plus/icons-vue'
+import { isSoldOut } from '@/utils/product'
+import { productRepository } from '@/repositories/productRepository'
 
 const router = useRouter()
+
 const products = ref<Array<any>>([])
 const loading = ref<boolean>(true)
 const categories = ref<Array<{ name: string; id: number | null }>>([
@@ -164,20 +182,13 @@ const fetchCategories = async () => {
 const fetchProducts = async (categoryId: number | null = null) => {
   try {
     loading.value = true
-    const token = localStorage.getItem('token')
-    const url = new URL('/mall-api/v1/products', window.location.origin)
-    // 传递 categoryId 而非 category name，确保后端正确过滤
-    if (categoryId !== null && categoryId !== undefined) {
-      url.searchParams.set('categoryId', categoryId.toString())
-    }
-    const response = await fetch(url.toString(), {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    products.value = await productRepository.fetchProducts({
+      categoryId,
+      keyword: '',
+      minPrice: undefined,
+      maxPrice: undefined,
+      status: undefined,
     })
-    const data = await response.json()
-    // 后端返回的 code 是字符串 "0000"，不是数字 0
-    if (data.code === '0000') {
-      products.value = data.data
-    }
   } catch (error) {
     console.error('获取商品失败:', error)
     ElMessage.error('获取商品失败')
@@ -192,7 +203,8 @@ const handleCategoryChange = (categoryName: string, categoryId: number | null) =
   fetchProducts(categoryId)
 }
 
-const addToCart = async (productId: number): Promise<void> => {
+const addToCart = async (product: { id: number; stock?: number | null }): Promise<void> => {
+  if (isSoldOut(product.stock)) return
   const token = localStorage.getItem('token')
   if (!token) {
     ElMessage.warning('请先登录')
@@ -206,7 +218,7 @@ const addToCart = async (productId: number): Promise<void> => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ productId, quantity: 1 })
+      body: JSON.stringify({ productId: product.id, quantity: 1 })
     })
     const data = await response.json()
     if (data.code === '0000') {
@@ -219,8 +231,9 @@ const addToCart = async (productId: number): Promise<void> => {
   }
 }
 
-const buyNow = async (product: { id: number }): Promise<void> => {
-  await addToCart(product.id)
+const buyNow = async (product: { id: number; stock?: number | null }): Promise<void> => {
+  if (isSoldOut(product.stock)) return
+  await addToCart(product)
   router.push('/cart')
 }
 
@@ -450,6 +463,12 @@ onMounted(async () => {
   font-size: 22px;
   font-weight: 700;
   color: #f56c6c;
+}
+
+.stock-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .stock {
