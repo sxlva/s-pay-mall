@@ -10,8 +10,21 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * @author 傅崇睿
  * @description 订单支付网关实现
+ * 
+ * 【职责说明】
+ * - 处理订单支付相关的网关操作
+ * - 实现领域层定义的IOrderPaymentGateway接口
+ * - 负责生成支付URL、更新支付订单信息、发送延时关闭消息等
+ * 
+ * 【核心功能】
+ * 1. generatePayUrl(): 生成支付URL
+ * 2. updatePayOrderInfo(): 更新支付订单信息
+ * 3. sendDelayCloseMessage(): 发送订单延时关闭消息
+ * 
+ * 【依赖说明】
+ * - PayOrderService: 支付订单服务
+ * - RocketMQTemplate: RocketMQ消息发送模板
  */
 @Slf4j
 @Component

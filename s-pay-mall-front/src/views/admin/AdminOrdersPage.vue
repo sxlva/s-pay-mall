@@ -29,7 +29,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="180" />
+        <el-table-column prop="create_time" label="创建时间" width="180" />
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="scope">
             <template v-if="scope.row.status === 'PAID'">
@@ -92,7 +92,7 @@ const getStatusInfo = (status) => {
     'SHIPPED': { label: '已发货', type: 'info' },
     'COMPLETED': { label: '已完成', type: 'success' },
     'DONE': { label: '已完成', type: 'success' },
-    'CANCELLED': { label: '已取消', type: 'danger' },
+    'CANCELED': { label: '已取消', type: 'danger' },
     'CLOSE': { label: '已取消', type: 'danger' },
     'CLOSED': { label: '已取消', type: 'danger' }
   }

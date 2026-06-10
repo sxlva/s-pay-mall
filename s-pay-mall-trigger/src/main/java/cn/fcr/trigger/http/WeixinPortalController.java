@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * 微信服务对接，对接地址：<a href="https://fuchongrui.site/pay-api/v1/weixin/portal/receive">/pay-api/v1/weixin/portal/receive</a>
@@ -34,13 +32,6 @@ public class WeixinPortalController {
     
     @Resource
     private WeixinBindService weixinBindService;
-    
-    /**
-     * 绑定消息正则表达式：匹配"绑定 xxxx"格式
-     */
-    private static final Pattern BIND_PATTERN = Pattern.compile("绑定\\s*(\\w+)");
-    private static final Pattern BIND_PATTERN_CN = Pattern.compile("绑定码[：:]?\\s*(\\w+)");
-    private static final Pattern BIND_PATTERN_EN = Pattern.compile("bind\\s*(\\w+)", Pattern.CASE_INSENSITIVE);
 
     @GetMapping(value = "receive", produces = "text/plain;charset=utf-8")
     public String validate(@RequestParam(value = "signature", required = false) String signature,
@@ -84,63 +75,28 @@ public class WeixinPortalController {
             if ("event".equals(message.getMsgType()) && "SCAN".equals(message.getEvent())) {
                 log.info("处理 SCAN 事件 - Ticket={}, EventKey={}", message.getTicket(), message.getEventKey());
                 try {
-                    loginService.handleWechatScanLogin(message.getTicket(), openid);
-                    return buildMessageTextEntity(openid, "登录成功");
-                } catch (Exception e) {
-                    log.error("微信扫码登录处理失败: ticket={}, openid={}", message.getTicket(), openid, e);
-                    return buildMessageTextEntity(openid, "登录失败，请重试");
-                }
-            }
-            
-            // 处理绑定消息
-            if ("text".equals(message.getMsgType())) {
-                String content = message.getContent();
-                String extractedTicket = extractBindTicket(content);
-                if (extractedTicket != null) {
-                    String status = weixinBindService.getBindStatusRaw(extractedTicket);
-                    if (status != null) {
-                        weixinBindService.updateBindStatus(extractedTicket, openid);
-                        return buildMessageTextEntity(openid, "绑定成功！您的微信账号已与注册码 " + extractedTicket + " 关联");
-                    } else {
-                        return buildMessageTextEntity(openid, "无效的绑定码，请在注册页面获取有效的绑定码后重试");
+                    String ticket = message.getTicket();
+                    // 先尝试处理绑定
+                    String bindStatus = weixinBindService.getBindStatusRaw(ticket);
+                    if (bindStatus != null) {
+                        weixinBindService.updateBindStatus(ticket, openid);
+                        log.info("微信扫码绑定成功: ticket={}, openid={}", ticket, openid);
+                        return "";
                     }
+                    // 绑定状态不存在，尝试处理登录
+                    loginService.handleWechatScanLogin(ticket, openid);
+                    return "";
+                } catch (Exception e) {
+                    log.error("微信扫码处理失败: ticket={}, openid={}", message.getTicket(), openid, e);
+                    return "";
                 }
             }
 
-            return buildMessageTextEntity(openid, "你好，" + message.getContent());
+            return buildMessageTextEntity(openid, "你好");
         } catch (Exception e) {
             log.error("接收微信公众号信息请求{}失败 {}", openid, requestBody, e);
             return "";
         }
-    }
-    
-    /**
-     * 从消息内容中提取绑定码
-     * 
-     * @param content 消息内容
-     * @return 绑定码，如果未找到返回 null
-     */
-    private String extractBindTicket(String content) {
-        if (StringUtils.isBlank(content)) {
-            return null;
-        }
-        
-        Matcher matcher = BIND_PATTERN.matcher(content);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        
-        matcher = BIND_PATTERN_CN.matcher(content);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        
-        matcher = BIND_PATTERN_EN.matcher(content);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        
-        return null;
     }
 
     private String buildMessageTextEntity(String openid, String content) {
