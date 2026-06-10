@@ -6,9 +6,15 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 
 /**
- * @author 傅崇睿
- * @date 2025/7/28 22:37
- * @description
+ * @description 商品RPC服务（模拟实现）
+ * 
+ * 【职责说明】
+ * - 模拟商品服务的RPC调用
+ * - 提供商品查询接口，返回模拟数据
+ * - 实际生产环境应替换为真实的RPC调用
+ * 
+ * 【核心功能】
+ * 1. queryProductByProductId(): 根据商品ID查询商品信息（模拟数据）
  */
 @Service
 public class ProductRPC {

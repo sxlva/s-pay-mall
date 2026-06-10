@@ -5,9 +5,17 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * @author 傅崇睿
- * @date 2025/7/28 22:31
- * @description
+ * @description 商品DTO
+ * 
+ * 【职责说明】
+ * - 封装商品信息的数据传输对象
+ * - 用于商品查询接口的数据传递
+ * 
+ * 【字段说明】
+ * - productId: 商品ID
+ * - productName: 商品名称
+ * - productDesc: 商品描述
+ * - price: 商品价格
  */
 @Data
 public class ProductDTO {

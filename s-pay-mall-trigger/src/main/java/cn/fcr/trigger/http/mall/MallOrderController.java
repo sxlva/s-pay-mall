@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http.mall;
 
-import cn.fcr.api.dto.CartAddRequest;
-import cn.fcr.api.dto.OrderCreateRequest;
+import cn.fcr.api.dto.CartAddRequestDTO;
+import cn.fcr.api.dto.OrderCreateRequestDTO;
 import cn.fcr.api.response.Response;
 import cn.fcr.domain.mall.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
@@ -36,7 +36,7 @@ public class MallOrderController extends BaseController {
     private IMallOrderService mallOrderService;
 
     @PostMapping("/cart")
-    public Response<Integer> addCart(@RequestBody CartAddRequest request, HttpServletRequest httpRequest) {
+    public Response<Integer> addCart(@RequestBody CartAddRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         Integer quantity = request.getQuantity() != null ? request.getQuantity() : 1;
         log.info("添加购物车: userId={}, productId={}, quantity={}", userId, request.getProductId(), quantity);
@@ -63,7 +63,7 @@ public class MallOrderController extends BaseController {
     }
 
     @PutMapping("/cart/quantity")
-    public Response<Integer> updateCartQuantity(@RequestBody CartAddRequest request, HttpServletRequest httpRequest) {
+    public Response<Integer> updateCartQuantity(@RequestBody CartAddRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         Integer quantity = request.getQuantity() != null ? request.getQuantity() : 1;
         if (quantity < 1) {
@@ -84,7 +84,7 @@ public class MallOrderController extends BaseController {
     }
 
     @PostMapping("/orders")
-    public Response<Map<String, Object>> createOrder(@RequestBody OrderCreateRequest request, HttpServletRequest httpRequest) {
+    public Response<Map<String, Object>> createOrder(@RequestBody OrderCreateRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         log.info("创建订单: userId={}, address={}", userId, request.getAddress());
         OrderCreateVO orderVO = mallOrderService.createOrder(userId, request.getAddress());

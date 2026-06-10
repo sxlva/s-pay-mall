@@ -2,6 +2,7 @@ package cn.fcr.domain.mall.service.impl;
 
 import cn.fcr.domain.mall.adapter.repository.IUserRepository;
 import cn.fcr.domain.mall.gateway.IAuthTokenGateway;
+import cn.fcr.domain.mall.gateway.IUserBindingGateway;
 import cn.fcr.domain.mall.model.entity.UserEntity;
 import cn.fcr.domain.mall.model.valobj.UserLoginVO;
 import cn.fcr.domain.mall.service.IMallUserService;
@@ -29,6 +30,9 @@ public class MallUserServiceImpl implements IMallUserService {
     @Resource
     private IOrderRepository orderRepository;
 
+    @Resource
+    private IUserBindingGateway userBindingGateway;
+
     @Override
     public UserLoginVO register(String username, String password) {
         Integer count = userRepository.countByUsername(username);
@@ -44,13 +48,20 @@ public class MallUserServiceImpl implements IMallUserService {
 
     @Override
     public UserLoginVO registerWithWeChat(String username, String password, String openId) {
+        if (userBindingGateway.isWeChatOpenIdBound(openId)) {
+            throw new IllegalArgumentException("该微信账号已被其他用户绑定");
+        }
+
         Integer count = userRepository.countByUsername(username);
         if (count != null && count > 0) {
-            throw new IllegalArgumentException("该微信账号已被其他用户绑定");
+            throw new IllegalArgumentException("用户名已存在");
         }
 
         Long userId = userRepository.insert(username, authTokenGateway.encodePassword(password), Constants.USER_STATUS_WECHAT);
         userRepository.insertUserRole(userId, 2L);
+        
+        userBindingGateway.bindWeChatOpenId(userId, openId);
+        log.info("微信扫码注册并绑定成功: userId={}, username={}, openId={}", userId, username, openId);
 
         return login(username, password);
     }

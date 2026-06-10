@@ -13,6 +13,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import javax.annotation.Resource;
 
+/**
+ * @author fcr
+ * @description Spring Security安全配置类，配置HTTP安全策略、JWT过滤器链和密码编码器
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -27,8 +31,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeRequests(auth -> auth
-                .antMatchers("/orders", "/orders/**").permitAll()
                 .antMatchers(
+                    "/orders",
+                    "/orders/**",
                     "/",
                     "/index.html",
                     "/static/**",
@@ -43,10 +48,10 @@ public class SecurityConfig {
                     "/mall-api/v1/products/**",
                     "/mall-api/v1/orders/**",
                     "/mall-api/v1/cart/**",
-                    "/mall-api/v1/admin/**",
                     "/mall-api/v1/profile/**",
                     "/error"
                 ).permitAll()
+                .antMatchers("/mall-api/v1/admin/**").hasRole("ADMIN")
                 .antMatchers("/pay-api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

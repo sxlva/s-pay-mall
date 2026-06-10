@@ -18,10 +18,10 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="roleCode" label="角色" width="120">
+        <el-table-column prop="role_code" label="角色" width="120">
           <template #default="scope">
-            <el-tag :type="getRoleTagType(scope.row.roleCode)">
-              {{ getRoleText(scope.row.roleCode) }}
+            <el-tag :type="getRoleTagType(scope.row.role_code)">
+              {{ getRoleText(scope.row.role_code) }}
             </el-tag>
           </template>
         </el-table-column>

@@ -1,6 +1,5 @@
 package cn.fcr.trigger.http;
 
-import cn.fcr.api.IPayService;
 import cn.fcr.api.dto.CreatePayRequestDTO;
 import cn.fcr.api.response.Response;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
@@ -17,11 +16,15 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 支付宝支付控制器
+ * 处理支付宝支付相关的接口
+ */
 @Slf4j
 @RestController()
 @CrossOrigin("${app.config.cross-origin}")
 @RequestMapping("/pay-api/${app.config.api-version}/alipay/")
-public class AliPayController implements IPayService {
+public class AliPayController {
 
     @Value("${alipay.alipay_public_key}")
     private String alipayPublicKey;
@@ -32,8 +35,10 @@ public class AliPayController implements IPayService {
     @Resource
     private PayOrderService payOrderService;
 
+    /**
+     * 创建支付订单
+     */
     @RequestMapping(value = "create_pay_order", method = RequestMethod.POST)
-    @Override
     public Response<String> createPayOrder(@RequestBody CreatePayRequestDTO createPayRequestDTO) {
         try {
             log.info("商品下单，根据商品ID创建支付单开始 userId:{} productId:{}",

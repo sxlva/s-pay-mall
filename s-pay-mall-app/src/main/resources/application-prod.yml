@@ -80,6 +80,7 @@ weixin:
     app-id: ${WEIXIN_APP_ID}
     app-secret: ${WEIXIN_APP_SECRET}
     template_id: ${WEIXIN_TEMPLATE_ID}
+    template_id_pay_success: ${WEIXIN_TEMPLATE_ID_PAY_SUCCESS}
 
 # 支付宝支付 - 沙箱 https://opendocs.alipay.com/common/02kkv7
 alipay:
