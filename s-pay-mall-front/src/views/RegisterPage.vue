@@ -47,68 +47,6 @@
           />
         </el-form-item>
 
-        <!-- 微信绑定区域 -->
-        <el-form-item label="微信公众号绑定（可选）">
-          <div class="wechat-bind-section">
-            <div v-if="!bindCode" class="bind-code-empty">
-              <el-button
-                type="primary"
-                size="default"
-                icon="Message"
-                @click="generateBindCode"
-                :loading="generatingCode"
-              >
-                获取绑定码
-              </el-button>
-              <span class="bind-tip">绑定后可使用微信扫码登录</span>
-            </div>
-            
-            <div v-else class="bind-code-container">
-              <div class="bind-code-display">
-                <span class="code-label">绑定码：</span>
-                <span class="code-value">{{ bindCode }}</span>
-                <el-button
-                  type="text"
-                  icon="Refresh"
-                  @click="generateBindCode"
-                  :loading="generatingCode"
-                >
-                  刷新
-                </el-button>
-              </div>
-              
-              <div class="bind-instruction">
-                <p class="instruction-title">请在微信公众号完成绑定：</p>
-                <ol>
-                  <li>打开微信，关注公众号</li>
-                  <li>发送消息：<strong>绑定 {{ bindCode }}</strong></li>
-                  <li>等待系统确认...</li>
-                </ol>
-              </div>
-              
-              <div class="bind-status">
-                <el-progress
-                  type="circle"
-                  :percentage="bindProgress"
-                  :size="60"
-                  :status="bindStatusColor"
-                />
-                <span :class="['status-text', bindStatusClass]">{{ bindStatusText }}</span>
-              </div>
-              
-              <el-button
-                v-if="bindSuccess"
-                type="success"
-                size="small"
-                icon="Check"
-                disabled
-              >
-                绑定成功
-              </el-button>
-            </div>
-          </div>
-        </el-form-item>
-
         <el-form-item>
           <el-button type="primary" class="register-btn" native-type="submit" :loading="submitting">
             注册
@@ -127,20 +65,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock, UserFilled, Message, Refresh, Check } from '@element-plus/icons-vue'
+import { User, Lock, UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const formRef = ref(null)
 const submitting = ref(false)
-const generatingCode = ref(false)
-const bindCode = ref('')
-const bindStatus = ref('') // BINDING_PENDING, BIND_SUCCESS, INVALID_CODE
-const bindSuccess = ref(false)
-const pollingTimer = ref(null)
-const openId = ref('')
 
 const form = reactive({
   username: '',
@@ -173,94 +105,6 @@ const rules = {
   ]
 }
 
-const bindProgress = computed(() => {
-  if (bindSuccess.value) return 100
-  if (bindStatus.value === 'BINDING_PENDING') return 50
-  if (bindStatus.value === 'INVALID_CODE') return 0
-  return 0
-})
-
-const bindStatusColor = computed(() => {
-  if (bindSuccess.value) return 'success'
-  if (bindStatus.value === 'BINDING_PENDING') return 'warning'
-  if (bindStatus.value === 'INVALID_CODE') return 'exception'
-  return 'info'
-})
-
-const bindStatusClass = computed(() => {
-  if (bindSuccess.value) return 'success'
-  if (bindStatus.value === 'BINDING_PENDING') return 'pending'
-  if (bindStatus.value === 'INVALID_CODE') return 'error'
-  return ''
-})
-
-const bindStatusText = computed(() => {
-  if (bindSuccess.value) return '已绑定'
-  if (bindStatus.value === 'BINDING_PENDING') return '等待绑定...'
-  if (bindStatus.value === 'INVALID_CODE') return '绑定码已过期'
-  return ''
-})
-
-const generateBindCode = async () => {
-  generatingCode.value = true
-  try {
-    const response = await fetch('/mall-api/v1/auth/bind-code', {
-      method: 'GET'
-    })
-    const data = await response.json()
-    if (data.code === 0 && data.data) {
-      bindCode.value = data.data.bindCode
-      bindStatus.value = 'BINDING_PENDING'
-      bindSuccess.value = false
-      openId.value = ''
-      startPolling()
-    } else {
-      ElMessage.error('获取绑定码失败')
-    }
-  } catch (error) {
-    ElMessage.error('获取绑定码失败')
-  } finally {
-    generatingCode.value = false
-  }
-}
-
-const startPolling = () => {
-  if (pollingTimer.value) {
-    clearInterval(pollingTimer.value)
-  }
-  
-  pollingTimer.value = setInterval(async () => {
-    try {
-      const response = await fetch(`/mall-api/v1/auth/check-bind-status?ticket=${bindCode.value}`, {
-        method: 'GET'
-      })
-      const data = await response.json()
-      if (data.code === 0 && data.data) {
-        const status = data.data.status
-        if (status === 'BIND_SUCCESS') {
-          bindStatus.value = 'BIND_SUCCESS'
-          bindSuccess.value = true
-          openId.value = data.data.openId
-          stopPolling()
-          ElMessage.success('微信绑定成功！')
-        } else if (status === 'INVALID_CODE') {
-          bindStatus.value = 'INVALID_CODE'
-          stopPolling()
-        }
-      }
-    } catch (error) {
-      console.error('轮询绑定状态失败:', error)
-    }
-  }, 3000)
-}
-
-const stopPolling = () => {
-  if (pollingTimer.value) {
-    clearInterval(pollingTimer.value)
-    pollingTimer.value = null
-  }
-}
-
 const submit = async () => {
   if (!formRef.value) return
 
@@ -272,10 +116,6 @@ const submit = async () => {
       const requestData = {
         username: form.username,
         password: form.password
-      }
-      
-      if (openId.value) {
-        requestData.openId = openId.value
       }
 
       const response = await fetch('/mall-api/v1/auth/register', {
@@ -291,12 +131,6 @@ const submit = async () => {
         if (formRef.value) {
           formRef.value.resetFields()
         }
-        
-        bindCode.value = ''
-        bindStatus.value = ''
-        bindSuccess.value = false
-        openId.value = ''
-        stopPolling()
         
         setTimeout(() => {
           router.push({ path: '/login', query: { username: form.username } })
@@ -393,98 +227,5 @@ const submit = async () => {
 
 :deep(.el-card__body) {
   padding: 0 30px 30px;
-}
-
-/* 微信绑定区域样式 */
-.wechat-bind-section {
-  padding: 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
-}
-
-.bind-code-empty {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.bind-tip {
-  font-size: 13px;
-  color: #909399;
-}
-
-.bind-code-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.bind-code-display {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.code-label {
-  font-size: 14px;
-  color: #606266;
-}
-
-.code-value {
-  font-size: 16px;
-  font-weight: 600;
-  color: #409EFF;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 2px;
-}
-
-.bind-instruction {
-  background: #fff;
-  padding: 12px;
-  border-radius: 6px;
-}
-
-.instruction-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: #303133;
-  margin: 0 0 8px;
-}
-
-.bind-instruction ol {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  color: #606266;
-}
-
-.bind-instruction li {
-  margin-bottom: 4px;
-}
-
-.bind-instruction strong {
-  color: #409EFF;
-}
-
-.bind-status {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.status-text {
-  font-size: 14px;
-}
-
-.status-text.success {
-  color: #67c23a;
-}
-
-.status-text.pending {
-  color: #e6a23c;
-}
-
-.status-text.error {
-  color: #f56c6c;
 }
 </style>

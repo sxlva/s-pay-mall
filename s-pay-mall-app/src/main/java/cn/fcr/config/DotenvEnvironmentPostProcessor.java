@@ -29,13 +29,13 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor 
 
         Dotenv dotenv;
         if (envFile.exists()) {
-            log.info("【DotenvEnvironmentPostProcessor】✅ 找到 .env 文件，路径: {}", envFile.getAbsolutePath());
+            log.info("【DotenvEnvironmentPostProcessor】 找到 .env 文件，路径: {}", envFile.getAbsolutePath());
             dotenv = Dotenv.configure()
                     .directory(projectRoot)
                     .filename(".env")
                     .load();
         } else {
-            log.warn("【DotenvEnvironmentPostProcessor】❌ 项目根目录下未找到 .env 文件，尝试加载 classpath 中的配置");
+            log.warn("【DotenvEnvironmentPostProcessor】 项目根目录下未找到 .env 文件，尝试加载 classpath 中的配置");
             dotenv = Dotenv.load();
         }
 
@@ -49,9 +49,9 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor 
         log.info("【DotenvEnvironmentPostProcessor】当前成功加载的 .env 文件绝对路径为: {}", envFile.getAbsolutePath());
 
         if (envMap.containsKey("MYSQL_ROOT_PASSWORD")) {
-            log.info("【DotenvEnvironmentPostProcessor】✅ MYSQL_ROOT_PASSWORD 已成功注入，值为: ****");
+            log.info("【DotenvEnvironmentPostProcessor】 MYSQL_ROOT_PASSWORD 已成功注入，值为: ****");
         } else {
-            log.warn("【DotenvEnvironmentPostProcessor】❌ MYSQL_ROOT_PASSWORD 未在 .env 中找到");
+            log.warn("【DotenvEnvironmentPostProcessor】 MYSQL_ROOT_PASSWORD 未在 .env 中找到");
         }
 
         environment.getPropertySources().addFirst(new MapPropertySource("dotenv", envMap));

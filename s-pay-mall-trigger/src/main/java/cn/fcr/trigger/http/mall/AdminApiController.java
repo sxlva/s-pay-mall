@@ -1,15 +1,12 @@
 package cn.fcr.trigger.http.mall;
 
-import cn.fcr.api.IAdminService;
-import cn.fcr.api.dto.CategorySaveRequest;
+import cn.fcr.api.dto.CategorySaveRequestDTO;
 import cn.fcr.api.dto.ProductSaveRequest;
-import cn.fcr.api.dto.UserSaveRequest;
+import cn.fcr.api.dto.UserSaveRequestDTO;
 import cn.fcr.api.response.Response;
+import cn.fcr.api.vo.*;
 import cn.fcr.domain.mall.model.command.ProductSaveCommand;
 import cn.fcr.domain.mall.model.entity.UserEntity;
-import cn.fcr.domain.mall.model.valobj.CategoryVO;
-import cn.fcr.domain.mall.model.valobj.OrderVO;
-import cn.fcr.domain.mall.model.valobj.ProductVO;
 import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.mall.service.IMallProductService;
 import cn.fcr.domain.mall.service.IMallStatisticsService;
@@ -21,20 +18,18 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * 管理端API控制器
- * 实现 IAdminService 接口，提供用户管理、商品管理、订单管理、统计分析等后台管理接口
+ * 提供用户管理、商品管理、订单管理、统计分析等后台管理接口
  */
 @Slf4j
 @RestController
 @CrossOrigin("${app.config.cross-origin}")
 @RequestMapping("/pay-api/${app.config.api-version}/admin")
-public class AdminApiController extends BaseController implements IAdminService {
+public class AdminApiController extends BaseController {
 
     @Resource
     private IMallUserService mallUserService;
@@ -48,26 +43,31 @@ public class AdminApiController extends BaseController implements IAdminService 
     @Resource
     private IMallStatisticsService mallStatisticsService;
 
-    @Override
+    // ==================== 用户管理 ====================
+
+    @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<List<Map<String, Object>>> listUsers(String username, Integer status, String roleCode) {
+    public Response<List<UserVO>> listUsers(
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String roleCode) {
         List<UserEntity> users = mallUserService.listUsers(username, status, roleCode);
-        List<Map<String, Object>> result = users.stream().map(u -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", u.getId());
-            map.put("username", u.getUsername());
-            map.put("status", u.getStatus());
-            map.put("roleCode", u.getRoleCode());
-            map.put("createTime", u.getCreateTime());
-            map.put("updateTime", u.getUpdateTime());
-            return map;
+        List<UserVO> result = users.stream().map(u -> {
+            UserVO vo = new UserVO();
+            vo.setId(u.getId());
+            vo.setUsername(u.getUsername());
+            vo.setStatus(u.getStatus());
+            vo.setRoleCode(u.getRoleCode());
+            vo.setCreateTime(u.getCreateTime());
+            vo.setUpdateTime(u.getUpdateTime());
+            return vo;
         }).collect(Collectors.toList());
         return success(result);
     }
 
-    @Override
+    @PostMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> saveUser(UserSaveRequest request) {
+    public Response<Integer> saveUser(@RequestBody UserSaveRequestDTO request) {
         log.info("保存用户: username={}", request.getUsername());
         UserEntity user = UserEntity.builder()
                 .id(request.getId())
@@ -79,79 +79,84 @@ public class AdminApiController extends BaseController implements IAdminService 
         return success(result);
     }
 
-    @Override
+    @PutMapping("/users/{userId}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> updateUserStatus(Long userId, Integer status) {
+    public Response<Integer> updateUserStatus(
+            @PathVariable Long userId,
+            @RequestParam Integer status) {
         log.info("更新用户状态: id={}, status={}", userId, status);
         int result = mallUserService.updateUserStatus(userId, status);
         return success(result);
     }
 
-    @Override
+    @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> deleteUser(Long userId) {
+    public Response<Integer> deleteUser(@PathVariable Long userId) {
         log.info("删除用户: id={}", userId);
         int result = mallUserService.deleteUser(userId);
         return success(result);
     }
 
-    @Override
+    // ==================== 分类管理 ====================
+
+    @GetMapping("/categories")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<List<Map<String, Object>>> listCategories() {
-        List<CategoryVO> categories = mallProductService.listCategory();
-        List<Map<String, Object>> result = categories.stream().map(c -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", c.getId());
-            map.put("name", c.getName());
-            map.put("status", c.getStatus());
-            map.put("create_time", c.getCreateTime() != null ? c.getCreateTime().toString() : "");
-            return map;
+    public Response<List<CategoryVO>> listCategories() {
+        List<cn.fcr.domain.mall.model.valobj.CategoryVO> categories = mallProductService.listCategory();
+        List<CategoryVO> result = categories.stream().map(c -> {
+            CategoryVO vo = new CategoryVO();
+            vo.setId(c.getId());
+            vo.setName(c.getName());
+            vo.setStatus(c.getStatus());
+            vo.setCreateTime(c.getCreateTime());
+            return vo;
         }).collect(Collectors.toList());
         return success(result);
     }
 
-    @Override
+    @PostMapping("/categories")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> saveCategory(CategorySaveRequest request) {
+    public Response<Integer> saveCategory(@RequestBody CategorySaveRequestDTO request) {
         log.info("保存分类: name={}", request.getName());
         int result = mallProductService.saveCategory(toMap(request));
         return success(result);
     }
 
-    @Override
+    @DeleteMapping("/categories/{categoryId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> deleteCategory(Long categoryId) {
+    public Response<Integer> deleteCategory(@PathVariable Long categoryId) {
         log.info("删除分类: id={}", categoryId);
         int result = mallProductService.deleteCategory(categoryId);
         return success(result);
     }
 
-    @Override
+    // ==================== 商品管理 ====================
+
+    @GetMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<List<Map<String, Object>>> listProducts(
-            Long categoryId,
-            String keyword,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            Integer status) {
-        List<ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
-        List<Map<String, Object>> result = products.stream().map(p -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", p.getId());
-            map.put("name", p.getName());
-            map.put("price", p.getPrice());
-            map.put("stock", p.getStock());
-            map.put("status", p.getStatus());
-            return map;
+    public Response<List<ProductVO>> listProducts(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Integer status) {
+        List<cn.fcr.domain.mall.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
+        List<ProductVO> result = products.stream().map(p -> {
+            ProductVO vo = new ProductVO();
+            vo.setId(p.getId());
+            vo.setName(p.getName());
+            vo.setPrice(p.getPrice());
+            vo.setStock(p.getStock());
+            vo.setStatus(p.getStatus());
+            return vo;
         }).collect(Collectors.toList());
         return success(result);
     }
 
-    @Override
+    @PostMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> saveProduct(ProductSaveRequest request) {
+    public Response<Integer> saveProduct(@RequestBody ProductSaveRequest request) {
         log.info("保存商品: name={}", request.getName());
-        // 将 DTO 转换为领域命令
         ProductSaveCommand command = ProductSaveCommand.builder()
                 .id(request.getId())
                 .categoryId(request.getCategoryId())
@@ -165,68 +170,90 @@ public class AdminApiController extends BaseController implements IAdminService 
         return success(result);
     }
 
-    @Override
+    @DeleteMapping("/products/{productId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> deleteProduct(Long productId) {
+    public Response<Integer> deleteProduct(@PathVariable Long productId) {
         log.info("删除商品: id={}", productId);
         int result = mallProductService.deleteProduct(productId);
         return success(result);
     }
 
-    @Override
+    // ==================== 订单管理 ====================
+
+    @GetMapping("/orders")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<List<Map<String, Object>>> listOrders(Long userId, String status, String startTime, String endTime) {
-        List<OrderVO> orders = mallOrderService.listOrders(userId, status, startTime, endTime);
-        List<Map<String, Object>> result = orders.stream().map(o -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", o.getId());
-            map.put("orderId", o.getOrderNo());
-            map.put("status", o.getStatus());
-            map.put("totalAmount", o.getTotalAmount());
-            return map;
+    public Response<List<OrderVO>> listOrders(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime) {
+        List<cn.fcr.domain.mall.model.valobj.OrderVO> orders = mallOrderService.listOrders(userId, status, startTime, endTime);
+        List<OrderVO> result = orders.stream().map(o -> {
+            OrderVO vo = new OrderVO();
+            vo.setId(o.getId());
+            vo.setOrderNo(o.getOrderNo());
+            vo.setStatus(o.getStatus());
+            vo.setTotalAmount(o.getTotalAmount());
+            return vo;
         }).collect(Collectors.toList());
         return success(result);
     }
 
-    @Override
+    @PutMapping("/orders/{orderId}/deliver")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> deliverOrder(Long orderId) {
+    public Response<Integer> deliverOrder(@PathVariable Long orderId) {
         log.info("一键发货: orderId={}", orderId);
         int result = mallOrderService.deliverOrder(orderId);
         return success(result);
     }
 
-    @Override
+    @PutMapping("/orders/{orderId}/cancel")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> cancelOrder(Long orderId) {
+    public Response<Integer> cancelOrder(@PathVariable Long orderId) {
         log.info("取消订单: orderId={}", orderId);
         int result = mallOrderService.cancelOrder(orderId);
         return success(result);
     }
 
-    @Override
+    @DeleteMapping("/orders/{orderId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> deleteOrder(Long orderId) {
+    public Response<Integer> deleteOrder(@PathVariable Long orderId) {
         log.info("删除订单: id={}", orderId);
         int result = mallOrderService.deleteOrder(orderId);
         return success(result);
     }
 
-    @Override
+    // ==================== 统计分析 ====================
+
+    @GetMapping("/statistics/sales-trend")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<List<Map<String, Object>>> getSalesTrend() {
-        List<Map<String, Object>> trend = mallStatisticsService.getSalesTrend();
-        return success(trend);
+    public Response<List<SalesTrendVO>> getSalesTrend() {
+        List<java.util.Map<String, Object>> trend = mallStatisticsService.getSalesTrend();
+        List<SalesTrendVO> result = trend.stream().map(map -> {
+            SalesTrendVO vo = new SalesTrendVO();
+            vo.setDate((String) map.get("date"));
+            vo.setSalesAmount((BigDecimal) map.get("salesAmount"));
+            vo.setOrderCount((Integer) map.get("orderCount"));
+            return vo;
+        }).collect(Collectors.toList());
+        return success(result);
     }
 
-    @Override
+    @GetMapping("/statistics/category-ratio")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<List<Map<String, Object>>> getCategoryRatio() {
-        List<Map<String, Object>> ratio = mallStatisticsService.getCategoryRatio();
-        return success(ratio);
+    public Response<List<CategoryRatioVO>> getCategoryRatio() {
+        List<java.util.Map<String, Object>> ratio = mallStatisticsService.getCategoryRatio();
+        List<CategoryRatioVO> result = ratio.stream().map(map -> {
+            CategoryRatioVO vo = new CategoryRatioVO();
+            vo.setCategoryName((String) map.get("categoryName"));
+            vo.setProductCount((Integer) map.get("productCount"));
+            vo.setSalesAmount((BigDecimal) map.get("salesAmount"));
+            return vo;
+        }).collect(Collectors.toList());
+        return success(result);
     }
 
-    private Map<String, Object> toMap(Object obj) {
-        return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(obj, Map.class);
+    private java.util.Map<String, Object> toMap(Object obj) {
+        return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(obj, java.util.Map.class);
     }
 }

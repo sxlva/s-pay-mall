@@ -1,5 +1,5 @@
 import { adminInstance } from '../utils/axios'
-import type { UserVO } from '../types/domain/user'
+import type { UserVO, UserQueryParams } from '../types/domain/user'
 import type { SaveUserParams, SaveCategoryParams, SaveProductParams } from '../types/api/admin'
 
 // ==================== 用户管理 ====================
@@ -8,7 +8,7 @@ export type { UserVO } from '../types/domain/user'
 
 export type { SaveUserParams } from '../types/api/admin'
 
-export const getAdminUsers = (params: Record<string, unknown> = {}): Promise<UserVO[]> => {
+export const getAdminUsers = (params: UserQueryParams = {}): Promise<UserVO[]> => {
   return adminInstance.get('/admin/users', { params })
 }
 
