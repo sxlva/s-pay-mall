@@ -4,9 +4,7 @@ import cn.fcr.domain.auth.gateway.IWeChatGateway;
 import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
 import cn.fcr.domain.auth.gateway.ITokenProvider;
 import cn.fcr.types.common.Constants;
-import com.google.common.cache.Cache;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -17,10 +15,6 @@ public class WeixinLoginService implements ILoginService {
 
     @Resource
     private IWeChatGateway weChatGateway;
-
-    @Qualifier("openidToken")
-    @Resource
-    private Cache<String, String> openidToken;
 
     @Resource
     private IWechatLoginGateway wechatLoginGateway;
@@ -40,7 +34,7 @@ public class WeixinLoginService implements ILoginService {
 
     @Override
     public void saveLoginState(String ticket, String openid) {
-        openidToken.put(ticket, openid);
+        wechatLoginGateway.saveLoginToken(ticket, openid);
         weChatGateway.sendLoginNotification(openid);
     }
 

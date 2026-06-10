@@ -9,6 +9,7 @@ public class Constants {
     public final static String SPLIT = ",";
 
     public static final String REDIS_WECHAT_BIND_TICKET_PREFIX = "wechat:bind:ticket:";
+    public static final String REDIS_WECHAT_ACCESS_TOKEN_PREFIX = "wechat:access_token:";
     public static final String REDIS_USER_REGISTER_LOCK_PREFIX = "user:register:lock:";
     public static final String REDIS_BIND_STATUS_PENDING = "BINDING_PENDING";
 

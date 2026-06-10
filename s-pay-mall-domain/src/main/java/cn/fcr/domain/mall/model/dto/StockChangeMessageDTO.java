@@ -26,6 +26,12 @@ public class StockChangeMessageDTO {
     private Integer newStock;
 
     /**
+     * 变更数量（扣减时为负数，恢复时为正数）
+     * 用于 PAY_DEDUCT 和 ORDER_RESTORE 场景
+     */
+    private Integer changeQuantity;
+
+    /**
      * 变更类型
      * ADMIN_UPDATE - 后台管理员修改库存
      * PAY_DEDUCT - 支付成功扣减库存
@@ -34,10 +40,15 @@ public class StockChangeMessageDTO {
     private String changeType;
 
     /**
-     * 消息唯一ID（用于幂等性检查）
-     * 格式建议：{changeType}:{productId}:{timestamp}
+     * 消息唯一ID（用于日志追踪）
      */
     private String messageId;
+
+    /**
+     * 业务单号（用于幂等性检查）
+     * 格式：orderId（扣减/恢复）或 updateRecordId（管理员更新）
+     */
+    private String businessNo;
 
     /**
      * 消息时间戳（毫秒）

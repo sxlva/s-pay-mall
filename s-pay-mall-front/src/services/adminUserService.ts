@@ -70,9 +70,7 @@ export class AdminUserService {
   static getRoleText(roleCode: string): string {
     const roleMap: Record<string, string> = {
       ADMIN: '管理员',
-      MEMBER: '普通会员',
-      VIP: 'VIP会员',
-      GUEST: '普通用户'
+      MEMBER: '普通会员'
     }
     return roleMap[roleCode] || roleCode
   }
