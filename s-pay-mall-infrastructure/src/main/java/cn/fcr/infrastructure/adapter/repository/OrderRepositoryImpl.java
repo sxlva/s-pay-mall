@@ -42,7 +42,7 @@ public class OrderRepositoryImpl implements IMallOrderQueryGateway {
         orderMain.setOrderNo(orderEntity.getOrderNo());
         orderMain.setUserId(orderEntity.getUserId());
         orderMain.setTotalAmount(orderEntity.getTotalAmount());
-        orderMain.setStatus(mapDomainStateToDbStatus(orderEntity.getState()));
+        orderMain.setStatus(orderEntity.getState() != null ? orderEntity.getState().toDbStatus() : "CREATED");
         orderMain.setAddress(orderEntity.getAddress());
         orderMain.setCreateTime(orderEntity.getCreateTime());
         orderMain.setUpdateTime(orderEntity.getUpdateTime());
@@ -160,7 +160,7 @@ public class OrderRepositoryImpl implements IMallOrderQueryGateway {
                 .createTime(order.getCreateTime())
                 .updateTime(order.getUpdateTime());
 
-        OrderState state = mapDbStatusToDomainState(order.getStatus());
+        OrderState state = OrderState.fromDbStatus(order.getStatus());
         if (state != null) {
             builder.statusDesc(state.getDescription());
         }
@@ -204,34 +204,10 @@ public class OrderRepositoryImpl implements IMallOrderQueryGateway {
                 .userId(order.getUserId())
                 .totalAmount(order.getTotalAmount())
                 .address(order.getAddress())
-                .state(mapDbStatusToDomainState(order.getStatus()))
+                .state(OrderState.fromDbStatus(order.getStatus()))
                 .items(itemEntities)
                 .createTime(order.getCreateTime())
                 .updateTime(order.getUpdateTime())
                 .build();
-    }
-
-    private String mapDomainStateToDbStatus(OrderState state) {
-        if (state == null) return "CREATED";
-        switch (state) {
-            case INIT: return "CREATED";
-            case PAID: return "PAID";
-            case SHIPPED: return "SHIPPED";
-            case DONE: return "COMPLETED";
-            case CANCELED: return "CANCELLED";
-            default: return state.getCode();
-        }
-    }
-
-    private OrderState mapDbStatusToDomainState(String dbStatus) {
-        if (dbStatus == null) return null;
-        switch (dbStatus) {
-            case "CREATED": return OrderState.INIT;
-            case "PAID": return OrderState.PAID;
-            case "SHIPPED": return OrderState.SHIPPED;
-            case "COMPLETED": return OrderState.DONE;
-            case "CANCELLED": return OrderState.CANCELED;
-            default: return OrderState.fromCode(dbStatus);
-        }
     }
 }

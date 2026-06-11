@@ -45,4 +45,13 @@ public interface IProductRepository {
      * @return 库存数量，若商品不存在返回 null
      */
     Integer queryStockByProductId(Long productId);
+
+    /**
+     * 统计商品关联的订单数量
+     * 用于删除商品前检查是否存在关联订单
+     *
+     * @param productId 商品ID
+     * @return 关联订单数量
+     */
+    long countOrderItemsByProductId(Long productId);
 }
