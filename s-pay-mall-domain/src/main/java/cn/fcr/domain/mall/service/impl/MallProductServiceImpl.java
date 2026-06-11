@@ -94,35 +94,67 @@ public class MallProductServiceImpl implements IMallProductService {
 
     @Override
     public int deleteProduct(Long id) {
+        long count = productRepository.countOrderItemsByProductId(id);
+        if (count > 0) {
+            throw new IllegalStateException("该商品下仍有关联订单，无法删除！");
+        }
         return productRepository.deleteProduct(id);
     }
 
+    /**
+     * 验证商品是否可销售
+     * 【DDD 重构】职责单一：Service 仅负责流程编排，业务逻辑由 Entity 执行
+     *
+     * @param productId 商品ID
+     * @param quantity 购买数量
+     * @param orderPrice 订单价格
+     * @throws IllegalArgumentException 商品不存在
+     * @throws IllegalStateException 商品已下架、库存不足或价格异常
+     */
     public void validateProductForSale(Long productId, int quantity, BigDecimal orderPrice) {
+        // 1. 查询实体（流程编排）
         ProductEntity product = productRepository.findById(productId);
         if (product == null) {
             throw new IllegalArgumentException("商品不存在");
         }
-        if (!product.isAvailable()) {
-            throw new IllegalStateException("商品已下架");
-        }
-        if (!product.validateStock(quantity)) {
-            throw new IllegalStateException("商品库存不足");
-        }
-        if (!product.validatePrice(orderPrice)) {
-            throw new IllegalStateException("商品价格异常");
-        }
+
+        // 2. 调用实体方法执行业务验证（充血模型）
+        product.validateForSale(quantity, orderPrice);
     }
 
+    /**
+     * 扣减库存（如果库存充足）
+     * 【DDD 重构】职责单一：Service 仅负责流程编排
+     *
+     * @param productId 商品ID
+     * @param quantity 扣减数量
+     * @return true=扣减成功，false=库存不足或商品不存在
+     */
     public boolean reduceStockIfAvailable(Long productId, int quantity) {
+        // 1. 查询实体（流程编排）
         ProductEntity product = productRepository.findById(productId);
-        if (product == null) return false;
+        if (product == null) {
+            return false;
+        }
+
+        // 2. 调用实体方法判断是否可扣减（充血模型）
         if (!product.canReduceStock(quantity)) {
             return false;
         }
+
+        // 3. 执行持久化（流程编排）
         return productRepository.decreaseStock(productId, quantity) > 0;
     }
 
+    /**
+     * 恢复库存
+     * 【DDD 重构】职责单一：Service 仅负责流程编排
+     *
+     * @param productId 商品ID
+     * @param quantity 恢复数量
+     */
     public void restoreStock(Long productId, int quantity) {
+        // 直接调用 Repository 执行持久化（无业务逻辑）
         productRepository.increaseStock(productId, quantity);
     }
 
