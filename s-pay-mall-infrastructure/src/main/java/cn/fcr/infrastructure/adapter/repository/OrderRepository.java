@@ -157,6 +157,32 @@ public class OrderRepository implements IOrderRepository {
     }
 
     @Override
+    public OrderEntity findByOrderNo(String orderNo) {
+        PayOrder order = orderDao.queryByOrderNo(orderNo);
+        if (order == null) {
+            return null;
+        }
+        // 【DDD】将 PO 转换为 Entity，确保领域对象完整性
+        return OrderEntity.builder()
+                .productId(order.getProductId())
+                .productName(order.getProductName())
+                .orderId(order.getOrderId())
+                .orderStatusVO(OrderStatusVO.valueOf(order.getStatus()))
+                .orderTime(order.getOrderTime())
+                .totalAmount(order.getTotalAmount())
+                .payUrl(order.getPayUrl())
+                .build();
+    }
+
+    @Override
+    public void save(OrderEntity order) {
+        // 【DDD】仅保存聚合根的状态变更，Entity 的内部逻辑已处理好状态
+        orderDao.updateStatus(order.getOrderId(), order.getOrderStatusVO().getCode());
+        log.info("【DDD 持久化】订单状态已保存: orderNo={}, status={}",
+                order.getOrderId(), order.getSafeStateCode());
+    }
+
+    @Override
     public long countByUserId(Long userId) {
         LambdaQueryWrapper<cn.fcr.infrastructure.dao.po.OrderMain> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(cn.fcr.infrastructure.dao.po.OrderMain::getUserId, userId);

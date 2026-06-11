@@ -5,8 +5,10 @@ import cn.fcr.domain.mall.model.entity.ProductEntity;
 import cn.fcr.domain.mall.model.valobj.CategoryVO;
 import cn.fcr.domain.mall.model.valobj.ProductVO;
 import cn.fcr.infrastructure.dao.ICategoryDao;
+import cn.fcr.infrastructure.dao.IOrderItemDao;
 import cn.fcr.infrastructure.dao.IProductDao;
 import cn.fcr.infrastructure.dao.po.Category;
+import cn.fcr.infrastructure.dao.po.OrderItem;
 import cn.fcr.infrastructure.dao.po.Product;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -26,6 +28,9 @@ public class ProductRepository implements IProductRepository {
 
     @Resource
     private IProductDao productDao;
+
+    @Resource
+    private IOrderItemDao orderItemDao;
 
     @Override
     public List<CategoryVO> findAllCategories() {
@@ -164,5 +169,12 @@ public class ProductRepository implements IProductRepository {
         product.setStatus(entity.getStatus());
         product.setCategory(entity.getCategory());
         return product;
+    }
+
+    @Override
+    public long countOrderItemsByProductId(Long productId) {
+        LambdaQueryWrapper<OrderItem> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(OrderItem::getProductId, productId);
+        return orderItemDao.selectCount(queryWrapper);
     }
 }
