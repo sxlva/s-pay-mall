@@ -5,14 +5,12 @@ import cn.fcr.domain.order.gateway.IProductGateway;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
-import cn.fcr.domain.order.model.valobj.OrderStatusVO;
 import cn.fcr.domain.order.model.valobj.PayStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -39,7 +37,7 @@ public class OrderService extends AbstractOrderService {
                 .build();
 
         String payUrl = paymentGateway.generatePayUrl(payOrderEntity);
-        payOrderEntity.setPayUrl(payUrl);
+        payOrderEntity.initPayUrl(payUrl);
 
         repository.updateOrderPayInfo(payOrderEntity);
 
@@ -66,36 +64,6 @@ public class OrderService extends AbstractOrderService {
         return repository.changeOrderClose(orderId);
     }
 
-    @Override
-    public boolean handleTimeoutCloseOrder(String orderNo) {
-        log.info("处理超时关单: orderNo={}", orderNo);
-
-        String currentStatus = repository.queryOrderStatus(orderNo);
-        if (currentStatus == null) {
-            log.warn("订单不存在，可能已被删除: orderNo={}", orderNo);
-            return false;
-        }
-
-        if (!OrderStatusVO.CREATE.getCode().equals(currentStatus)) {
-            log.info("订单状态已变更，无需关单: orderNo={}, status={}", orderNo, currentStatus);
-            return false;
-        }
-
-        boolean closed = repository.closeOrderWithOptimisticLock(orderNo, OrderStatusVO.CREATE.getCode());
-        if (!closed) {
-            log.info("订单状态已被其他线程修改，关单失败: orderNo={}", orderNo);
-            return false;
-        }
-
-        List<Map<String, Object>> orderItems = repository.queryOrderItems(orderNo);
-        for (Map<String, Object> item : orderItems) {
-            String productId = (String) item.get("productId");
-            Integer quantity = (Integer) item.get("quantity");
-            productGateway.restoreStock(productId, quantity);
-            log.info("已恢复库存: productId={}, quantity={}", productId, quantity);
-        }
-
-        log.info("超时关单成功: orderNo={}", orderNo);
-        return true;
-    }
+    // 【DDD 重构】handleTimeoutCloseOrder 已迁移至 AbstractOrderService
+    // 父类方法已使用 order.closeByTimeout() 进行状态变更，无需重复实现
 }

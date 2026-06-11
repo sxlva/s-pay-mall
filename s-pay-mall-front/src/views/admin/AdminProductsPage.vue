@@ -241,7 +241,10 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功')
     await loadProducts()
   } catch (error) {
-    // 用户取消或删除失败
+    // axios拦截器已经处理了错误弹窗，这里不再重复处理
+    if (error && error.message && error.message === 'cancel') {
+      ElMessage.info('已取消删除')
+    }
   }
 }
 

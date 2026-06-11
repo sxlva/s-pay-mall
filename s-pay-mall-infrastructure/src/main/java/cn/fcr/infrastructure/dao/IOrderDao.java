@@ -126,4 +126,15 @@ public interface IOrderDao {
      */
     @Update("update pay_order set status = 'CLOSED', pay_time = now(), update_time = now() where order_id = #{orderNo} and status = #{expectStatus}")
     int closeOrderWithOptimisticLock(@Param("orderNo") String orderNo, @Param("expectStatus") String expectStatus);
+
+    /**
+     * 更新订单状态
+     * 【DDD】用于保存聚合根的状态变更
+     *
+     * @param orderNo 订单号
+     * @param status  新状态
+     * @return 影响行数
+     */
+    @Update("update pay_order set status = #{status}, update_time = now() where order_id = #{orderNo}")
+    int updateStatus(@Param("orderNo") String orderNo, @Param("status") String status);
 }
