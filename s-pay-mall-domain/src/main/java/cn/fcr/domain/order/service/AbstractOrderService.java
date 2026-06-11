@@ -69,33 +69,42 @@ public abstract class AbstractOrderService implements IOrderService {
     public boolean handleTimeoutCloseOrder(String orderNo) {
         log.info("处理超时关单: orderNo={}", orderNo);
 
-        String currentStatus = repository.queryOrderStatus(orderNo);
-        if (currentStatus == null) {
+        // 【DDD 重构】获取完整聚合根，而非仅查询状态字符串
+        OrderEntity order = repository.findByOrderNo(orderNo);
+        if (order == null) {
             log.warn("订单不存在，可能已被删除: orderNo={}", orderNo);
             return false;
         }
 
-        if (!OrderStatusVO.CREATE.getCode().equals(currentStatus)) {
-            log.info("订单状态已变更，无需关单: orderNo={}, status={}", orderNo, currentStatus);
+        // 【DDD 重构】使用 Entity 行为方法进行状态变更（Entity 内部进行守卫校验）
+        if (!order.canCancel()) {
+            log.info("订单状态不允许取消: orderNo={}, status={}", orderNo, order.getSafeStateDesc());
             return false;
         }
 
-        boolean closed = repository.closeOrderWithOptimisticLock(orderNo, OrderStatusVO.CREATE.getCode());
-        if (!closed) {
-            log.info("订单状态已被其他线程修改，关单失败: orderNo={}", orderNo);
+        try {
+            // 【DDD 核心】调用聚合根方法，状态守卫由 Entity 内部处理
+            order.closeByTimeout();
+
+            // 【DDD 职责分离】Repository 仅负责持久化，业务逻辑在 Entity
+            repository.save(order);
+
+            // 恢复库存（这是领域事件处理，属于服务编排）
+            List<Map<String, Object>> orderItems = repository.queryOrderItems(orderNo);
+            for (Map<String, Object> item : orderItems) {
+                String productId = (String) item.get("productId");
+                Integer quantity = (Integer) item.get("quantity");
+                productGateway.restoreStock(productId, quantity);
+                log.info("已恢复库存: productId={}, quantity={}", productId, quantity);
+            }
+
+            log.info("超时关单成功: orderNo={}", orderNo);
+            return true;
+        } catch (IllegalStateException e) {
+            // 状态守卫拒绝操作（并发修改导致状态已变更）
+            log.warn("订单状态守卫拒绝关单: orderNo={}, reason={}", orderNo, e.getMessage());
             return false;
         }
-
-        List<Map<String, Object>> orderItems = repository.queryOrderItems(orderNo);
-        for (Map<String, Object> item : orderItems) {
-            String productId = (String) item.get("productId");
-            Integer quantity = (Integer) item.get("quantity");
-            productGateway.restoreStock(productId, quantity);
-            log.info("已恢复库存: productId={}, quantity={}", productId, quantity);
-        }
-
-        log.info("超时关单成功: orderNo={}", orderNo);
-        return true;
     }
 
     protected abstract void doSaveOrder(CreateOrderAggregate orderAggregate);
