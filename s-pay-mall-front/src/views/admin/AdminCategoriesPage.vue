@@ -141,9 +141,9 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功')
     await load()
   } catch (error) {
-    // 用户取消时 error.message 通常是 'cancel'
-    if (error && error.message && error.message !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+    // axios拦截器已经处理了错误弹窗，这里不再重复处理
+    if (error && error.message && error.message === 'cancel') {
+      ElMessage.info('已取消删除')
     }
   }
 }

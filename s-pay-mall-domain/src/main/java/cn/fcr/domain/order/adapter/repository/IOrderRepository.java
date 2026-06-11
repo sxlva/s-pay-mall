@@ -55,6 +55,23 @@ public interface IOrderRepository {
     boolean closeOrderWithOptimisticLock(String orderNo, String expectStatus);
 
     /**
+     * 根据订单号查询完整订单（聚合根查询）
+     * 【DDD】用于获取完整的 OrderEntity 对象以进行业务操作
+     *
+     * @param orderNo 订单号
+     * @return 订单实体，若不存在返回 null
+     */
+    OrderEntity findByOrderNo(String orderNo);
+
+    /**
+     * 保存订单聚合根
+     * 【DDD】聚合根的状态变更由 Entity 内部处理，Repository 仅负责持久化
+     *
+     * @param order 订单实体
+     */
+    void save(OrderEntity order);
+
+    /**
      * 统计指定用户的订单数量
      * 用于删除用户前检查关联订单
      *

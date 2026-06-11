@@ -43,7 +43,7 @@ public class AliPayReturnController {
             }
         }
         
-        log.info("重定向到商城主页: https://mall.fuchongrui.site");
-        return new ModelAndView("redirect:https://github.com/sxlva");
+        log.info("重定向到商城主页: https://fuchongrui.site");
+        return new ModelAndView("redirect:https://fuchongrui.site");
     }
 }
