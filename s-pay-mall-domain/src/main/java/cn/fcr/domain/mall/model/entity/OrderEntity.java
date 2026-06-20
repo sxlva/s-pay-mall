@@ -1,8 +1,8 @@
 package cn.fcr.domain.mall.model.entity;
 
 import cn.fcr.domain.mall.model.valobj.CartItemVO;
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
-import cn.fcr.domain.order.model.valobj.PayStatus;
+import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.shared.model.vo.PayStatus;
 import cn.fcr.types.util.DateUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -2,9 +2,7 @@ package cn.fcr.domain.mall.service.impl;
 
 import cn.fcr.domain.mall.adapter.repository.IStatisticsRepository;
 import cn.fcr.domain.mall.service.IMallStatisticsService;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -13,13 +11,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
 public class MallStatisticsServiceImpl implements IMallStatisticsService {
 
-    @Resource
-    private IStatisticsRepository statisticsRepository;
+    private final IStatisticsRepository statisticsRepository;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    public MallStatisticsServiceImpl(IStatisticsRepository statisticsRepository) {
+        this.statisticsRepository = statisticsRepository;
+    }
 
     @Override
     public List<Map<String, Object>> getSalesTrend() {

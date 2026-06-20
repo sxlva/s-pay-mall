@@ -1,13 +1,14 @@
 package cn.fcr.trigger.http.mall;
 
 import cn.fcr.api.response.Response;
+import cn.fcr.domain.mall.model.exception.CategoryHasProductsException;
+import cn.fcr.domain.mall.model.exception.ProductHasOrdersException;
 import cn.fcr.types.common.Constants;
 import cn.fcr.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import java.sql.SQLIntegrityConstraintViolationException;
 
 /**
  * @author fcr
@@ -26,23 +27,35 @@ public class GlobalExceptionHandler {
                 .build();
     }
 
-    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
-    public Response<String> onSQLIntegrityConstraintViolationException(SQLIntegrityConstraintViolationException e) {
-        log.error("数据库约束异常", e);
-        String message = e.getMessage();
-        String friendlyMessage = "操作失败";
-        if (message != null) {
-            if (message.contains("order_item") || message.contains("product_id")) {
-                friendlyMessage = "该商品下仍有关联订单，无法删除！";
-            } else if (message.contains("product") || message.contains("category_id")) {
-                friendlyMessage = "该分类下仍有关联商品，无法删除！";
-            } else if (message.contains("foreign key")) {
-                friendlyMessage = "存在关联数据，无法删除！";
-            }
-        }
+    @ExceptionHandler(CategoryHasProductsException.class)
+    public Response<String> onCategoryHasProductsException(CategoryHasProductsException e) {
+        log.warn("分类删除被拒: {}", e.getMessage());
         return Response.<String>builder()
                 .code(Constants.ResponseCode.UN_ERROR.getCode())
-                .info(friendlyMessage)
+                .info(e.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(ProductHasOrdersException.class)
+    public Response<String> onProductHasOrdersException(ProductHasOrdersException e) {
+        log.warn("商品删除被拒: {}", e.getMessage());
+        return Response.<String>builder()
+                .code(Constants.ResponseCode.UN_ERROR.getCode())
+                .info(e.getMessage())
+                .build();
+    }
+
+    /**
+     * 数据库约束异常兜底处理
+     * 正常路径下约束异常已被 Domain Service 前置校验或 Infrastructure 层捕获转换，
+     * 此处理器仅处理未预期的数据库约束冲突，返回通用错误信息。
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public Response<String> onDataIntegrityViolationException(DataIntegrityViolationException e) {
+        log.error("未预期的数据库约束异常", e);
+        return Response.<String>builder()
+                .code(Constants.ResponseCode.UN_ERROR.getCode())
+                .info("操作失败，存在关联数据无法删除")
                 .build();
     }
 

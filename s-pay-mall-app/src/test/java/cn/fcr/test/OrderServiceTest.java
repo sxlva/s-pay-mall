@@ -1,6 +1,6 @@
 package cn.fcr.test;
 
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.service.IOrderService;
 import com.alibaba.fastjson.JSON;
@@ -27,9 +27,10 @@ public class OrderServiceTest {
 
     @Test
     public void test_createOrder() throws Exception {
-        ShopCartEntity shopCartEntity = new ShopCartEntity();
-        shopCartEntity.setUserId("fuchongrui");
-        shopCartEntity.setProductId("10001");
+        ShopCartEntity shopCartEntity = ShopCartEntity.builder()
+                .userId("fuchongrui")
+                .productId("10001")
+                .build();
         PayOrderEntity payOrderEntity = orderService.createOrder(shopCartEntity);
         log.info("请求参数:{}", JSON.toJSONString(shopCartEntity));
         log.info("测试结果:{}", JSON.toJSONString(payOrderEntity));

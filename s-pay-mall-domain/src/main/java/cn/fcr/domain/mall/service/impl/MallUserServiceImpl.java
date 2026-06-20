@@ -2,36 +2,36 @@ package cn.fcr.domain.mall.service.impl;
 
 import cn.fcr.domain.mall.adapter.repository.IUserRepository;
 import cn.fcr.domain.mall.gateway.IAuthTokenGateway;
+import cn.fcr.domain.mall.gateway.IOrderQueryGateway;
 import cn.fcr.domain.mall.gateway.IUserBindingGateway;
 import cn.fcr.domain.mall.model.entity.UserEntity;
 import cn.fcr.domain.mall.model.valobj.UserLoginVO;
+import cn.fcr.domain.mall.model.valobj.UserProfile;
 import cn.fcr.domain.mall.service.IMallUserService;
-import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.types.common.Constants;
 import cn.fcr.types.exception.AppException;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.logging.Logger;
 
-@Slf4j
-@Service
 public class MallUserServiceImpl implements IMallUserService {
 
-    @Resource
-    private IUserRepository userRepository;
+    private final Logger logger = Logger.getLogger(MallUserServiceImpl.class.getName());
 
-    @Resource
-    private IAuthTokenGateway authTokenGateway;
+    private final IUserRepository userRepository;
+    private final IAuthTokenGateway authTokenGateway;
+    private final IOrderQueryGateway orderQueryGateway;
+    private final IUserBindingGateway userBindingGateway;
 
-    @Resource
-    private IOrderRepository orderRepository;
-
-    @Resource
-    private IUserBindingGateway userBindingGateway;
+    public MallUserServiceImpl(IUserRepository userRepository,
+                               IAuthTokenGateway authTokenGateway,
+                               IOrderQueryGateway orderQueryGateway,
+                               IUserBindingGateway userBindingGateway) {
+        this.userRepository = userRepository;
+        this.authTokenGateway = authTokenGateway;
+        this.orderQueryGateway = orderQueryGateway;
+        this.userBindingGateway = userBindingGateway;
+    }
 
     @Override
     public UserLoginVO register(String username, String password) {
@@ -59,9 +59,9 @@ public class MallUserServiceImpl implements IMallUserService {
 
         Long userId = userRepository.insert(username, authTokenGateway.encodePassword(password), Constants.USER_STATUS_WECHAT);
         userRepository.insertUserRole(userId, 2L);
-        
+
         userBindingGateway.bindWeChatOpenId(userId, openId);
-        log.info("微信扫码注册并绑定成功: userId={}, username={}, openId={}", userId, username, openId);
+        logger.info("微信扫码注册并绑定成功: userId=" + userId + ", username=" + username + ", openId=" + openId);
 
         return login(username, password);
     }
@@ -77,20 +77,12 @@ public class MallUserServiceImpl implements IMallUserService {
         try {
             user.validateLoginStatus();
         } catch (IllegalStateException e) {
-            log.warn("【登录拦截】用户 {} 已被封禁", username);
+            logger.warning("【登录拦截】用户 " + username + " 已被封禁");
             throw new AppException(Constants.ResponseCode.BANNED.getCode(), e.getMessage());
         }
 
-        boolean isAdminGreenPass = Constants.ADMIN_USERNAME.equals(username) && Constants.ADMIN_PASSWORD.equals(password);
-        boolean isNormalUserMatch = !Constants.ADMIN_USERNAME.equals(username) &&
-                user.validatePassword(password, authTokenGateway::matchesPassword);
-
-        if (!isAdminGreenPass && !isNormalUserMatch) {
+        if (!user.validatePassword(password, authTokenGateway::matchesPassword)) {
             throw new IllegalArgumentException("密码错误");
-        }
-
-        if (isAdminGreenPass) {
-            log.info("管理员登录成功");
         }
 
         Long userId = user.getId();
@@ -121,7 +113,7 @@ public class MallUserServiceImpl implements IMallUserService {
                 .roleCode(user.getRoleCode())
                 .roleId(user.getRoleId())
                 .build();
-        
+
         if (userCopy.getPassword() != null) {
             userCopy.setPassword(authTokenGateway.encodePassword(userCopy.getPassword()));
         }
@@ -135,52 +127,51 @@ public class MallUserServiceImpl implements IMallUserService {
 
     @Override
     public int deleteUser(Long id) {
-        log.info("【级联删除】开始删除用户: userId={}", id);
+        logger.info("【级联删除】开始删除用户: userId=" + id);
 
         // 检查用户是否存在关联订单，若存在则禁止删除
-        long orderCount = orderRepository.countByUserId(id);
+        long orderCount = orderQueryGateway.countOrdersByUserId(id);
         if (orderCount > 0) {
-            log.warn("【级联删除拦截】用户 {} 存在 {} 个关联订单，禁止删除", id, orderCount);
+            logger.warning("【级联删除拦截】用户 " + id + " 存在 " + orderCount + " 个关联订单，禁止删除");
             throw new AppException(Constants.ResponseCode.UN_ERROR.getCode(), "该用户存在关联订单，无法删除");
         }
 
         int deleted = 0;
 
         deleted += userRepository.deleteUserRoleByUserId(id);
-        log.info("【级联删除】已删除 user_role 记录: {} 条", deleted);
+        logger.info("【级联删除】已删除 user_role 记录: " + deleted + " 条");
 
         deleted += userRepository.deleteUserBindingByUserId(id);
-        log.info("【级联删除】已删除 user_binding 记录: {} 条", deleted);
+        logger.info("【级联删除】已删除 user_binding 记录: " + deleted + " 条");
 
         deleted += userRepository.deleteCartItemByUserId(id);
-        log.info("【级联删除】已删除 cart_item 记录: {} 条", deleted);
+        logger.info("【级联删除】已删除 cart_item 记录: " + deleted + " 条");
 
         deleted += userRepository.deleteById(id);
-        log.info("【级联删除】已删除 mall_user 记录: {} 条", deleted);
+        logger.info("【级联删除】已删除 mall_user 记录: " + deleted + " 条");
 
         return deleted;
     }
 
     @Override
-    public Map<String, Object> getProfile(Long userId) {
+    public UserProfile getProfile(Long userId) {
         UserEntity user = userRepository.findById(userId);
-        
-        Map<String, Object> profile = new HashMap<>();
-        if (user != null) {
-            profile.put("id", user.getId());
-            profile.put("username", user.getUsername());
-            profile.put("status", user.getStatus());
-            profile.put("createTime", user.getCreateTime());
-            profile.put("updateTime", user.getUpdateTime());
+        if (user == null) {
+            return null;
         }
 
         String roleCode = userRepository.getRoleCodeByUserId(userId);
-        if (roleCode != null) {
-            profile.put("role", roleCode);
-        } else {
-            profile.put("role", Constants.DEFAULT_ROLE_MEMBER);
+        if (roleCode == null) {
+            roleCode = Constants.DEFAULT_ROLE_MEMBER;
         }
 
-        return profile;
+        return UserProfile.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .status(user.getStatus())
+                .roleCode(roleCode)
+                .createTime(user.getCreateTime())
+                .updateTime(user.getUpdateTime())
+                .build();
     }
 }
