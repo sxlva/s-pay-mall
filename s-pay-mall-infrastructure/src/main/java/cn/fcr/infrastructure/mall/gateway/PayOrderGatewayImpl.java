@@ -2,8 +2,8 @@ package cn.fcr.infrastructure.mall.gateway;
 
 import cn.fcr.domain.mall.gateway.IPayOrderGateway;
 import cn.fcr.domain.shared.model.vo.PayStatus;
-import cn.fcr.infrastructure.dao.IOrderDao;
-import cn.fcr.infrastructure.dao.po.PayOrder;
+import cn.fcr.infrastructure.dao.order.IOrderDao;
+import cn.fcr.infrastructure.dao.order.po.PayOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

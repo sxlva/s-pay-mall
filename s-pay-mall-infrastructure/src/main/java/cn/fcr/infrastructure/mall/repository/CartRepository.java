@@ -3,10 +3,10 @@ package cn.fcr.infrastructure.mall.repository;
 import cn.fcr.domain.mall.adapter.repository.ICartRepository;
 import cn.fcr.domain.mall.model.entity.CartEntity;
 import cn.fcr.domain.mall.model.entity.CartItemEntity;
-import cn.fcr.infrastructure.dao.ICartItemDao;
-import cn.fcr.infrastructure.dao.IProductDao;
-import cn.fcr.infrastructure.dao.po.CartItem;
-import cn.fcr.infrastructure.dao.po.Product;
+import cn.fcr.infrastructure.dao.mall.ICartItemDao;
+import cn.fcr.infrastructure.dao.mall.IProductDao;
+import cn.fcr.infrastructure.dao.mall.po.CartItem;
+import cn.fcr.infrastructure.dao.mall.po.Product;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Repository;
 
