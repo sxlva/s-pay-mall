@@ -65,7 +65,11 @@ public class ProductRepository implements IProductRepository {
 
     @Override
     public int deleteCategory(Long id) {
-        return categoryDao.deleteById(id);
+        try {
+            return categoryDao.deleteById(id);
+        } catch (Exception e) {
+            throw new cn.fcr.domain.mall.model.exception.CategoryHasProductsException("该分类下仍有关联商品，无法删除");
+        }
     }
 
     @Override
@@ -110,7 +114,11 @@ public class ProductRepository implements IProductRepository {
 
     @Override
     public int deleteProduct(Long id) {
-        return productDao.deleteById(id);
+        try {
+            return productDao.deleteById(id);
+        } catch (Exception e) {
+            throw new cn.fcr.domain.mall.model.exception.ProductHasOrdersException("该商品下仍有关联订单，无法删除");
+        }
     }
 
     @Override

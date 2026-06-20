@@ -1,7 +1,7 @@
 package cn.fcr.infrastructure.gateway;
 
 import cn.fcr.domain.mall.gateway.IOrderPaymentGateway;
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.service.PayOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;

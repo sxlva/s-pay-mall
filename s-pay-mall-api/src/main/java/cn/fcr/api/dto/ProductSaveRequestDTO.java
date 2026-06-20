@@ -11,7 +11,7 @@ import java.math.BigDecimal;
  * 用于创建或更新商品的请求参数封装
  */
 @Data
-public class ProductSaveRequest {
+public class ProductSaveRequestDTO {
 
     /**
      * 商品ID，创建时为null，更新时必填

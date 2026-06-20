@@ -1,5 +1,11 @@
-package cn.fcr.domain.order.model.valobj;
+package cn.fcr.domain.shared.model.vo;
 
+/**
+ * 支付状态枚举
+ * <p>
+ * 【共享值对象】定义在 shared 模块中，供 order 和 mall 领域共同使用，
+ * 避免跨模块直接依赖。
+ */
 public enum PayStatus {
     WAIT_PAY("WAIT_PAY", "待支付"),
     PAYING("PAYING", "支付中"),

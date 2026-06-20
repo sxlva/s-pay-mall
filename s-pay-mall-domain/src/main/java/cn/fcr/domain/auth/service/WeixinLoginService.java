@@ -4,23 +4,24 @@ import cn.fcr.domain.auth.gateway.IWeChatGateway;
 import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
 import cn.fcr.domain.auth.gateway.ITokenProvider;
 import cn.fcr.types.common.Constants;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import java.util.logging.Logger;
 
-@Slf4j
-@Service
 public class WeixinLoginService implements ILoginService {
 
-    @Resource
-    private IWeChatGateway weChatGateway;
+    private final Logger logger = Logger.getLogger(WeixinLoginService.class.getName());
 
-    @Resource
-    private IWechatLoginGateway wechatLoginGateway;
+    private final IWeChatGateway weChatGateway;
+    private final IWechatLoginGateway wechatLoginGateway;
+    private final ITokenProvider tokenProvider;
 
-    @Resource
-    private ITokenProvider tokenProvider;
+    public WeixinLoginService(IWeChatGateway weChatGateway,
+                              IWechatLoginGateway wechatLoginGateway,
+                              ITokenProvider tokenProvider) {
+        this.weChatGateway = weChatGateway;
+        this.wechatLoginGateway = wechatLoginGateway;
+        this.tokenProvider = tokenProvider;
+    }
 
     @Override
     public String createQrCodeTicket() {
@@ -40,30 +41,30 @@ public class WeixinLoginService implements ILoginService {
 
     @Override
     public String handleWechatScanLogin(String ticket, String openid) {
-        log.info("处理微信扫码登录: ticket={}, openid={}", ticket, openid);
-        
+        logger.info("处理微信扫码登录: ticket=" + ticket + ", openid=" + openid);
+
         try {
             Long userId = wechatLoginGateway.findUserIdByOpenid(openid);
-            
+
             if (userId == null) {
-                log.info("微信用户首次登录，开始自动注册: openid={}", openid);
+                logger.info("微信用户首次登录，开始自动注册: openid=" + openid);
                 userId = wechatLoginGateway.createWechatUserAndBind(openid);
-                log.info("自动注册成功: userId={}", userId);
+                logger.info("自动注册成功: userId=" + userId);
             } else {
-                log.info("微信用户已绑定，查询到用户: userId={}", userId);
+                logger.info("微信用户已绑定，查询到用户: userId=" + userId);
             }
-            
+
             String username = "wx_user_" + userId;
             String token = tokenProvider.createToken(userId, username, Constants.DEFAULT_ROLE_MEMBER);
-            log.info("生成JWT Token成功: userId={}", userId);
-            
+            logger.info("生成JWT Token成功: userId=" + userId);
+
             wechatLoginGateway.saveLoginToken(ticket, token);
             weChatGateway.sendLoginNotification(openid);
-            
+
             return token;
-            
+
         } catch (Exception e) {
-            log.error("微信扫码登录处理失败: ticket={}, openid={}", ticket, openid, e);
+            logger.severe("微信扫码登录处理失败: ticket=" + ticket + ", openid=" + openid);
             throw new RuntimeException("微信登录处理失败", e);
         }
     }

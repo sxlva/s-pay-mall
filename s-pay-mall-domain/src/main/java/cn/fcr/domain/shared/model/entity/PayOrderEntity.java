@@ -1,6 +1,6 @@
-package cn.fcr.domain.order.model.entity;
+package cn.fcr.domain.shared.model.entity;
 
-import cn.fcr.domain.order.model.valobj.PayStatus;
+import cn.fcr.domain.shared.model.vo.PayStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +10,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ * 支付订单实体
+ * <p>
+ * 【共享实体】定义在 shared 模块中，供 order 和 mall 领域共同使用。
+ * 代表一笔支付交易的完整信息，包含支付链接、第三方交易号、支付状态等。
+ */
 @Data
 @Builder
 @AllArgsConstructor

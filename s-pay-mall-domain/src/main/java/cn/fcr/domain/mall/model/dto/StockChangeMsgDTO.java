@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StockChangeMsg {
+public class StockChangeMsgDTO {
 
     /**
      * 商品ID
@@ -50,6 +50,11 @@ public class StockChangeMsg {
      * 格式：orderId（扣减/恢复）或 updateRecordId（管理员更新）
      */
     private String businessNo;
+
+    /**
+     * 消息时间戳（毫秒）
+     */
+    private Long timestamp;
 
     /**
      * 变更类型常量

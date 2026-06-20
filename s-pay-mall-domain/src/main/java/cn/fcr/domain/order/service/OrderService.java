@@ -4,16 +4,12 @@ import cn.fcr.domain.order.gateway.IPaymentGateway;
 import cn.fcr.domain.order.gateway.IProductGateway;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
-import cn.fcr.domain.order.model.valobj.PayStatus;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.shared.model.vo.PayStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@Slf4j
-@Service
 public class OrderService extends AbstractOrderService {
 
     public OrderService(IOrderRepository repository, IProductGateway productGateway, IPaymentGateway paymentGateway) {
