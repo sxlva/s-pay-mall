@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http.mall;
 
 import cn.fcr.api.dto.CategorySaveRequestDTO;
-import cn.fcr.api.dto.ProductSaveRequest;
+import cn.fcr.api.dto.ProductSaveRequestDTO;
 import cn.fcr.api.dto.UserSaveRequestDTO;
 import cn.fcr.api.response.Response;
 import cn.fcr.api.vo.*;
@@ -11,6 +11,7 @@ import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.mall.service.IMallProductService;
 import cn.fcr.domain.mall.service.IMallStatisticsService;
 import cn.fcr.domain.mall.service.IMallUserService;
+import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,6 +43,9 @@ public class AdminApiController extends BaseController {
 
     @Resource
     private IMallStatisticsService mallStatisticsService;
+
+    @Resource
+    private OrderApplicationService orderApplicationService;
 
     // ==================== 用户管理 ====================
 
@@ -155,7 +159,7 @@ public class AdminApiController extends BaseController {
 
     @PostMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> saveProduct(@RequestBody ProductSaveRequest request) {
+    public Response<Integer> saveProduct(@RequestBody ProductSaveRequestDTO request) {
         log.info("保存商品: name={}", request.getName());
         ProductSaveCommand command = ProductSaveCommand.builder()
                 .id(request.getId())
@@ -203,7 +207,7 @@ public class AdminApiController extends BaseController {
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> deliverOrder(@PathVariable Long orderId) {
         log.info("一键发货: orderId={}", orderId);
-        int result = mallOrderService.deliverOrder(orderId);
+        int result = orderApplicationService.deliverOrder(orderId);
         return success(result);
     }
 
@@ -211,7 +215,7 @@ public class AdminApiController extends BaseController {
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> cancelOrder(@PathVariable Long orderId) {
         log.info("取消订单: orderId={}", orderId);
-        int result = mallOrderService.cancelOrder(orderId);
+        int result = orderApplicationService.cancelOrder(orderId);
         return success(result);
     }
 

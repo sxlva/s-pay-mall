@@ -8,25 +8,25 @@ import cn.fcr.domain.mall.model.entity.CartItemEntity;
 import cn.fcr.domain.mall.model.entity.ProductEntity;
 import cn.fcr.domain.mall.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.service.IMallCartService;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
 public class MallCartServiceImpl implements IMallCartService {
 
-    @Resource
-    private ICartRepository cartRepository;
+    private final ICartRepository cartRepository;
+    private final IProductRepository productRepository;
+    private final IDistributedLockService distributedLockService;
 
-    @Resource
-    private IProductRepository productRepository;
-
-    @Resource
-    private IDistributedLockService distributedLockService;
+    public MallCartServiceImpl(ICartRepository cartRepository,
+                               IProductRepository productRepository,
+                               IDistributedLockService distributedLockService) {
+        this.cartRepository = cartRepository;
+        this.productRepository = productRepository;
+        this.distributedLockService = distributedLockService;
+    }
 
     @Override
     public int addCart(Long userId, Long productId, Integer quantity) {
@@ -61,7 +61,7 @@ public class MallCartServiceImpl implements IMallCartService {
                 .map(item -> toCartItemVO(item, getProductStock(item.getProductId())))
                 .collect(Collectors.toList());
     }
-    
+
     private Integer getProductStock(Long productId) {
         ProductEntity product = productRepository.findById(productId);
         return product != null ? product.getStock() : 0;
@@ -74,11 +74,11 @@ public class MallCartServiceImpl implements IMallCartService {
             if (product == null) {
                 throw new IllegalArgumentException("商品不存在");
             }
-            
+
             if (product.getStock() == null || quantity > product.getStock()) {
                 throw new IllegalArgumentException("库存不足");
             }
-            
+
             CartEntity cart = cartRepository.findByUserId(userId);
             cart.updateQuantity(productId, quantity);
             cartRepository.saveCart(cart);

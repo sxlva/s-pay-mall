@@ -5,17 +5,17 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
 /**
- * @author 傅崇睿
- * @date 2025/8/2 17:17
- * @description
+ * 支付成功消息事件
+ * <p>
+ * 纯数据对象（POJO），定义支付成功消息的结构和消息主题。
+ * 实例化由 Infrastructure 层的实现类完成。
  */
-@Component
 public class PaySuccessMessageEvent extends BaseEvent<PaySuccessMessageEvent.PaySuccessMessage> {
     @Override
     public EventMessage<PaySuccessMessage> buildEventMessage(PaySuccessMessage data) {

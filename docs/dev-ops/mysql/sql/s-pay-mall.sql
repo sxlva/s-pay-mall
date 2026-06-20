@@ -214,7 +214,7 @@ INSERT INTO `role`(`id`, `role_code`, `role_name`) VALUES
 
 -- 用户数据 - 管理员账号：admin / 123456
 INSERT INTO `mall_user`(`id`, `username`, `password`, `status`) VALUES
-(1, 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', 1);
+(1, 'admin', '$2a$10$nx2T4i2eVpyqKNq.Xs6FGeQQEJwHYcwBC.Ilt8hXKGkoca.ctw6qy', 1);
 
 -- 用户角色关联
 INSERT INTO `user_role`(`user_id`, `role_id`) VALUES

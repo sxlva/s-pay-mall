@@ -49,7 +49,7 @@ public class Application {
                 // 创建管理员用户
                 MallUser admin = new MallUser();
                 admin.setUsername("admin");
-                admin.setPassword("123456");
+                admin.setPassword(passwordEncoder.encode("123456"));
                 admin.setStatus(1);
                 admin.setCreateTime(LocalDateTime.now());
                 admin.setUpdateTime(LocalDateTime.now());
