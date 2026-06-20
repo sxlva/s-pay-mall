@@ -1,7 +1,7 @@
 package cn.fcr.api;
 
 import cn.fcr.api.dto.CategorySaveRequestDTO;
-import cn.fcr.api.dto.ProductSaveRequest;
+import cn.fcr.api.dto.ProductSaveRequestDTO;
 import cn.fcr.api.dto.UserSaveRequestDTO;
 import cn.fcr.api.response.Response;
 import cn.fcr.api.vo.CategoryRatioVO;
@@ -108,7 +108,7 @@ public interface IAdminFacade {
      * @param request 商品信息
      * @return 成功返回影响行数
      */
-    Response<Integer> saveProduct(ProductSaveRequest request);
+    Response<Integer> saveProduct(ProductSaveRequestDTO request);
 
     /**
      * 删除商品

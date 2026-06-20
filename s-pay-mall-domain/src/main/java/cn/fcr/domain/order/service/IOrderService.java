@@ -1,6 +1,6 @@
 package cn.fcr.domain.order.service;
 
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 
 import java.util.List;

@@ -2,9 +2,9 @@ package cn.fcr.domain.mall.service;
 
 import cn.fcr.domain.mall.model.entity.UserEntity;
 import cn.fcr.domain.mall.model.valobj.UserLoginVO;
+import cn.fcr.domain.mall.model.valobj.UserProfile;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 用户领域服务接口
@@ -25,5 +25,5 @@ public interface IMallUserService {
     
     int deleteUser(Long id);
     
-    Map<String, Object> getProfile(Long userId);
+    UserProfile getProfile(Long userId);
 }

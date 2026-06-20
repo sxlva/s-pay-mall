@@ -1,10 +1,10 @@
 package cn.fcr.infrastructure.adapter.repository;
 
-import cn.fcr.domain.order.adapter.event.PaySuccessMessageEvent;
+import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.OrderEntity;
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ProductEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.model.valobj.OrderStatusVO;
@@ -13,8 +13,6 @@ import cn.fcr.infrastructure.dao.IOrderMainDao;
 import cn.fcr.infrastructure.dao.po.PayOrder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
@@ -37,9 +35,7 @@ public class OrderRepository implements IOrderRepository {
     @Resource
     private IOrderMainDao orderMainDao;
     @Resource
-    private PaySuccessMessageEvent paySuccessMessageEvent;
-    @Autowired(required = false)
-    private RocketMQTemplate rocketMQTemplate;
+    private IOrderEventPublisher orderEventPublisher;
 
     @Override
     public void doSaveOrder(CreateOrderAggregate orderAggregate) {
@@ -82,19 +78,7 @@ public class OrderRepository implements IOrderRepository {
         orderDao.changeOrderPaySuccess(payOrderReq);
         log.info("pay_order 表状态已更新为 PAY_SUCCESS: orderId={}", orderId);
 
-        PaySuccessMessageEvent.PaySuccessMessage paySuccessMessage = PaySuccessMessageEvent.PaySuccessMessage.builder()
-                .tradeNo(orderId)
-                .orderNo(orderId)
-                .build();
-        
-        if (rocketMQTemplate != null) {
-            try {
-                rocketMQTemplate.convertAndSend("order_paid", paySuccessMessage);
-                log.info("已发送支付成功消息到 RocketMQ: orderId={}", orderId);
-            } catch (Exception e) {
-                log.error("发送支付成功消息失败，但不影响订单状态更新: orderId={}, error={}", orderId, e.getMessage());
-            }
-        }
+        orderEventPublisher.publishPaySuccess(orderId, orderId);
     }
 
     @Override
