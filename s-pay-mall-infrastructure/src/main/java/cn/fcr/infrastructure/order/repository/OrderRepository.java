@@ -8,9 +8,9 @@ import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ProductEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.model.valobj.OrderStatusVO;
-import cn.fcr.infrastructure.dao.IOrderDao;
-import cn.fcr.infrastructure.dao.IOrderMainDao;
-import cn.fcr.infrastructure.dao.po.PayOrder;
+import cn.fcr.infrastructure.dao.order.IOrderDao;
+import cn.fcr.infrastructure.dao.order.IOrderMainDao;
+import cn.fcr.infrastructure.dao.order.po.PayOrder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -168,8 +168,8 @@ public class OrderRepository implements IOrderRepository {
 
     @Override
     public long countByUserId(Long userId) {
-        LambdaQueryWrapper<cn.fcr.infrastructure.dao.po.OrderMain> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(cn.fcr.infrastructure.dao.po.OrderMain::getUserId, userId);
+        LambdaQueryWrapper<cn.fcr.infrastructure.dao.order.po.OrderMain> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(cn.fcr.infrastructure.dao.order.po.OrderMain::getUserId, userId);
         return orderMainDao.selectCount(wrapper);
     }
 }

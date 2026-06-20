@@ -1,6 +1,6 @@
-package cn.fcr.infrastructure.dao;
+package cn.fcr.infrastructure.dao.mall;
 
-import cn.fcr.infrastructure.dao.po.CartItem;
+import cn.fcr.infrastructure.dao.mall.po.CartItem;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;

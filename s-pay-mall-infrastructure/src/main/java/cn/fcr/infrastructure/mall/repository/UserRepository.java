@@ -2,11 +2,11 @@ package cn.fcr.infrastructure.mall.repository;
 
 import cn.fcr.domain.mall.adapter.repository.IUserRepository;
 import cn.fcr.domain.mall.model.entity.UserEntity;
-import cn.fcr.infrastructure.dao.ICartItemDao;
-import cn.fcr.infrastructure.dao.IMallUserDao;
-import cn.fcr.infrastructure.dao.IUserBindingDao;
-import cn.fcr.infrastructure.dao.IUserRoleDao;
-import cn.fcr.infrastructure.dao.po.MallUser;
+import cn.fcr.infrastructure.dao.mall.ICartItemDao;
+import cn.fcr.infrastructure.dao.auth.IMallUserDao;
+import cn.fcr.infrastructure.dao.auth.IUserBindingDao;
+import cn.fcr.infrastructure.dao.auth.IUserRoleDao;
+import cn.fcr.infrastructure.dao.auth.po.MallUser;
 import cn.fcr.types.common.Constants;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Repository;

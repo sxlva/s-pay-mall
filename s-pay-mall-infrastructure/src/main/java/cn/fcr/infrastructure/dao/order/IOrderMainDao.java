@@ -1,6 +1,6 @@
-package cn.fcr.infrastructure.dao;
+package cn.fcr.infrastructure.dao.order;
 
-import cn.fcr.infrastructure.dao.po.OrderMain;
+import cn.fcr.infrastructure.dao.order.po.OrderMain;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

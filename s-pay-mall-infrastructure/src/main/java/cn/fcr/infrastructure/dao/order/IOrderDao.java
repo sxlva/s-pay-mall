@@ -1,6 +1,6 @@
-package cn.fcr.infrastructure.dao;
+package cn.fcr.infrastructure.dao.order;
 
-import cn.fcr.infrastructure.dao.po.PayOrder;
+import cn.fcr.infrastructure.dao.order.po.PayOrder;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

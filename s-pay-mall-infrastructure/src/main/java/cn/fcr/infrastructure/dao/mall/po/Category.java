@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.dao.po;
+package cn.fcr.infrastructure.dao.mall.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -6,37 +6,27 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 订单主表实体类
+ * 商品分类实体类
  */
 @Data
-@TableName("order_main")
-public class OrderMain {
-    
+@TableName("category")
+public class Category {
+
     @TableId(type = IdType.AUTO)
     private Long id;
-    
-    @TableField("order_no")
-    private String orderNo;
-    
-    @TableField("user_id")
-    private Long userId;
-    
-    @TableField("total_amount")
-    private BigDecimal totalAmount;
-    
+
+    @TableField("name")
+    private String name;
+
     @TableField("status")
-    private String status;
-    
-    @TableField("address")
-    private String address;
-    
+    private Integer status;
+
     @TableField("create_time")
     private LocalDateTime createTime;
-    
+
     @TableField("update_time")
     private LocalDateTime updateTime;
 }

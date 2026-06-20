@@ -1,6 +1,6 @@
-package cn.fcr.infrastructure.dao;
+package cn.fcr.infrastructure.dao.auth;
 
-import cn.fcr.infrastructure.dao.po.UserBinding;
+import cn.fcr.infrastructure.dao.auth.po.UserBinding;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
