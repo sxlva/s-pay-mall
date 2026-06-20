@@ -57,6 +57,7 @@ public class MallOrderController extends BaseController {
             map.put("quantity", item.getQuantity());
             map.put("selected", item.getSelected());
             map.put("itemAmount", item.getItemAmount());
+            map.put("stock", item.getStock());
             return map;
         }).collect(Collectors.toList());
         return success(result);

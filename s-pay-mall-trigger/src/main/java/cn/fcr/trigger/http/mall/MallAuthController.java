@@ -8,13 +8,14 @@ import cn.fcr.api.vo.UserLoginVO;
 import cn.fcr.api.vo.UserProfileVO;
 import cn.fcr.domain.auth.service.ILoginService;
 import cn.fcr.domain.auth.service.WeixinBindService;
+import cn.fcr.domain.mall.model.valobj.UserProfile;
 import cn.fcr.domain.mall.service.IMallUserService;
 import cn.fcr.trigger.http.BaseController;
+import cn.fcr.trigger.http.assembler.UserProfileAssembler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Map;
 
 /**
  * 用户认证控制器
@@ -87,15 +88,11 @@ public class MallAuthController extends BaseController {
      */
     @GetMapping("/profile")
     public Response<UserProfileVO> getProfile(Long userId) {
-        Map<String, Object> profile = mallUserService.getProfile(userId);
-        UserProfileVO result = new UserProfileVO();
-        result.setId((Long) profile.get("id"));
-        result.setUsername((String) profile.get("username"));
-        result.setStatus((Integer) profile.get("status"));
-        result.setRoleCode((String) profile.get("roleCode"));
-        result.setOrderCount((Integer) profile.get("orderCount"));
-        result.setCartCount((Integer) profile.get("cartCount"));
-        return success(result);
+        UserProfile profile = mallUserService.getProfile(userId);
+        if (profile == null) {
+            return fail("用户不存在");
+        }
+        return success(UserProfileAssembler.toVO(profile));
     }
 
     /**

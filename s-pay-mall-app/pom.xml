@@ -99,10 +99,14 @@
             <version>2.9.0</version>
         </dependency>
 
-        <!-- 工程模块；启动依赖 trigger->domain, infrastructure-->
+        <!-- 工程模块；启动依赖 trigger、domain、infrastructure-->
         <dependency>
             <groupId>cn.fcr</groupId>
             <artifactId>s-pay-mall-trigger</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.fcr</groupId>
+            <artifactId>s-pay-mall-domain</artifactId>
         </dependency>
         <dependency>
             <groupId>cn.fcr</groupId>

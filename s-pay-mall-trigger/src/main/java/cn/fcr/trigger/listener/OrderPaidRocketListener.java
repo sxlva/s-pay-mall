@@ -4,8 +4,8 @@ import cn.fcr.domain.order.adapter.event.PaySuccessMessageEvent;
 import cn.fcr.domain.mall.gateway.IUserBindingGateway;
 import cn.fcr.domain.mall.gateway.IMallOrderQueryGateway;
 import cn.fcr.domain.mall.model.entity.OrderEntity;
-import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.auth.gateway.IWeChatGateway;
+import cn.fcr.trigger.application.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter;
 public class OrderPaidRocketListener implements RocketMQListener<PaySuccessMessageEvent.PaySuccessMessage> {
 
     @Resource
-    private IMallOrderService mallOrderService;
+    private OrderApplicationService orderApplicationService;
 
     @Resource
     private IMallOrderQueryGateway mallOrderQueryGateway;
@@ -40,7 +40,7 @@ public class OrderPaidRocketListener implements RocketMQListener<PaySuccessMessa
                 message.getOrderNo(), message.getTradeNo());
 
         try {
-            mallOrderService.paySuccess(message.getOrderNo());
+            orderApplicationService.paySuccess(message.getOrderNo());
             log.info("订单状态更新成功，触发后续履约链路：开始发货、用户充值、发放会员权益、计算返利...");
 
             sendPaymentNotification(message.getOrderNo());

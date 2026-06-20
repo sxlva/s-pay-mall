@@ -2,22 +2,20 @@ package cn.fcr.domain.mall.model.entity;
 
 public enum OrderState {
 
-    INIT("INIT", "待支付"),
-
-    PAID("PAID", "已支付"),
-
-    SHIPPED("SHIPPED", "已发货"),
-
-    DONE("DONE", "已完成"),
-
-    CANCELED("CANCELED", "已取消");
+    INIT("INIT", "待支付", "CREATED"),
+    PAID("PAID", "已支付", "PAID"),
+    SHIPPED("SHIPPED", "已发货", "SHIPPED"),
+    DONE("DONE", "已完成", "COMPLETED"),
+    CANCELED("CANCELED", "已取消", "CANCELLED");
 
     private final String code;
     private final String description;
+    private final String dbStatus;
 
-    OrderState(String code, String description) {
+    OrderState(String code, String description, String dbStatus) {
         this.code = code;
         this.description = description;
+        this.dbStatus = dbStatus;
     }
 
     public String getCode() {
@@ -41,26 +39,24 @@ public enum OrderState {
     }
 
     /**
+     * 获取状态的中文描述（安全版）
+     *
+     * @param code 状态码
+     * @return 中文描述，若无法识别则返回原 code
+     */
+    public static String describe(String code) {
+        OrderState state = fromCode(code);
+        return state != null ? state.getDescription() : code;
+    }
+
+    /**
      * 将领域状态转换为数据库存储状态
      * 【DDD 原则】状态映射逻辑封装在领域对象中，避免泄露到 Infrastructure 层
      *
      * @return 数据库状态字符串
      */
     public String toDbStatus() {
-        switch (this) {
-            case INIT:
-                return "CREATED";
-            case PAID:
-                return "PAID";
-            case SHIPPED:
-                return "SHIPPED";
-            case DONE:
-                return "COMPLETED";
-            case CANCELED:
-                return "CANCELLED";
-            default:
-                return this.code;
-        }
+        return this.dbStatus;
     }
 
     /**
@@ -74,20 +70,11 @@ public enum OrderState {
         if (dbStatus == null) {
             return null;
         }
-        switch (dbStatus) {
-            case "CREATED":
-                return INIT;
-            case "PAID":
-                return PAID;
-            case "SHIPPED":
-                return SHIPPED;
-            case "COMPLETED":
-                return DONE;
-            case "CANCELLED":
-                return CANCELED;
-            default:
-                // 尝试使用 fromCode 兼容直接存储枚举 code 的情况
-                return fromCode(dbStatus);
+        for (OrderState state : values()) {
+            if (state.dbStatus.equals(dbStatus)) {
+                return state;
+            }
         }
+        return fromCode(dbStatus);
     }
 }
