@@ -1,5 +1,7 @@
 package cn.fcr.api.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
@@ -18,6 +20,7 @@ public class UserSaveRequestDTO {
     /**
      * 用户名
      */
+    @NotBlank(message = "用户名不能为空")
     private String username;
 
     /**
@@ -28,5 +31,6 @@ public class UserSaveRequestDTO {
     /**
      * 用户状态：0-禁用，1-启用
      */
+    @NotNull(message = "用户状态不能为空")
     private Integer status;
 }

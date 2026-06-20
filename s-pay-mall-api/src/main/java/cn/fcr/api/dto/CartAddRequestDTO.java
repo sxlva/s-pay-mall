@@ -1,5 +1,6 @@
 package cn.fcr.api.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
@@ -13,6 +14,7 @@ public class CartAddRequestDTO {
     /**
      * 商品ID
      */
+    @NotNull(message = "商品ID不能为空")
     private Long productId;
 
     /**
