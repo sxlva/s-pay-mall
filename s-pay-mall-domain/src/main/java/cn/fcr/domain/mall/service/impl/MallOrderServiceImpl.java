@@ -45,6 +45,13 @@ public class MallOrderServiceImpl implements IMallOrderService {
         List<CartItemVO> deductedItems = new ArrayList<>();
 
         try {
+            // 预检查库存：遍历购物车商品，检查库存是否充足
+            for (CartItemVO item : cart) {
+                if (!hasEnoughStock(item.getProductId(), item.getQuantity())) {
+                    throw new IllegalArgumentException("商品库存不足: productId=" + item.getProductId());
+                }
+            }
+
             // 预扣减库存：遍历购物车商品，执行 Redis decr 操作
             for (CartItemVO item : cart) {
                 stockGateway.deductStock(item.getProductId(), item.getQuantity());
@@ -194,5 +201,20 @@ public class MallOrderServiceImpl implements IMallOrderService {
 
         logger.info("订单库存检查通过，orderNo=" + orderNo);
         return true;
+    }
+
+    /**
+     * 预检查库存是否充足
+     * 【DDD 重构】库存预检查下沉到 Domain 层，由业务逻辑自行判断，
+     * Gateway 层只保留原子扣减操作和竞态补偿。
+     *
+     * @param productId 商品ID
+     * @param quantity  需要数量
+     * @return true=库存充足，false=库存不足
+     */
+    private boolean hasEnoughStock(Long productId, Integer quantity) {
+        long currentStock = stockGateway.getStock(productId);
+        logger.info("【库存预检查】productId={}, 当前库存={}, 需要数量={}", productId, currentStock, quantity);
+        return currentStock >= quantity;
     }
 }
