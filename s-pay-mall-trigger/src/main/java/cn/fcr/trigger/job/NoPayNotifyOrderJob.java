@@ -1,10 +1,7 @@
 package cn.fcr.trigger.job;
 
+import cn.fcr.domain.order.gateway.IAlipayQueryGateway;
 import cn.fcr.domain.order.service.IOrderService;
-import com.alipay.api.AlipayClient;
-import com.alipay.api.domain.AlipayTradeQueryModel;
-import com.alipay.api.request.AlipayTradeQueryRequest;
-import com.alipay.api.response.AlipayTradeQueryResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -14,7 +11,10 @@ import java.util.List;
 
 /**
  * @description 检测未接收到或未正确处理的支付回调通知
- * 
+ *
+ * <p>支付宝交易查询逻辑已封装至 {@link IAlipayQueryGateway}，
+ * 本 Job 不再直接依赖 Alipay SDK。</p>
+ *
  * @note 当前已禁用：因 IOrderDao.queryNoPayNotifyOrder 方法未绑定，导致每3秒抛出异常
  *       需在 IOrderDao 中正确配置该方法后再启用
  */
@@ -24,8 +24,9 @@ public class NoPayNotifyOrderJob {
 
     @Resource
     private IOrderService orderService;
+
     @Resource
-    private AlipayClient alipayClient;
+    private IAlipayQueryGateway alipayQueryGateway;
 
     //@Scheduled(cron = "0/3 * * * * ?")
     public void exec() {
@@ -35,15 +36,7 @@ public class NoPayNotifyOrderJob {
             if (null == orderIds || orderIds.isEmpty()) return;
 
             for (String orderId : orderIds) {
-                AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
-                AlipayTradeQueryModel bizModel = new AlipayTradeQueryModel();
-                bizModel.setOutTradeNo(orderId);
-                request.setBizModel(bizModel);
-
-                AlipayTradeQueryResponse alipayTradeQueryResponse = alipayClient.execute(request);
-                String code = alipayTradeQueryResponse.getCode();
-                // 判断状态码
-                if ("10000".equals(code)) {
+                if (alipayQueryGateway.queryTradeSuccess(orderId)) {
                     orderService.changeOrderPaySuccess(orderId);
                 }
             }
