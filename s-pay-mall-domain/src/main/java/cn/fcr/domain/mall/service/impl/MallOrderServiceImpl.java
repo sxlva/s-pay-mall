@@ -61,14 +61,15 @@ public class MallOrderServiceImpl implements IMallOrderService {
             OrderEntity orderEntity = OrderEntity.createFromCart(userId, address, cart);
             mallOrderQueryGateway.saveOrder(orderEntity);
 
-            mallCartService.clearCart(userId);
-
             orderPaymentGateway.sendDelayCloseMessage(orderEntity.getOrderNo());
 
             PayOrderEntity payOrderEntity = orderEntity.toPayOrder();
             String payUrl = orderPaymentGateway.generatePayUrl(payOrderEntity);
 
             orderPaymentGateway.updatePayOrderInfo(payOrderEntity);
+
+            // 清空购物车：只有订单创建全流程完全成功后才清空
+            mallCartService.clearCart(userId);
 
             return OrderCreateVO.builder()
                     .orderNo(orderEntity.getOrderNo())
