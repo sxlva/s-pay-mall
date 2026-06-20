@@ -1,5 +1,6 @@
 package cn.fcr.api.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
@@ -13,5 +14,6 @@ public class OrderCreateRequestDTO {
     /**
      * 收货地址
      */
+    @NotBlank(message = "收货地址不能为空")
     private String address;
 }

@@ -1,5 +1,6 @@
 package cn.fcr.api.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
@@ -21,6 +22,7 @@ public class CreatePayRequestDTO {
     /**
      * 商品ID
      */
+    @NotBlank(message = "商品ID不能为空")
     private String productId;
 
 }

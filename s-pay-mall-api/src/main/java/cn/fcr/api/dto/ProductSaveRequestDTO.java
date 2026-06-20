@@ -1,6 +1,8 @@
 package cn.fcr.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -21,12 +23,14 @@ public class ProductSaveRequestDTO {
     /**
      * 商品分类ID，前端使用snake_case命名
      */
+    @NotNull(message = "商品分类ID不能为空")
     @JsonProperty("category_id")
     private Long categoryId;
 
     /**
      * 商品名称
      */
+    @NotBlank(message = "商品名称不能为空")
     private String name;
 
     /**
@@ -37,15 +41,18 @@ public class ProductSaveRequestDTO {
     /**
      * 商品价格
      */
+    @NotNull(message = "商品价格不能为空")
     private BigDecimal price;
 
     /**
      * 商品库存数量
      */
+    @NotNull(message = "商品库存数量不能为空")
     private Integer stock;
 
     /**
      * 商品状态：0-下架，1-上架
      */
+    @NotNull(message = "商品状态不能为空")
     private Integer status;
 }
