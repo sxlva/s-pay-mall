@@ -1,7 +1,7 @@
 package cn.fcr.infrastructure.adapter.payment;
 
 import cn.fcr.domain.mall.gateway.IPayOrderGateway;
-import cn.fcr.domain.order.model.valobj.PayStatus;
+import cn.fcr.domain.shared.model.vo.PayStatus;
 import cn.fcr.infrastructure.dao.IOrderDao;
 import cn.fcr.infrastructure.dao.po.PayOrder;
 import lombok.extern.slf4j.Slf4j;

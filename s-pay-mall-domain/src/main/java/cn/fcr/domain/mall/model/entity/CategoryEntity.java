@@ -3,7 +3,7 @@ package cn.fcr.domain.mall.model.entity;
 import cn.fcr.domain.mall.model.exception.CategoryException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter; // 【重构】替换 @Data 为 @Getter
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;

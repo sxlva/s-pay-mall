@@ -1,7 +1,8 @@
 # 微信扫码登录流程（V2.0）
 
 > **领域上下文**：Auth Context  
-> **演进说明**：架构保持稳定，新增"技术亮点与面试高频考点"章节
+> **演进说明**：V1.0 使用 Guava Cache → V2.0 使用 Redis（StringRedisTemplate）  
+> **依赖外部**：微信开放平台 API、Redis
 
 ---
 
@@ -26,21 +27,21 @@ sequenceDiagram
     participant C as LoginController
     participant S as WeixinLoginService
     participant A as WeixinApiService
-    participant Cache as Guava Cache
+    participant Redis as Redis
     participant WX as 微信API服务器
 
     User->>F: 访问 /login 页面
     F->>C: GET /api/v1/login/weixin_qrcode_ticket
     C->>S: createQrCodeTicket()
     S->>A: getAccessToken(appId, appSecret)
-    A->>Cache: get("wx:token:appid")
+    A->>Redis: get("wx:token:appid")
     
     alt 缓存命中
-        Cache-->>A: accessToken
+        Redis-->>A: accessToken
     else 缓存未命中
         A->>WX: HTTP GET /cgi-bin/token
         WX-->>A: { access_token, expires_in }
-        A->>Cache: put("wx:token:appid", token, 7000s)
+        A->>Redis: setex("wx:token:appid", 7000, token)
     end
     
     A->>WX: HTTP POST /cgi-bin/qrcode/create
@@ -62,27 +63,27 @@ sequenceDiagram
     participant WXAPI as 微信服务器
     participant Portal as WeixinPortalController
     participant Service as WeixinLoginService
-    participant Cache as Guava Cache
+    participant Redis as Redis
     participant F as 前端
     participant C as LoginController
 
     WX->>WXAPI: 扫描二维码
     WXAPI->>Portal: POST /api/v1/weixin/portal/receive (XML)
     Portal->>Service: saveLoginState(ticket, openid)
-    Service->>Cache: put("wx:login:ticket:"+ticket, openid, 180s)
+    Service->>Redis: setex("wx:login:ticket:"+ticket, 180, openid)
     Portal-->>WXAPI: "success"
 
     loop 每 3 秒轮询
         F->>C: GET /api/v1/login/check_login?ticket=xxx
         C->>Service: checkLogin(ticket)
-        Service->>Cache: getIfPresent("wx:login:ticket:"+ticket)
+        Service->>Redis: get("wx:login:ticket:"+ticket)
         alt 已扫码
-            Cache-->>Service: openid
+            Redis-->>Service: openid
             Service-->>C: openid
             C-->>F: Response<String>(openid)
             F->>F: 停止轮询，跳转主页
         else 未扫码
-            Cache-->>Service: null
+            Redis-->>Service: null
             Service-->>C: null
             C-->>F: Response<String>(未登录)
         end
@@ -95,9 +96,9 @@ sequenceDiagram
 
 | 凭证 | 存储位置 | TTL | 说明 |
 |------|----------|-----|------|
-| accessToken | Guava Cache | 7000s | 提前于官方 7200s 过期 |
+| accessToken | Redis (StringRedisTemplate) | 7000s | 提前于官方 7200s 过期 |
 | ticket | 微信服务器 | 1800s | 微信侧强制 |
-| ticket→openid | Guava Cache | 180s | 防止轮询无限重试 |
+| ticket→openid | Redis (StringRedisTemplate) | 180s | 防止轮询无限重试 |
 
 ---
 
@@ -105,10 +106,10 @@ sequenceDiagram
 
 | 考点 | 标准答案 |
 |------|----------|
-| **AccessToken 缓存** | 微信 API 有频率限制（2000次/分），缓存可显著降低 RT 与限流风险 |
+| **AccessToken 缓存** | 微信 API 有频率限制（2000次/分），使用 Redis 缓存 accessToken 可显著降低 RT 与限流风险 |
 | **轮询 vs 长连接** | 短时一次性交互，3s 轮询实现简单、容错高；大规模场景可升级 SSE |
 | **OpenID vs UnionID** | OpenID 是某公众号下的唯一标识；UnionID 是开放平台下跨应用统一标识 |
-| **安全性** | ticket→openid 仅存于服务端缓存，前端只见 ticket；短 TTL 降低重放窗口 |
+| **安全性** | ticket→openid 仅存于 Redis 缓存，前端只见 ticket；短 TTL 降低重放窗口 |
 | **解耦设计** | 微信回调是被动事件，轮询是主动探查，二者解耦保证系统稳定 |
 
 ---

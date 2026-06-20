@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http.mall;
 
 import cn.fcr.api.dto.CategorySaveRequestDTO;
-import cn.fcr.api.dto.ProductSaveRequest;
+import cn.fcr.api.dto.ProductSaveRequestDTO;
 import cn.fcr.api.dto.UserSaveRequestDTO;
 import cn.fcr.api.response.Response;
 import cn.fcr.api.vo.CategoryRatioVO;
@@ -11,12 +11,14 @@ import cn.fcr.api.vo.ProductVO;
 import cn.fcr.api.vo.SalesTrendVO;
 import cn.fcr.api.vo.UserVO;
 import cn.fcr.domain.mall.model.command.ProductSaveCommand;
+import cn.fcr.domain.auth.model.valobj.Role;
 import cn.fcr.domain.mall.model.entity.OrderState;
 import cn.fcr.domain.mall.model.entity.UserEntity;
 import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.mall.service.IMallProductService;
 import cn.fcr.domain.mall.service.IMallStatisticsService;
 import cn.fcr.domain.mall.service.IMallUserService;
+import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -49,6 +51,9 @@ public class MallAdminController extends BaseController {
     @Resource
     private IMallStatisticsService mallStatisticsService;
 
+    @Resource
+    private OrderApplicationService orderApplicationService;
+
     // ==================== 用户管理 ====================
 
     @GetMapping("/users")
@@ -63,21 +68,12 @@ public class MallAdminController extends BaseController {
             vo.setUsername(u.getUsername());
             vo.setStatus(u.getStatus());
             vo.setRoleCode(u.getRoleCode());
-            vo.setRoleName(getRoleName(u.getRoleCode()));
+            vo.setRoleName(Role.descByCode(u.getRoleCode()));
             vo.setCreateTime(u.getCreateTime());
             vo.setUpdateTime(u.getUpdateTime());
             return vo;
         }).collect(Collectors.toList());
         return success(result);
-    }
-
-    private String getRoleName(String roleCode) {
-        if ("ADMIN".equals(roleCode)) {
-            return "管理员";
-        } else if ("USER".equals(roleCode)) {
-            return "普通会员";
-        }
-        return roleCode;
     }
 
     @PostMapping("/users")
@@ -167,7 +163,7 @@ public class MallAdminController extends BaseController {
     }
 
     @PostMapping("/products")
-    public Response<Integer> saveProduct(@RequestBody ProductSaveRequest request) {
+    public Response<Integer> saveProduct(@RequestBody ProductSaveRequestDTO request) {
         log.info("保存商品: name={}", request.getName());
         ProductSaveCommand command = ProductSaveCommand.builder()
                 .id(request.getId())
@@ -205,7 +201,7 @@ public class MallAdminController extends BaseController {
             vo.setOrderNo(o.getOrderNo());
             vo.setUserId(o.getUserId());
             vo.setStatus(o.getStatus());
-            vo.setStatusDesc(o.getStatusDesc() != null ? o.getStatusDesc() : getOrderStatusDesc(o.getStatus()));
+            vo.setStatusDesc(o.getStatusDesc() != null ? o.getStatusDesc() : OrderState.describe(o.getStatus()));
             vo.setTotalAmount(o.getTotalAmount());
             vo.setAddress(o.getAddress() != null ? o.getAddress() : "");
             vo.setCreateTime(o.getCreateTime());
@@ -216,22 +212,17 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
-    private String getOrderStatusDesc(String status) {
-        OrderState state = OrderState.fromCode(status);
-        return state != null ? state.getDescription() : status;
-    }
-
     @PutMapping("/orders/{orderId}/deliver")
     public Response<Integer> deliverOrder(@PathVariable Long orderId) {
         log.info("一键发货: orderId={}", orderId);
-        int result = mallOrderService.deliverOrder(orderId);
+        int result = orderApplicationService.deliverOrder(orderId);
         return success(result);
     }
 
     @PutMapping("/orders/{orderId}/cancel")
     public Response<Integer> cancelOrder(@PathVariable Long orderId) {
         log.info("取消订单: orderId={}", orderId);
-        int result = mallOrderService.cancelOrder(orderId);
+        int result = orderApplicationService.cancelOrder(orderId);
         return success(result);
     }
 

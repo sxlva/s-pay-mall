@@ -1,6 +1,6 @@
 package cn.fcr.domain.mall.service;
 
-import cn.fcr.domain.mall.model.dto.StockChangeMsg;
+import cn.fcr.domain.mall.model.dto.StockChangeMsgDTO;
 
 /**
  * 库存变更策略处理器接口
@@ -26,7 +26,7 @@ public interface StockChangeHandler {
      * @return 处理后的库存值
      * @throws RuntimeException 处理失败时抛出异常，触发 MQ 重试机制
      */
-    long handle(Long productId, StockChangeMsg msg);
+    long handle(Long productId, StockChangeMsgDTO msg);
 
     /**
      * 判断当前处理器是否支持该变更类型

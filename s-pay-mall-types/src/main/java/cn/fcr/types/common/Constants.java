@@ -14,8 +14,6 @@ public class Constants {
     public static final String REDIS_BIND_STATUS_PENDING = "BINDING_PENDING";
 
     public static final String IDENTITY_TYPE_WECHAT_MP = "WECHAT_MP";
-    public static final String ADMIN_USERNAME = "admin";
-    public static final String ADMIN_PASSWORD = "123456";
     public static final String DEFAULT_ROLE_MEMBER = "MEMBER";
     public static final Integer USER_STATUS_ACTIVE = 1;
     public static final Integer USER_STATUS_WECHAT = 2;

@@ -2,7 +2,7 @@ package cn.fcr.domain.order.adapter.repository;
 
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.OrderEntity;
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 
 import java.util.List;

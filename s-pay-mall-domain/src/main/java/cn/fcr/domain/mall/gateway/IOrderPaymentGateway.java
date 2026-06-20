@@ -1,6 +1,6 @@
 package cn.fcr.domain.mall.gateway;
 
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 
 /**
  * @author 傅崇睿
