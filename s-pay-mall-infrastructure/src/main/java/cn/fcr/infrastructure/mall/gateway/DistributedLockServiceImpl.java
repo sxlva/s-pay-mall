@@ -1,7 +1,7 @@
 package cn.fcr.infrastructure.mall.gateway;
 
 import cn.fcr.domain.mall.adapter.gateway.IDistributedLockService;
-import cn.fcr.infrastructure.config.RedisDistributedLock;
+import cn.fcr.infrastructure.config.mall.RedisDistributedLock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

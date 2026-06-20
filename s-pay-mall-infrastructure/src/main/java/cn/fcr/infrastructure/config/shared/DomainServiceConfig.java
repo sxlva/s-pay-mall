@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.config;
+package cn.fcr.infrastructure.config.shared;
 
 import cn.fcr.domain.auth.gateway.IWeChatGateway;
 import cn.fcr.domain.auth.gateway.IWechatLoginGateway;

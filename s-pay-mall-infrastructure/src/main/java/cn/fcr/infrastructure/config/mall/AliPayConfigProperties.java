@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.config;
+package cn.fcr.infrastructure.config.mall;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

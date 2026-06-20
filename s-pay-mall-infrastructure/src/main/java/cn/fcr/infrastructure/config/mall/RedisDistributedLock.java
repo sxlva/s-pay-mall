@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.config;
+package cn.fcr.infrastructure.config.mall;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -21,10 +21,10 @@ public class RedisDistributedLock {
     public String tryLock(Long productId) {
         String lockKey = LOCK_PREFIX + productId;
         String requestId = UUID.randomUUID().toString();
-        
+
         Boolean success = stringRedisTemplate.opsForValue()
                 .setIfAbsent(lockKey, requestId, LOCK_EXPIRE_TIME, TimeUnit.SECONDS);
-        
+
         if (Boolean.TRUE.equals(success)) {
             log.info("获取锁成功: lockKey={}, requestId={}", lockKey, requestId);
             return requestId;
