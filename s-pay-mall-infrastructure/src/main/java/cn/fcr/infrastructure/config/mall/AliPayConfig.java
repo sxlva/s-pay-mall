@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.config;
+package cn.fcr.infrastructure.config.mall;
 
 import com.alipay.api.AlipayClient;
 import com.alipay.api.DefaultAlipayClient;

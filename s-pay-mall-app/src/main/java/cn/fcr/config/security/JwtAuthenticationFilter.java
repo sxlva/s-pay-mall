@@ -1,6 +1,6 @@
 package cn.fcr.config.security;
 
-import cn.fcr.infrastructure.config.JwtTokenProvider;
+import cn.fcr.infrastructure.config.auth.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
