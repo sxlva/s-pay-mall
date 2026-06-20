@@ -39,7 +39,7 @@ public enum OrderState {
     }
 
     /**
-     * 获取状态的中文描述（安全版）
+     * 获取状态
      *
      * @param code 状态码
      * @return 中文描述，若无法识别则返回原 code

@@ -1,6 +1,6 @@
 package cn.fcr.config;
 
-import cn.fcr.infrastructure.adapter.wechat.IWeixinApiService;
+import cn.fcr.infrastructure.auth.gateway.IWeixinApiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

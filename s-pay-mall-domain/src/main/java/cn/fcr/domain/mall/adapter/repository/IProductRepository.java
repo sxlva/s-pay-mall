@@ -21,6 +21,15 @@ public interface IProductRepository {
 
     ProductEntity findById(Long id);
 
+    /**
+     * 批量查询商品
+     * 用于解决 N+1 查询问题
+     *
+     * @param ids 商品ID列表
+     * @return 商品实体列表
+     */
+    List<ProductEntity> findByIds(List<Long> ids);
+
     int saveProduct(ProductEntity product);
 
     int deleteProduct(Long id);

@@ -12,6 +12,7 @@ import cn.fcr.domain.mall.service.IMallCartService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class MallCartServiceImpl implements IMallCartService {
@@ -57,13 +58,22 @@ public class MallCartServiceImpl implements IMallCartService {
     @Override
     public List<CartItemVO> listCart(Long userId) {
         CartEntity cart = cartRepository.findByUserId(userId);
+        List<Long> productIds = cart.getItems().stream()
+                .map(CartItemEntity::getProductId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, ProductEntity> productMap = productIds.isEmpty()
+                ? Map.of()
+                : productRepository.findByIds(productIds).stream()
+                        .collect(Collectors.toMap(ProductEntity::getId, p -> p));
+
         return cart.getItems().stream()
-                .map(item -> toCartItemVO(item, getProductStock(item.getProductId())))
+                .map(item -> toCartItemVO(item, getStock(productMap.get(item.getProductId()))))
                 .collect(Collectors.toList());
     }
 
-    private Integer getProductStock(Long productId) {
-        ProductEntity product = productRepository.findById(productId);
+    private Integer getStock(ProductEntity product) {
         return product != null ? product.getStock() : 0;
     }
 

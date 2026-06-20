@@ -47,6 +47,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
     </properties>
 
     <developers>
@@ -151,6 +152,13 @@
                 <groupId>com.squareup.retrofit2</groupId>
                 <artifactId>adapter-rxjava2</artifactId>
                 <version>2.9.0</version>
+            </dependency>
+
+            <!-- MapStruct -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
             </dependency>
 
             <!-- 工程模块 -->
