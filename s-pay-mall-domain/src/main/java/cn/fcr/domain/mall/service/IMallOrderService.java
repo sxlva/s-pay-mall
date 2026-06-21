@@ -1,5 +1,7 @@
 package cn.fcr.domain.mall.service;
 
+import cn.fcr.domain.mall.model.entity.OrderEntity;
+import cn.fcr.domain.mall.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
 
@@ -10,7 +12,34 @@ import java.util.List;
  */
 public interface IMallOrderService {
 
-    OrderCreateVO createOrder(Long userId, String address);
+    /**
+     * 预检查库存并扣减
+     * 遍历购物车商品，检查库存是否充足，然后执行 Redis 原子扣减。
+     * 不做异常捕获补偿，补偿逻辑由 Application 层统一编排。
+     *
+     * @param cart 购物车商品列表
+     * @return 已成功扣减库存的商品列表（用于失败时恢复）
+     */
+    List<CartItemVO> checkAndDeductStock(List<CartItemVO> cart);
+
+    /**
+     * 创建订单实体并落库
+     * 仅负责 OrderEntity 的创建与 saveOrder()，不涉及支付链接生成。
+     *
+     * @param userId  用户ID
+     * @param address 收货地址
+     * @param cart    购物车商品列表
+     * @return 保存后的订单实体
+     */
+    OrderEntity buildAndSaveOrder(Long userId, String address, List<CartItemVO> cart);
+
+    /**
+     * 恢复已扣减的库存
+     * 当订单创建流程失败时，由 Application 层调用此方法进行补偿。
+     *
+     * @param deductedItems 已扣减库存的商品列表
+     */
+    void restoreDeductedStock(List<CartItemVO> deductedItems);
 
     List<OrderVO> listOrders(Long userId, String status, String start, String end);
 

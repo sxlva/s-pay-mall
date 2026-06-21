@@ -7,11 +7,10 @@ import cn.fcr.api.dto.OrderCreateRespDTO;
 import cn.fcr.api.dto.OrderListRespDTO;
 import cn.fcr.api.dto.StockCheckRespDTO;
 import cn.fcr.api.response.Response;
+import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.domain.mall.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
-import cn.fcr.domain.mall.service.IMallCartService;
-import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.trigger.http.BaseController;
 import cn.fcr.trigger.http.converter.CartItemConverter;
 import cn.fcr.trigger.http.converter.OrderConverter;
@@ -35,24 +34,21 @@ import java.util.stream.Collectors;
 public class MallOrderController extends BaseController {
 
     @Resource
-    private IMallCartService mallCartService;
-
-    @Resource
-    private IMallOrderService mallOrderService;
+    private OrderApplicationService orderApplicationService;
 
     @PostMapping("/cart")
     public Response<Integer> addCart(@RequestBody CartAddRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         Integer quantity = request.getQuantity() != null ? request.getQuantity() : 1;
         log.info("添加购物车: userId={}, productId={}, quantity={}", userId, request.getProductId(), quantity);
-        int result = mallCartService.addCart(userId, request.getProductId(), quantity);
+        int result = orderApplicationService.addCart(userId, request.getProductId(), quantity);
         return success(result);
     }
 
     @GetMapping("/cart")
     public Response<List<CartItemRespDTO>> listCart(HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
-        List<CartItemVO> cartItems = mallCartService.listCart(userId);
+        List<CartItemVO> cartItems = orderApplicationService.listCart(userId);
         List<CartItemRespDTO> result = cartItems.stream()
                 .map(CartItemConverter.INSTANCE::toRespDTO)
                 .collect(Collectors.toList());
@@ -67,7 +63,7 @@ public class MallOrderController extends BaseController {
             return fail("数量不能小于1");
         }
         log.info("更新购物车数量: userId={}, productId={}, quantity={}", userId, request.getProductId(), quantity);
-        int result = mallCartService.updateQuantity(userId, request.getProductId(), quantity);
+        int result = orderApplicationService.updateCartQuantity(userId, request.getProductId(), quantity);
         return success(result);
     }
 
@@ -75,7 +71,7 @@ public class MallOrderController extends BaseController {
     public Response<Integer> deleteCartItem(@RequestParam("itemId") Long itemId, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         log.info("[购物车删除] 接收到删除请求，用户ID: {}, 目标条目ID: {}", userId, itemId);
-        int result = mallCartService.deleteCartItem(userId, itemId);
+        int result = orderApplicationService.deleteCartItem(userId, itemId);
         log.info("[购物车删除] 删除完成，影响行数: {}", result);
         return success(result);
     }
@@ -84,7 +80,7 @@ public class MallOrderController extends BaseController {
     public Response<OrderCreateRespDTO> createOrder(@RequestBody OrderCreateRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         log.info("创建订单: userId={}, address={}", userId, request.getAddress());
-        OrderCreateVO orderVO = mallOrderService.createOrder(userId, request.getAddress());
+        OrderCreateVO orderVO = orderApplicationService.createOrder(userId, request.getAddress());
 
         OrderCreateRespDTO result = OrderConverter.INSTANCE.toCreateResp(orderVO);
         if (orderVO.getPayUrl() != null && !orderVO.getPayUrl().isEmpty()) {
@@ -100,7 +96,7 @@ public class MallOrderController extends BaseController {
                                                        @RequestParam(value = "startTime", required = false) String startTime,
                                                        @RequestParam(value = "endTime", required = false) String endTime) {
         Long userId = currentUserId(httpRequest);
-        List<OrderVO> orders = mallOrderService.listOrders(userId, status, startTime, endTime);
+        List<OrderVO> orders = orderApplicationService.listOrders(userId, status, startTime, endTime);
         List<OrderListRespDTO> result = orders.stream()
                 .map(OrderListConverter.INSTANCE::toRespDTO)
                 .collect(Collectors.toList());
@@ -112,7 +108,7 @@ public class MallOrderController extends BaseController {
         Long userId = currentUserId(httpRequest);
         log.info("继续支付订单: userId={}, orderNo={}", userId, orderNo);
 
-        OrderCreateVO orderVO = mallOrderService.continuePay(orderNo);
+        OrderCreateVO orderVO = orderApplicationService.continuePay(orderNo);
 
         OrderCreateRespDTO result = OrderConverter.INSTANCE.toCreateResp(orderVO);
         if (orderVO.getPayUrl() != null && !orderVO.getPayUrl().isEmpty()) {
@@ -127,7 +123,7 @@ public class MallOrderController extends BaseController {
         Long userId = currentUserId(httpRequest);
         log.info("检查订单库存: userId={}, orderNo={}", userId, orderNo);
 
-        boolean stockOk = mallOrderService.checkOrderStock(orderNo);
+        boolean stockOk = orderApplicationService.checkStock(orderNo);
 
         StockCheckRespDTO result = StockCheckRespDTO.builder()
                 .success(stockOk)
