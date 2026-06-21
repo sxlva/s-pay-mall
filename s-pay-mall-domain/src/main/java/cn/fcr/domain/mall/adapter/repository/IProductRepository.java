@@ -23,7 +23,6 @@ public interface IProductRepository {
 
     /**
      * 批量查询商品
-     * 用于解决 N+1 查询问题
      *
      * @param ids 商品ID列表
      * @return 商品实体列表

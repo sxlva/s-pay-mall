@@ -3,10 +3,9 @@
 version: '3.9'
 
 services:
-  # mysql
   mysql-spay:
     image: mysql:8.0.32
-    container_name: mysql-spay
+    container_name: s-pay-mall-mysql
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
@@ -15,12 +14,10 @@ services:
     ports:
       - "23306:3306"
     volumes:
-      # 挂载本地初始化脚本
       - ./mysql/sql:/docker-entrypoint-initdb.d
-      # 修改：使用独立的命名卷
-      - mysql-spay-data:/var/lib/mysql
+      - s-pay-mall-mysql-data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 5s
       timeout: 10s
       retries: 10
@@ -28,12 +25,11 @@ services:
     networks:
       - spay-network
 
-  # phpmyadmin https://hub.docker.com/_/phpmyadmin
   phpmyadmin-spay:
     image: phpmyadmin:5.2.1
-    container_name: phpmyadmin-spay
+    container_name: s-pay-mall-phpmyadmin
     ports:
-      - 8898:80
+      - "8898:80"
     environment:
       - PMA_HOST=mysql-spay
       - PMA_PORT=3306
@@ -44,13 +40,12 @@ services:
     networks:
       - spay-network
 
-  # Redis
   redis-spay:
     image: redis:6.2
-    container_name: redis-spay
+    container_name: s-pay-mall-redis
     restart: always
     ports:
-      - 26379:6379
+      - "26379:6379"
     volumes:
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
@@ -62,14 +57,13 @@ services:
       timeout: 5s
       retries: 3
 
-  # RedisAdmin https://github.com/joeferner/redis-commander
   redis-admin-spay:
     image: spryker/redis-commander:0.8.0
-    container_name: redis-admin
+    container_name: s-pay-mall-redis-admin
     hostname: redis-commander
     restart: always
     ports:
-      - 8082:8081
+      - "8082:8081"
     environment:
       - REDIS_HOST=redis-spay
       - REDIS_PORT=6379
@@ -87,7 +81,7 @@ services:
 
   rocketmq-namesrv:
     image: apache/rocketmq:5.3.2
-    container_name: rocketmq-namesrv
+    container_name: s-pay-mall-rocketmq-namesrv
     command: sh mqnamesrv
     ports:
       - "9876:9876"
@@ -96,7 +90,7 @@ services:
 
   rocketmq-broker:
     image: apache/rocketmq:5.3.2
-    container_name: rocketmq-broker
+    container_name: s-pay-mall-rocketmq-broker
     command: sh mqbroker -n rocketmq-namesrv:9876 -c /home/rocketmq/conf/broker.conf
     depends_on:
       - rocketmq-namesrv
@@ -111,15 +105,15 @@ services:
       - ./rocketmq/logs:/home/rocketmq/logs
       - ./rocketmq/conf:/home/rocketmq/conf
     networks:
-        - spay-network
+      - spay-network
 
   rocketmq-dashboard:
     image: apacherocketmq/rocketmq-dashboard:latest
-    container_name: rmqdashboard
+    container_name: s-pay-mall-rocketmq-dashboard
     ports:
-      - "8080:8080" 
+      - "8080:8080"
     environment:
-      - NAMESRV_ADDR=rocketmq-namesrv:9876 
+      - NAMESRV_ADDR=rocketmq-namesrv:9876
       - ROCKETMQ_CONFIG_IS_ACL_ENABLED=true
       - ROCKETMQ_CONFIG_ACCESS_KEY=${ROCKETMQ_ACCESS_KEY}
       - ROCKETMQ_CONFIG_SECRET_KEY=${ROCKETMQ_SECRET_KEY}
@@ -128,10 +122,9 @@ services:
     networks:
       - spay-network
 
-# 声明顶级网络和数据卷
 networks:
   spay-network:
     driver: bridge
 
 volumes:
-  mysql-spay-data:
+  s-pay-mall-mysql-data:

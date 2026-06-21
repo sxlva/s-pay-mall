@@ -1,6 +1,5 @@
 package cn.fcr.infrastructure.order.repository;
 
-import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.OrderEntity;
@@ -34,8 +33,6 @@ public class OrderRepository implements IOrderRepository {
     private IOrderDao orderDao;
     @Resource
     private IOrderMainDao orderMainDao;
-    @Resource
-    private IOrderEventPublisher orderEventPublisher;
 
     @Override
     public void doSaveOrder(CreateOrderAggregate orderAggregate) {
@@ -78,7 +75,6 @@ public class OrderRepository implements IOrderRepository {
         orderDao.changeOrderPaySuccess(payOrderReq);
         log.info("pay_order 表状态已更新为 PAY_SUCCESS: orderId={}", orderId);
 
-        orderEventPublisher.publishPaySuccess(orderId, orderId);
     }
 
     @Override

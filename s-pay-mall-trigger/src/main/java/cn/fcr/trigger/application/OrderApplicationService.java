@@ -7,6 +7,10 @@ import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
 import cn.fcr.domain.mall.service.IMallCartService;
 import cn.fcr.domain.mall.service.IMallOrderService;
+import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
+import cn.fcr.domain.order.model.entity.ShopCartEntity;
+import cn.fcr.domain.order.service.IOrderService;
+import cn.fcr.domain.order.service.PayOrderService;
 import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单应用层服务
@@ -35,13 +40,22 @@ public class OrderApplicationService {
     private final IMallCartService mallCartService;
     private final IMallOrderService mallOrderService;
     private final IOrderPaymentGateway orderPaymentGateway;
+    private final IOrderService orderService;
+    private final PayOrderService payOrderService;
+    private final IOrderEventPublisher orderEventPublisher;
 
     public OrderApplicationService(IMallCartService mallCartService,
                                    IMallOrderService mallOrderService,
-                                   IOrderPaymentGateway orderPaymentGateway) {
+                                   IOrderPaymentGateway orderPaymentGateway,
+                                   IOrderService orderService,
+                                   PayOrderService payOrderService,
+                                   IOrderEventPublisher orderEventPublisher) {
         this.mallCartService = mallCartService;
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
+        this.orderService = orderService;
+        this.payOrderService = payOrderService;
+        this.orderEventPublisher = orderEventPublisher;
     }
 
     // ==================== 购物车 ====================
@@ -120,5 +134,49 @@ public class OrderApplicationService {
     @Transactional(rollbackFor = Exception.class)
     public int cancelOrder(Long orderId) {
         return mallOrderService.cancelOrder(orderId);
+    }
+
+    // ==================== 旧 Order Domain ====================
+
+    public PayOrderEntity createPayOrder(String userId, String productId) throws Exception {
+        ShopCartEntity shopCartEntity = ShopCartEntity.builder()
+                .userId(userId)
+                .productId(productId)
+                .build();
+        return orderService.createOrder(shopCartEntity);
+    }
+
+    public boolean verifyPayCallbackSign(Map<String, String> params, String alipayPublicKey) {
+        return payOrderService.verifyCallbackSign(params, alipayPublicKey);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void changeOrderPaySuccess(String orderId) {
+        orderService.changeOrderPaySuccess(orderId);
+        orderEventPublisher.publishPaySuccess(orderId, orderId);
+    }
+
+    public List<String> queryNoPayNotifyOrder() {
+        return orderService.queryNoPayNotifyOrder();
+    }
+
+    public List<String> queryTimeoutCloseOrderList() {
+        return orderService.queryTimeoutCloseOrderList();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public boolean changeOrderClose(String orderId) {
+        return orderService.changeOrderClose(orderId);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public boolean handleTimeoutCloseOrder(String orderNo) {
+        return orderService.handleTimeoutCloseOrder(orderNo);
+    }
+
+    // ==================== 跨域共享（Mall Domain 查询） ====================
+
+    public OrderVO getOrderByNo(String orderNo) {
+        return mallOrderService.getOrderByNo(orderNo);
     }
 }
