@@ -14,12 +14,12 @@ import cn.fcr.domain.mall.model.command.ProductSaveCommand;
 import cn.fcr.domain.auth.model.valobj.Role;
 import cn.fcr.domain.mall.model.entity.OrderState;
 import cn.fcr.domain.mall.model.entity.UserEntity;
-import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.mall.service.IMallProductService;
 import cn.fcr.domain.mall.service.IMallStatisticsService;
 import cn.fcr.domain.mall.service.IMallUserService;
 import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
+import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,9 +44,6 @@ public class MallAdminController extends BaseController {
 
     @Resource
     private IMallProductService mallProductService;
-
-    @Resource
-    private IMallOrderService mallOrderService;
 
     @Resource
     private IMallStatisticsService mallStatisticsService;
@@ -163,7 +160,7 @@ public class MallAdminController extends BaseController {
     }
 
     @PostMapping("/products")
-    public Response<Integer> saveProduct(@RequestBody ProductSaveRequestDTO request) {
+    public Response<Integer> saveProduct(@RequestBody @Valid ProductSaveRequestDTO request) {
         log.info("保存商品: name={}", request.getName());
         ProductSaveCommand command = ProductSaveCommand.builder()
                 .id(request.getId())
@@ -193,7 +190,7 @@ public class MallAdminController extends BaseController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
-        List<cn.fcr.domain.mall.model.valobj.OrderVO> orders = mallOrderService.listOrders(userId, status, startTime, endTime);
+        List<cn.fcr.domain.mall.model.valobj.OrderVO> orders = orderApplicationService.listOrders(userId, status, startTime, endTime);
         
         List<OrderVO> result = orders.stream().map(o -> {
             OrderVO vo = new OrderVO();
@@ -229,7 +226,7 @@ public class MallAdminController extends BaseController {
     @DeleteMapping("/orders/{orderId}")
     public Response<Integer> deleteOrder(@PathVariable Long orderId) {
         log.info("删除订单: id={}", orderId);
-        int result = mallOrderService.deleteOrder(orderId);
+        int result = orderApplicationService.deleteOrder(orderId);
         return success(result);
     }
 
@@ -259,29 +256,5 @@ public class MallAdminController extends BaseController {
             return vo;
         }).collect(Collectors.toList());
         return success(result);
-    }
-
-    private BigDecimal toBigDecimal(Object value) {
-        if (value == null) {
-            return BigDecimal.ZERO;
-        }
-        if (value instanceof BigDecimal) {
-            return (BigDecimal) value;
-        }
-        if (value instanceof Double) {
-            return BigDecimal.valueOf((Double) value);
-        }
-        if (value instanceof Number) {
-            return BigDecimal.valueOf(((Number) value).doubleValue());
-        }
-        try {
-            return new BigDecimal(value.toString());
-        } catch (NumberFormatException e) {
-            return BigDecimal.ZERO;
-        }
-    }
-
-    private java.util.Map<String, Object> toMap(Object obj) {
-        return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(obj, java.util.Map.class);
     }
 }

@@ -1,8 +1,8 @@
 package cn.fcr.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -24,7 +24,6 @@ public class ProductSaveRequestDTO {
      * 商品分类ID，前端使用snake_case命名
      */
     @NotNull(message = "商品分类ID不能为空")
-    @JsonProperty("category_id")
     private Long categoryId;
 
     /**
