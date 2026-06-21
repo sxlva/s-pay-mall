@@ -8,7 +8,6 @@ import cn.fcr.domain.mall.model.entity.OrderItemEntity;
 import cn.fcr.domain.mall.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
-import cn.fcr.domain.mall.service.IMallCartService;
 import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.mall.service.IOrderStateMachineService;
 import cn.fcr.domain.shared.model.entity.PayOrderEntity;
@@ -20,18 +19,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MallOrderServiceImpl implements IMallOrderService {
 
-    private final IMallCartService mallCartService;
     private final IMallOrderQueryGateway mallOrderQueryGateway;
     private final IOrderPaymentGateway orderPaymentGateway;
     private final IOrderStateMachineService orderStateMachineService;
     private final IStockGateway stockGateway;
 
-    public MallOrderServiceImpl(IMallCartService mallCartService,
-                                IMallOrderQueryGateway mallOrderQueryGateway,
+    public MallOrderServiceImpl(IMallOrderQueryGateway mallOrderQueryGateway,
                                 IOrderPaymentGateway orderPaymentGateway,
                                 IOrderStateMachineService orderStateMachineService,
                                 IStockGateway stockGateway) {
-        this.mallCartService = mallCartService;
         this.mallOrderQueryGateway = mallOrderQueryGateway;
         this.orderPaymentGateway = orderPaymentGateway;
         this.orderStateMachineService = orderStateMachineService;
@@ -39,50 +35,41 @@ public class MallOrderServiceImpl implements IMallOrderService {
     }
 
     @Override
-    public OrderCreateVO createOrder(Long userId, String address) {
-        List<CartItemVO> cart = mallCartService.listCart(userId);
+    public List<CartItemVO> checkAndDeductStock(List<CartItemVO> cart) {
         List<CartItemVO> deductedItems = new ArrayList<>();
 
-        try {
-            // 预检查库存：遍历购物车商品，检查库存是否充足
-            for (CartItemVO item : cart) {
-                if (!hasEnoughStock(item.getProductId(), item.getQuantity())) {
-                    throw new IllegalArgumentException("商品库存不足: productId=" + item.getProductId());
-                }
+        // 预检查库存：遍历购物车商品，检查库存是否充足
+        for (CartItemVO item : cart) {
+            if (!hasEnoughStock(item.getProductId(), item.getQuantity())) {
+                throw new IllegalArgumentException("商品库存不足: productId=" + item.getProductId());
             }
+        }
 
-            // 预扣减库存：遍历购物车商品，执行 Redis decr 操作
-            for (CartItemVO item : cart) {
-                stockGateway.deductStock(item.getProductId(), item.getQuantity());
-                deductedItems.add(item);
-            }
+        // 预扣减库存：遍历购物车商品，执行 Redis decr 操作
+        for (CartItemVO item : cart) {
+            stockGateway.deductStock(item.getProductId(), item.getQuantity());
+            deductedItems.add(item);
+        }
 
-            OrderEntity orderEntity = OrderEntity.createFromCart(userId, address, cart);
-            mallOrderQueryGateway.saveOrder(orderEntity);
+        return deductedItems;
+    }
 
-            orderPaymentGateway.sendDelayCloseMessage(orderEntity.getOrderNo());
+    @Override
+    public OrderEntity buildAndSaveOrder(Long userId, String address, List<CartItemVO> cart) {
+        OrderEntity orderEntity = OrderEntity.createFromCart(userId, address, cart);
+        mallOrderQueryGateway.saveOrder(orderEntity);
+        return orderEntity;
+    }
 
-            PayOrderEntity payOrderEntity = orderEntity.toPayOrder();
-            String payUrl = orderPaymentGateway.generatePayUrl(payOrderEntity);
-
-            orderPaymentGateway.updatePayOrderInfo(payOrderEntity);
-
-            // 清空购物车：只有订单创建全流程完全成功后才清空
-            mallCartService.clearCart(userId);
-
-            return OrderCreateVO.builder()
-                    .orderNo(orderEntity.getOrderNo())
-                    .totalAmount(orderEntity.getTotalAmount())
-                    .status(orderEntity.getState().getCode())
-                    .payUrl(payUrl)
-                    .build();
-        } catch (Exception e) {
-            // 发生异常时恢复已扣减的库存
-            for (CartItemVO item : deductedItems) {
-                stockGateway.restoreStock(item.getProductId(), item.getQuantity());
-                log.warn("【库存恢复】创建订单失败，恢复库存，productId=" + item.getProductId() + ", quantity=" + item.getQuantity());
-            }
-            throw e;
+    @Override
+    public void restoreDeductedStock(List<CartItemVO> deductedItems) {
+        if (deductedItems == null || deductedItems.isEmpty()) {
+            return;
+        }
+        for (CartItemVO item : deductedItems) {
+            stockGateway.restoreStock(item.getProductId(), item.getQuantity());
+            log.warn("【库存恢复】创建订单失败，恢复库存，productId={}, quantity={}",
+                    item.getProductId(), item.getQuantity());
         }
     }
 

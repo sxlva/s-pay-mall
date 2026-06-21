@@ -131,12 +131,11 @@ public class DomainServiceConfig {
     // ==================== 商城订单服务 ====================
 
     @Bean
-    public MallOrderServiceImpl mallOrderService(IMallCartService mallCartService,
-                                                 IMallOrderQueryGateway mallOrderQueryGateway,
+    public MallOrderServiceImpl mallOrderService(IMallOrderQueryGateway mallOrderQueryGateway,
                                                  IOrderPaymentGateway orderPaymentGateway,
                                                  IOrderStateMachineService orderStateMachineService,
                                                  IStockGateway stockGateway) {
-        return new MallOrderServiceImpl(mallCartService, mallOrderQueryGateway,
+        return new MallOrderServiceImpl(mallOrderQueryGateway,
                 orderPaymentGateway, orderStateMachineService, stockGateway);
     }
 
