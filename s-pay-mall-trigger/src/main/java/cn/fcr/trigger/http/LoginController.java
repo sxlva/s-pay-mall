@@ -65,7 +65,7 @@ public class LoginController {
     public Response<String> checkLogin(String ticket) {
         try {
             String openidToken = loginService.checkLogin(ticket);
-            log.info("扫码检测登录结果 ticket:{} openidToken:{}", ticket, openidToken);
+            log.info("扫码检测登录结果 ticket:{}", ticket);
             
             if (StringUtils.isNotBlank(openidToken)) {
                 return Response.<String>builder()

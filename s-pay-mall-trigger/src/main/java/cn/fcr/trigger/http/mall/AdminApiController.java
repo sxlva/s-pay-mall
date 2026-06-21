@@ -7,13 +7,13 @@ import cn.fcr.api.response.Response;
 import cn.fcr.api.vo.*;
 import cn.fcr.domain.mall.model.command.ProductSaveCommand;
 import cn.fcr.domain.mall.model.entity.UserEntity;
-import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.mall.service.IMallProductService;
 import cn.fcr.domain.mall.service.IMallStatisticsService;
 import cn.fcr.domain.mall.service.IMallUserService;
 import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
 import lombok.extern.slf4j.Slf4j;
+import javax.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,9 +37,6 @@ public class AdminApiController extends BaseController {
 
     @Resource
     private IMallProductService mallProductService;
-
-    @Resource
-    private IMallOrderService mallOrderService;
 
     @Resource
     private IMallStatisticsService mallStatisticsService;
@@ -159,7 +156,7 @@ public class AdminApiController extends BaseController {
 
     @PostMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
-    public Response<Integer> saveProduct(@RequestBody ProductSaveRequestDTO request) {
+    public Response<Integer> saveProduct(@RequestBody @Valid ProductSaveRequestDTO request) {
         log.info("保存商品: name={}", request.getName());
         ProductSaveCommand command = ProductSaveCommand.builder()
                 .id(request.getId())
@@ -191,7 +188,7 @@ public class AdminApiController extends BaseController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
-        List<cn.fcr.domain.mall.model.valobj.OrderVO> orders = mallOrderService.listOrders(userId, status, startTime, endTime);
+        List<cn.fcr.domain.mall.model.valobj.OrderVO> orders = orderApplicationService.listOrders(userId, status, startTime, endTime);
         List<OrderVO> result = orders.stream().map(o -> {
             OrderVO vo = new OrderVO();
             vo.setId(o.getId());
@@ -223,7 +220,7 @@ public class AdminApiController extends BaseController {
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> deleteOrder(@PathVariable Long orderId) {
         log.info("删除订单: id={}", orderId);
-        int result = mallOrderService.deleteOrder(orderId);
+        int result = orderApplicationService.deleteOrder(orderId);
         return success(result);
     }
 
@@ -255,9 +252,5 @@ public class AdminApiController extends BaseController {
             return vo;
         }).collect(Collectors.toList());
         return success(result);
-    }
-
-    private java.util.Map<String, Object> toMap(Object obj) {
-        return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(obj, java.util.Map.class);
     }
 }

@@ -38,17 +38,21 @@ public class MallOrderServiceImpl implements IMallOrderService {
     public List<CartItemVO> checkAndDeductStock(List<CartItemVO> cart) {
         List<CartItemVO> deductedItems = new ArrayList<>();
 
-        // 预检查库存：遍历购物车商品，检查库存是否充足
+        // 逐项检查并扣减：边扣边记录，失败时在方法内部主动回滚已扣部分
         for (CartItemVO item : cart) {
             if (!hasEnoughStock(item.getProductId(), item.getQuantity())) {
+                // 库存不足，回滚已扣减的库存后抛出异常
+                restoreDeductedStock(deductedItems);
                 throw new IllegalArgumentException("商品库存不足: productId=" + item.getProductId());
             }
-        }
-
-        // 预扣减库存：遍历购物车商品，执行 Redis decr 操作
-        for (CartItemVO item : cart) {
-            stockGateway.deductStock(item.getProductId(), item.getQuantity());
-            deductedItems.add(item);
+            try {
+                stockGateway.deductStock(item.getProductId(), item.getQuantity());
+                deductedItems.add(item);
+            } catch (Exception e) {
+                // Redis 扣减异常，回滚已扣减的库存后抛出原始异常
+                restoreDeductedStock(deductedItems);
+                throw e;
+            }
         }
 
         return deductedItems;
