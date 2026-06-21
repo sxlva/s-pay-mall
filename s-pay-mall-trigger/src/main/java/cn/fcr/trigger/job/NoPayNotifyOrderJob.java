@@ -1,7 +1,7 @@
 package cn.fcr.trigger.job;
 
 import cn.fcr.domain.order.gateway.IAlipayQueryGateway;
-import cn.fcr.domain.order.service.IOrderService;
+import cn.fcr.trigger.application.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,7 +23,7 @@ import java.util.List;
 public class NoPayNotifyOrderJob {
 
     @Resource
-    private IOrderService orderService;
+    private OrderApplicationService orderApplicationService;
 
     @Resource
     private IAlipayQueryGateway alipayQueryGateway;
@@ -32,12 +32,12 @@ public class NoPayNotifyOrderJob {
     public void exec() {
         try {
             log.info("任务；检测未接收到或未正确处理的支付回调通知");
-            List<String> orderIds = orderService.queryNoPayNotifyOrder();
+            List<String> orderIds = orderApplicationService.queryNoPayNotifyOrder();
             if (null == orderIds || orderIds.isEmpty()) return;
 
             for (String orderId : orderIds) {
                 if (alipayQueryGateway.queryTradeSuccess(orderId)) {
-                    orderService.changeOrderPaySuccess(orderId);
+                    orderApplicationService.changeOrderPaySuccess(orderId);
                 }
             }
         } catch (Exception e) {

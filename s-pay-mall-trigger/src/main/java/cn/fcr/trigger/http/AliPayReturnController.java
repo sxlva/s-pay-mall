@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http;
 
 import cn.fcr.domain.mall.model.valobj.OrderVO;
-import cn.fcr.domain.mall.service.IMallOrderService;
+import cn.fcr.trigger.application.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 public class AliPayReturnController {
 
     @Resource
-    private IMallOrderService mallOrderService;
+    private OrderApplicationService orderApplicationService;
 
     @GetMapping
     public ModelAndView handleAlipayReturn(
@@ -34,7 +34,7 @@ public class AliPayReturnController {
         
         if (orderNo != null && !orderNo.isEmpty()) {
             try {
-                OrderVO orderVO = mallOrderService.getOrderByNo(orderNo);
+                OrderVO orderVO = orderApplicationService.getOrderByNo(orderNo);
                 if (orderVO != null) {
                     log.info("订单查询成功 - orderNo: {}, status: {}", orderNo, orderVO.getStatus());
                 }

@@ -1,6 +1,6 @@
 package cn.fcr.trigger.listener;
 
-import cn.fcr.domain.order.service.IOrderService;
+import cn.fcr.trigger.application.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
@@ -19,14 +19,14 @@ import javax.annotation.Resource;
 public class OrderTimeoutCloseRocketListener implements RocketMQListener<String> {
 
     @Resource
-    private IOrderService orderService;
+    private OrderApplicationService orderApplicationService;
 
     @Override
     public void onMessage(String orderNo) {
         log.info("接收到超时关单消息: orderNo={}", orderNo);
         
         try {
-            boolean success = orderService.handleTimeoutCloseOrder(orderNo);
+            boolean success = orderApplicationService.handleTimeoutCloseOrder(orderNo);
             if (success) {
                 log.info("超时关单成功: orderNo={}", orderNo);
             } else {

@@ -1,6 +1,6 @@
 package cn.fcr.trigger.job;
 
-import cn.fcr.domain.order.service.IOrderService;
+import cn.fcr.trigger.application.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,19 +16,19 @@ import java.util.List;
 public class TimeoutCloseOrderJob {
 
     @Resource
-    private IOrderService orderService;
+    private OrderApplicationService orderApplicationService;
 
     //@Scheduled(cron = "0 0/10 * * * ?")
     public void exec() {
         try {
             log.info("任务；超时30分钟订单关闭");
-            List<String> orderIds = orderService.queryTimeoutCloseOrderList();
+            List<String> orderIds = orderApplicationService.queryTimeoutCloseOrderList();
             if (null == orderIds || orderIds.isEmpty()) {
                 log.info("定时任务，超时30分钟订单关闭，暂无超时未支付订单 orderIds is null");
                 return;
             }
             for (String orderId : orderIds) {
-                boolean status = orderService.changeOrderClose(orderId);
+                boolean status = orderApplicationService.changeOrderClose(orderId);
                 log.info("定时任务，超时30分钟订单关闭 orderId: {} status：{}", orderId, status);
             }
         } catch (Exception e) {
