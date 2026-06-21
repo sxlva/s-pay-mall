@@ -5,11 +5,10 @@ import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
 import cn.fcr.domain.auth.gateway.ITokenProvider;
 import cn.fcr.types.common.Constants;
 
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class WeixinLoginService implements ILoginService {
-
-    private final Logger logger = Logger.getLogger(WeixinLoginService.class.getName());
 
     private final IWeChatGateway weChatGateway;
     private final IWechatLoginGateway wechatLoginGateway;
@@ -41,22 +40,22 @@ public class WeixinLoginService implements ILoginService {
 
     @Override
     public String handleWechatScanLogin(String ticket, String openid) {
-        logger.info("处理微信扫码登录: ticket=" + ticket + ", openid=" + openid);
+        log.info("处理微信扫码登录: ticket=" + ticket + ", openid=" + openid);
 
         try {
             Long userId = wechatLoginGateway.findUserIdByOpenid(openid);
 
             if (userId == null) {
-                logger.info("微信用户首次登录，开始自动注册: openid=" + openid);
+                log.info("微信用户首次登录，开始自动注册: openid=" + openid);
                 userId = wechatLoginGateway.createWechatUserAndBind(openid);
-                logger.info("自动注册成功: userId=" + userId);
+                log.info("自动注册成功: userId=" + userId);
             } else {
-                logger.info("微信用户已绑定，查询到用户: userId=" + userId);
+                log.info("微信用户已绑定，查询到用户: userId=" + userId);
             }
 
             String username = "wx_user_" + userId;
             String token = tokenProvider.createToken(userId, username, Constants.DEFAULT_ROLE_MEMBER);
-            logger.info("生成JWT Token成功: userId=" + userId);
+            log.info("生成JWT Token成功: userId=" + userId);
 
             wechatLoginGateway.saveLoginToken(ticket, token);
             weChatGateway.sendLoginNotification(openid);
@@ -64,7 +63,7 @@ public class WeixinLoginService implements ILoginService {
             return token;
 
         } catch (Exception e) {
-            logger.severe("微信扫码登录处理失败: ticket=" + ticket + ", openid=" + openid);
+            log.error("微信扫码登录处理失败: ticket=" + ticket + ", openid=" + openid);
             throw new RuntimeException("微信登录处理失败", e);
         }
     }

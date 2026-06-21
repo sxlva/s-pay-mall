@@ -7,11 +7,10 @@ import cn.fcr.domain.shared.model.vo.PayStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class PayOrderService {
-
-    private final Logger logger = Logger.getLogger(PayOrderService.class.getName());
 
     private final IPayGateway payGateway;
 
@@ -29,12 +28,12 @@ public class PayOrderService {
 
             if (payUrl != null && !payUrl.isBlank()) {
                 payOrder.initPayUrl(payUrl);
-                logger.info("支付表单生成成功，orderNo=" + payOrder.getOrderNo());
+                log.info("支付表单生成成功，orderNo=" + payOrder.getOrderNo());
             }
 
             return payUrl;
         } catch (Exception e) {
-            logger.severe("支付表单生成失败，orderNo=" + payOrder.getOrderNo());
+            log.error("支付表单生成失败，orderNo=" + payOrder.getOrderNo());
             payOrder.markFailed();
             throw new RuntimeException("支付链接生成失败", e);
         }
@@ -54,7 +53,7 @@ public class PayOrderService {
         String tradeNo = callbackParams.get("trade_no");
         payOrder.completePay(tradeNo);
 
-        logger.info("支付回调处理完成，orderNo=" + payOrder.getOrderNo() + "，tradeNo=" + tradeNo);
+        log.info("支付回调处理完成，orderNo=" + payOrder.getOrderNo() + "，tradeNo=" + tradeNo);
     }
 
     public PayOrderEntity buildFromParams(String orderNo, String userId, String productId,
