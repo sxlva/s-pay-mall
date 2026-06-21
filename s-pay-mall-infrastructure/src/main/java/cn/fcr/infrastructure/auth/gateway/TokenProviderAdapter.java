@@ -1,7 +1,7 @@
 package cn.fcr.infrastructure.auth.gateway;
 
 import cn.fcr.domain.auth.gateway.ITokenProvider;
-import cn.fcr.infrastructure.config.JwtTokenProvider;
+import cn.fcr.infrastructure.config.auth.JwtTokenProvider;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;

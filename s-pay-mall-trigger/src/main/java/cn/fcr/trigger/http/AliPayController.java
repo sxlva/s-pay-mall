@@ -3,9 +3,7 @@ package cn.fcr.trigger.http;
 import cn.fcr.api.dto.CreatePayRequestDTO;
 import cn.fcr.api.response.Response;
 import cn.fcr.domain.shared.model.entity.PayOrderEntity;
-import cn.fcr.domain.order.model.entity.ShopCartEntity;
-import cn.fcr.domain.order.service.IOrderService;
-import cn.fcr.domain.order.service.PayOrderService;
+import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,10 +28,7 @@ public class AliPayController {
     private String alipayPublicKey;
 
     @Resource
-    private IOrderService orderService;
-
-    @Resource
-    private PayOrderService payOrderService;
+    private OrderApplicationService orderApplicationService;
 
     /**
      * 创建支付订单
@@ -47,10 +42,7 @@ public class AliPayController {
             String userId = createPayRequestDTO.getUserId();
             String productId = createPayRequestDTO.getProductId();
 
-            PayOrderEntity payOrderEntity = orderService.createOrder(ShopCartEntity.builder()
-                    .userId(userId)
-                    .productId(productId)
-                    .build());
+            PayOrderEntity payOrderEntity = orderApplicationService.createPayOrder(userId, productId);
 
             log.info("商品下单，根据商品ID创建支付单完成 userId:{} productId:{} orderNo:{}",
                     userId, productId, payOrderEntity.getOrderNo());
@@ -87,7 +79,7 @@ public class AliPayController {
 
         Map<String, String> params = extractParams(request);
 
-        boolean signVerified = payOrderService.verifyCallbackSign(params, alipayPublicKey);
+        boolean signVerified = orderApplicationService.verifyPayCallbackSign(params, alipayPublicKey);
         if (!signVerified) {
             log.error("支付回调，签名验证失败。公钥长度: {}, 公钥前100字符: {}, 接收参数: {}", 
                     alipayPublicKey != null ? alipayPublicKey.length() : 0,
@@ -100,7 +92,7 @@ public class AliPayController {
         log.info("支付回调，验签通过，交易名称: {}, 商户订单号: {}, 交易金额: {}",
                 params.get("subject"), tradeNo, params.get("total_amount"));
 
-        orderService.changeOrderPaySuccess(tradeNo);
+        orderApplicationService.changeOrderPaySuccess(tradeNo);
 
         return "success";
     }

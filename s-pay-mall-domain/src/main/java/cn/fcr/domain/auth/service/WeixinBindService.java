@@ -2,7 +2,7 @@ package cn.fcr.domain.auth.service;
 
 import cn.fcr.domain.auth.repository.IWeChatTokenRepository;
 
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 微信绑定服务
@@ -10,9 +10,8 @@ import java.util.logging.Logger;
  * <p>负责处理微信公众号绑定的状态管理
  * 通过 IWeChatTokenRepository 抽象接口操作缓存
  */
+@Slf4j
 public class WeixinBindService {
-
-    private final Logger logger = Logger.getLogger(WeixinBindService.class.getName());
 
     private final IWeChatTokenRepository weChatTokenRepository;
 
@@ -27,7 +26,7 @@ public class WeixinBindService {
      */
     public void initBindStatus(String ticket) {
         weChatTokenRepository.initBindStatus(ticket);
-        logger.info("初始化微信绑定状态 ticket:" + ticket);
+        log.info("初始化微信绑定状态 ticket:" + ticket);
     }
 
     /**
@@ -38,7 +37,7 @@ public class WeixinBindService {
      */
     public void updateBindStatus(String ticket, String openId) {
         weChatTokenRepository.saveBindTicket(ticket, openId);
-        logger.info("更新微信绑定状态 ticket:" + ticket + " openId:" + openId);
+        log.info("更新微信绑定状态 ticket:" + ticket + " openId:" + openId);
     }
 
     /**

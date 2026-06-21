@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.dao.po;
+package cn.fcr.infrastructure.dao.auth.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

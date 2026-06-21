@@ -2,7 +2,7 @@ package cn.fcr.infrastructure.mall.gateway;
 
 import cn.fcr.domain.mall.gateway.IPayGateway;
 import cn.fcr.domain.shared.model.entity.PayOrderEntity;
-import cn.fcr.infrastructure.config.AliPayConfigProperties;
+import cn.fcr.infrastructure.config.mall.AliPayConfigProperties;
 import com.alibaba.fastjson.JSONObject;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.AlipayApiException;

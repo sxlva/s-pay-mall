@@ -1,8 +1,8 @@
 package cn.fcr;
 
-import cn.fcr.infrastructure.dao.IMallUserDao;
-import cn.fcr.infrastructure.dao.IUserRoleDao;
-import cn.fcr.infrastructure.dao.po.MallUser;
+import cn.fcr.infrastructure.dao.auth.IMallUserDao;
+import cn.fcr.infrastructure.dao.auth.IUserRoleDao;
+import cn.fcr.infrastructure.dao.auth.po.MallUser;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Configurable;

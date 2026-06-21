@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.dao.po;
+package cn.fcr.infrastructure.dao.order.po;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

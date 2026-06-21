@@ -1,11 +1,11 @@
 package cn.fcr.infrastructure.auth.gateway;
 
 import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
-import cn.fcr.infrastructure.dao.IMallUserDao;
-import cn.fcr.infrastructure.dao.IUserBindingDao;
-import cn.fcr.infrastructure.dao.IUserRoleDao;
-import cn.fcr.infrastructure.dao.po.MallUser;
-import cn.fcr.infrastructure.dao.po.UserBinding;
+import cn.fcr.infrastructure.dao.auth.IMallUserDao;
+import cn.fcr.infrastructure.dao.auth.IUserBindingDao;
+import cn.fcr.infrastructure.dao.auth.IUserRoleDao;
+import cn.fcr.infrastructure.dao.auth.po.MallUser;
+import cn.fcr.infrastructure.dao.auth.po.UserBinding;
 import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;

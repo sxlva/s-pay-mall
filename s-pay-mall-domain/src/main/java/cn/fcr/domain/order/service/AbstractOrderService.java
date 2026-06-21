@@ -13,11 +13,10 @@ import cn.fcr.domain.order.model.valobj.OrderStatusVO;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class AbstractOrderService implements IOrderService {
-
-    protected final Logger logger = Logger.getLogger(AbstractOrderService.class.getName());
 
     protected final IOrderRepository repository;
     protected final IProductGateway productGateway;
@@ -33,13 +32,13 @@ public abstract class AbstractOrderService implements IOrderService {
     public PayOrderEntity createOrder(ShopCartEntity shopCartEntity) throws Exception {
         OrderEntity unpaidOrderEntity = repository.queryUnPayOrder(shopCartEntity);
         if (null != unpaidOrderEntity && OrderStatusVO.PAY_WAIT.equals(unpaidOrderEntity.getOrderStatusVO())) {
-            logger.info("创建订单-存在，已存在未支付订单。userId:" + shopCartEntity.getUserId() + " productId:" + shopCartEntity.getProductId() + " orderId:" + unpaidOrderEntity.getOrderId());
+            log.info("创建订单-存在，已存在未支付订单。userId:" + shopCartEntity.getUserId() + " productId:" + shopCartEntity.getProductId() + " orderId:" + unpaidOrderEntity.getOrderId());
             return PayOrderEntity.builder()
                     .orderNo(unpaidOrderEntity.getOrderId())
                     .payUrl(unpaidOrderEntity.getPayUrl())
                     .build();
         } else if (null != unpaidOrderEntity && OrderStatusVO.CREATE.equals(unpaidOrderEntity.getOrderStatusVO())) {
-            logger.info("创建订单-存在，存在未创建支付单订单，创建支付单开始 userId:" + shopCartEntity.getUserId() + " productId:" + shopCartEntity.getProductId() + " orderId:" + unpaidOrderEntity.getOrderId());
+            log.info("创建订单-存在，存在未创建支付单订单，创建支付单开始 userId:" + shopCartEntity.getUserId() + " productId:" + shopCartEntity.getProductId() + " orderId:" + unpaidOrderEntity.getOrderId());
             PayOrderEntity payOrderEntity = doPrepayOrder(shopCartEntity.getUserId(), shopCartEntity.getProductId(), unpaidOrderEntity.getProductName(), unpaidOrderEntity.getOrderId(), unpaidOrderEntity.getTotalAmount());
             return PayOrderEntity.builder()
                     .orderNo(payOrderEntity.getOrderNo())
@@ -58,7 +57,7 @@ public abstract class AbstractOrderService implements IOrderService {
         this.doSaveOrder(orderAggregate);
 
         PayOrderEntity payOrderEntity = doPrepayOrder(shopCartEntity.getUserId(), productEntity.getProductId(), productEntity.getProductName(), orderEntity.getOrderId(), productEntity.getPrice());
-        logger.info("创建订单-完成，生成支付单。userId: " + shopCartEntity.getUserId() + " orderId: " + orderEntity.getOrderId() + " payUrl: " + payOrderEntity.getPayUrl());
+        log.info("创建订单-完成，生成支付单。userId: " + shopCartEntity.getUserId() + " orderId: " + orderEntity.getOrderId() + " payUrl: " + payOrderEntity.getPayUrl());
 
         return PayOrderEntity.builder()
                 .orderNo(orderEntity.getOrderId())
@@ -68,18 +67,18 @@ public abstract class AbstractOrderService implements IOrderService {
 
     @Override
     public boolean handleTimeoutCloseOrder(String orderNo) {
-        logger.info("处理超时关单: orderNo=" + orderNo);
+        log.info("处理超时关单: orderNo=" + orderNo);
 
         // 【DDD 重构】获取完整聚合根，而非仅查询状态字符串
         OrderEntity order = repository.findByOrderNo(orderNo);
         if (order == null) {
-            logger.warning("订单不存在，可能已被删除: orderNo=" + orderNo);
+            log.warn("订单不存在，可能已被删除: orderNo=" + orderNo);
             return false;
         }
 
         // 【DDD 重构】使用 Entity 行为方法进行状态变更（Entity 内部进行守卫校验）
         if (!order.canCancel()) {
-            logger.info("订单状态不允许取消: orderNo=" + orderNo + ", status=" + order.getSafeStateDesc());
+            log.info("订单状态不允许取消: orderNo=" + orderNo + ", status=" + order.getSafeStateDesc());
             return false;
         }
 
@@ -96,14 +95,14 @@ public abstract class AbstractOrderService implements IOrderService {
                 String productId = (String) item.get("productId");
                 Integer quantity = (Integer) item.get("quantity");
                 productGateway.restoreStock(productId, quantity);
-                logger.info("已恢复库存: productId=" + productId + ", quantity=" + quantity);
+                log.info("已恢复库存: productId=" + productId + ", quantity=" + quantity);
             }
 
-            logger.info("超时关单成功: orderNo=" + orderNo);
+            log.info("超时关单成功: orderNo=" + orderNo);
             return true;
         } catch (IllegalStateException e) {
             // 状态守卫拒绝操作（并发修改导致状态已变更）
-            logger.warning("订单状态守卫拒绝关单: orderNo=" + orderNo + ", reason=" + e.getMessage());
+            log.warn("订单状态守卫拒绝关单: orderNo=" + orderNo + ", reason=" + e.getMessage());
             return false;
         }
     }

@@ -7,6 +7,8 @@ import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * 基础控制器类
@@ -67,5 +69,30 @@ public class BaseController {
                 .parseClaimsJws(auth.substring(7))
                 .getBody();
         return ((Number) claims.get("uid")).longValue();
+    }
+
+    protected BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
+        if (value instanceof Double) {
+            return BigDecimal.valueOf((Double) value);
+        }
+        if (value instanceof Number) {
+            return BigDecimal.valueOf(((Number) value).doubleValue());
+        }
+        try {
+            return new BigDecimal(value.toString());
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Map<String, Object> toMap(Object obj) {
+        return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(obj, Map.class);
     }
 }

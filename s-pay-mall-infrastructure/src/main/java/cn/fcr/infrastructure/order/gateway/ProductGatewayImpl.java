@@ -3,7 +3,7 @@ package cn.fcr.infrastructure.order.gateway;
 import cn.fcr.domain.mall.gateway.IStockGateway;
 import cn.fcr.domain.order.gateway.IProductGateway;
 import cn.fcr.domain.order.model.entity.ProductEntity;
-import cn.fcr.infrastructure.dao.IProductDao;
+import cn.fcr.infrastructure.dao.mall.IProductDao;
 import cn.fcr.infrastructure.order.gateway.dto.ProductDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

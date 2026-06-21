@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.config;
+package cn.fcr.infrastructure.config.order;
 
 import cn.fcr.domain.mall.gateway.IPayGateway;
 import cn.fcr.domain.order.service.PayOrderService;

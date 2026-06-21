@@ -1,6 +1,5 @@
 package cn.fcr.infrastructure.order.repository;
 
-import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.OrderEntity;
@@ -8,9 +7,9 @@ import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ProductEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.model.valobj.OrderStatusVO;
-import cn.fcr.infrastructure.dao.IOrderDao;
-import cn.fcr.infrastructure.dao.IOrderMainDao;
-import cn.fcr.infrastructure.dao.po.PayOrder;
+import cn.fcr.infrastructure.dao.order.IOrderDao;
+import cn.fcr.infrastructure.dao.order.IOrderMainDao;
+import cn.fcr.infrastructure.dao.order.po.PayOrder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -34,8 +33,6 @@ public class OrderRepository implements IOrderRepository {
     private IOrderDao orderDao;
     @Resource
     private IOrderMainDao orderMainDao;
-    @Resource
-    private IOrderEventPublisher orderEventPublisher;
 
     @Override
     public void doSaveOrder(CreateOrderAggregate orderAggregate) {
@@ -78,7 +75,6 @@ public class OrderRepository implements IOrderRepository {
         orderDao.changeOrderPaySuccess(payOrderReq);
         log.info("pay_order 表状态已更新为 PAY_SUCCESS: orderId={}", orderId);
 
-        orderEventPublisher.publishPaySuccess(orderId, orderId);
     }
 
     @Override
@@ -168,8 +164,8 @@ public class OrderRepository implements IOrderRepository {
 
     @Override
     public long countByUserId(Long userId) {
-        LambdaQueryWrapper<cn.fcr.infrastructure.dao.po.OrderMain> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(cn.fcr.infrastructure.dao.po.OrderMain::getUserId, userId);
+        LambdaQueryWrapper<cn.fcr.infrastructure.dao.order.po.OrderMain> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(cn.fcr.infrastructure.dao.order.po.OrderMain::getUserId, userId);
         return orderMainDao.selectCount(wrapper);
     }
 }

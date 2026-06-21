@@ -1,8 +1,8 @@
 package cn.fcr.infrastructure.mall.gateway;
 
 import cn.fcr.domain.mall.gateway.IUserBindingGateway;
-import cn.fcr.infrastructure.dao.IUserBindingDao;
-import cn.fcr.infrastructure.dao.po.UserBinding;
+import cn.fcr.infrastructure.dao.auth.IUserBindingDao;
+import cn.fcr.infrastructure.dao.auth.po.UserBinding;
 import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -12,11 +12,10 @@ import cn.fcr.types.common.Constants;
 import cn.fcr.types.exception.AppException;
 
 import java.util.List;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MallUserServiceImpl implements IMallUserService {
-
-    private final Logger logger = Logger.getLogger(MallUserServiceImpl.class.getName());
 
     private final IUserRepository userRepository;
     private final IAuthTokenGateway authTokenGateway;
@@ -61,7 +60,7 @@ public class MallUserServiceImpl implements IMallUserService {
         userRepository.insertUserRole(userId, 2L);
 
         userBindingGateway.bindWeChatOpenId(userId, openId);
-        logger.info("微信扫码注册并绑定成功: userId=" + userId + ", username=" + username + ", openId=" + openId);
+        log.info("微信扫码注册并绑定成功: userId=" + userId + ", username=" + username + ", openId=" + openId);
 
         return login(username, password);
     }
@@ -77,7 +76,7 @@ public class MallUserServiceImpl implements IMallUserService {
         try {
             user.validateLoginStatus();
         } catch (IllegalStateException e) {
-            logger.warning("【登录拦截】用户 " + username + " 已被封禁");
+            log.warn("【登录拦截】用户 " + username + " 已被封禁");
             throw new AppException(Constants.ResponseCode.BANNED.getCode(), e.getMessage());
         }
 
@@ -127,28 +126,28 @@ public class MallUserServiceImpl implements IMallUserService {
 
     @Override
     public int deleteUser(Long id) {
-        logger.info("【级联删除】开始删除用户: userId=" + id);
+        log.info("【级联删除】开始删除用户: userId=" + id);
 
         // 检查用户是否存在关联订单，若存在则禁止删除
         long orderCount = orderQueryGateway.countOrdersByUserId(id);
         if (orderCount > 0) {
-            logger.warning("【级联删除拦截】用户 " + id + " 存在 " + orderCount + " 个关联订单，禁止删除");
+            log.warn("【级联删除拦截】用户 " + id + " 存在 " + orderCount + " 个关联订单，禁止删除");
             throw new AppException(Constants.ResponseCode.UN_ERROR.getCode(), "该用户存在关联订单，无法删除");
         }
 
         int deleted = 0;
 
         deleted += userRepository.deleteUserRoleByUserId(id);
-        logger.info("【级联删除】已删除 user_role 记录: " + deleted + " 条");
+        log.info("【级联删除】已删除 user_role 记录: " + deleted + " 条");
 
         deleted += userRepository.deleteUserBindingByUserId(id);
-        logger.info("【级联删除】已删除 user_binding 记录: " + deleted + " 条");
+        log.info("【级联删除】已删除 user_binding 记录: " + deleted + " 条");
 
         deleted += userRepository.deleteCartItemByUserId(id);
-        logger.info("【级联删除】已删除 cart_item 记录: " + deleted + " 条");
+        log.info("【级联删除】已删除 cart_item 记录: " + deleted + " 条");
 
         deleted += userRepository.deleteById(id);
-        logger.info("【级联删除】已删除 mall_user 记录: " + deleted + " 条");
+        log.info("【级联删除】已删除 mall_user 记录: " + deleted + " 条");
 
         return deleted;
     }

@@ -1,9 +1,9 @@
 package cn.fcr.infrastructure.mall.repository;
 
 import cn.fcr.domain.mall.adapter.repository.IStatisticsRepository;
-import cn.fcr.infrastructure.dao.ICategoryDao;
-import cn.fcr.infrastructure.dao.IOrderMainDao;
-import cn.fcr.infrastructure.dao.IProductDao;
+import cn.fcr.infrastructure.dao.mall.ICategoryDao;
+import cn.fcr.infrastructure.dao.order.IOrderMainDao;
+import cn.fcr.infrastructure.dao.mall.IProductDao;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;

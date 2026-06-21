@@ -12,11 +12,10 @@ import cn.fcr.domain.mall.service.IMallProductService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MallProductServiceImpl implements IMallProductService {
-
-    private final Logger logger = Logger.getLogger(MallProductServiceImpl.class.getName());
 
     private final IProductRepository productRepository;
 
@@ -48,11 +47,11 @@ public class MallProductServiceImpl implements IMallProductService {
 
     @Override
     public List<ProductVO> listProducts(Long categoryId, String category, String keyword, BigDecimal minPrice, BigDecimal maxPrice, Integer status) {
-        logger.info("【商品查询】分类过滤: categoryId=" + categoryId + ", keyword=" + keyword);
+        log.info("【商品查询】分类过滤: categoryId=" + categoryId + ", keyword=" + keyword);
 
         List<ProductVO> result = productRepository.findProducts(categoryId, keyword, minPrice, maxPrice, status);
 
-        logger.info("【商品查询】完成，数量: " + result.size());
+        log.info("【商品查询】完成，数量: " + result.size());
         return result;
     }
 

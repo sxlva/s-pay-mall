@@ -50,21 +50,14 @@ public class StockGatewayImpl implements IStockGateway {
         String stockKey = STOCK_KEY_PREFIX + productId;
         RAtomicLong stockCounter = redissonClient.getAtomicLong(stockKey);
 
-        // 先读取当前库存（乐观检查）
-        long currentStock = stockCounter.get();
-        log.info("【库存检查】productId={}, 当前库存={}, 购买数量={}", productId, currentStock, quantity);
-
-        // 预检查：库存不足直接拒绝
-        if (currentStock < quantity) {
-            throw new AppException("STOCK_INSUFFICIENT", "商品库存不足，无法下单");
-        }
-
-        // 执行原子递减操作
+        // 【DDD】预检查已上移至 Domain 层（MallOrderServiceImpl），
+        // 本方法仅保留原子操作和竞态补偿，不再做前置读判断。
+        // 直接执行原子递减操作
         long remainingStock = stockCounter.addAndGet(-quantity);
 
-        // 二次检查：处理竞态条件（多个线程同时通过预检查的情况）
+        // 竞态补偿：多个并发请求同时扣减时，若结果库存为负则回滚
         if (remainingStock < 0) {
-            // 库存不足，恢复库存并抛出异常
+            // 库存不足，恢复库存并抛出异常（兜底保护）
             stockCounter.addAndGet(quantity);
             throw new AppException("STOCK_INSUFFICIENT", "商品库存不足，无法下单");
         }
