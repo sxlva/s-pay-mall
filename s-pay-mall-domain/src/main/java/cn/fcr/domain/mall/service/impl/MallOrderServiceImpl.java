@@ -15,11 +15,10 @@ import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MallOrderServiceImpl implements IMallOrderService {
-
-    private final Logger logger = Logger.getLogger(MallOrderServiceImpl.class.getName());
 
     private final IMallCartService mallCartService;
     private final IMallOrderQueryGateway mallOrderQueryGateway;
@@ -81,7 +80,7 @@ public class MallOrderServiceImpl implements IMallOrderService {
             // 发生异常时恢复已扣减的库存
             for (CartItemVO item : deductedItems) {
                 stockGateway.restoreStock(item.getProductId(), item.getQuantity());
-                logger.warning("【库存恢复】创建订单失败，恢复库存，productId=" + item.getProductId() + ", quantity=" + item.getQuantity());
+                log.warn("【库存恢复】创建订单失败，恢复库存，productId=" + item.getProductId() + ", quantity=" + item.getQuantity());
             }
             throw e;
         }
@@ -121,9 +120,9 @@ public class MallOrderServiceImpl implements IMallOrderService {
     public void paySuccess(String orderNo) {
         boolean success = orderStateMachineService.paySuccess(orderNo);
         if (success) {
-            logger.info("订单支付成功，orderNo=" + orderNo);
+            log.info("订单支付成功，orderNo=" + orderNo);
         } else {
-            logger.warning("订单状态不允许更新或订单不存在，orderNo=" + orderNo + "，可能是重复回调");
+            log.warn("订单状态不允许更新或订单不存在，orderNo=" + orderNo + "，可能是重复回调");
         }
     }
 
@@ -146,7 +145,7 @@ public class MallOrderServiceImpl implements IMallOrderService {
 
     @Override
     public OrderCreateVO continuePay(String orderNo) {
-        logger.info("继续支付订单，orderNo=" + orderNo);
+        log.info("继续支付订单，orderNo=" + orderNo);
 
         // 1. 查询订单
         OrderEntity orderEntity = mallOrderQueryGateway.findByOrderNo(orderNo);
@@ -166,7 +165,7 @@ public class MallOrderServiceImpl implements IMallOrderService {
         // 4. 更新支付订单信息
         orderPaymentGateway.updatePayOrderInfo(payOrderEntity);
 
-        logger.info("继续支付订单成功，orderNo=" + orderNo);
+        log.info("继续支付订单成功，orderNo=" + orderNo);
 
         return OrderCreateVO.builder()
                 .orderNo(orderEntity.getOrderNo())
@@ -178,29 +177,29 @@ public class MallOrderServiceImpl implements IMallOrderService {
 
     @Override
     public boolean checkOrderStock(String orderNo) {
-        logger.info("检查订单库存，orderNo=" + orderNo);
+        log.info("检查订单库存，orderNo=" + orderNo);
 
         OrderEntity orderEntity = mallOrderQueryGateway.findByOrderNo(orderNo);
         if (orderEntity == null) {
-            logger.warning("订单不存在，orderNo=" + orderNo);
+            log.warn("订单不存在，orderNo=" + orderNo);
             return false;
         }
 
         List<OrderItemEntity> items = orderEntity.getItems();
         if (items == null || items.isEmpty()) {
-            logger.warning("订单无商品项，orderNo=" + orderNo);
+            log.warn("订单无商品项，orderNo=" + orderNo);
             return false;
         }
 
         for (OrderItemEntity item : items) {
             long currentStock = stockGateway.getStock(item.getProductId());
             if (currentStock < item.getQuantity()) {
-                logger.warning("库存不足，productId=" + item.getProductId() + ", 需要=" + item.getQuantity() + ", 当前=" + currentStock);
+                log.warn("库存不足，productId=" + item.getProductId() + ", 需要=" + item.getQuantity() + ", 当前=" + currentStock);
                 return false;
             }
         }
 
-        logger.info("订单库存检查通过，orderNo=" + orderNo);
+        log.info("订单库存检查通过，orderNo=" + orderNo);
         return true;
     }
 
@@ -215,7 +214,7 @@ public class MallOrderServiceImpl implements IMallOrderService {
      */
     private boolean hasEnoughStock(Long productId, Integer quantity) {
         long currentStock = stockGateway.getStock(productId);
-        logger.info("【库存预检查】productId={}, 当前库存={}, 需要数量={}", productId, currentStock, quantity);
+        log.info("【库存预检查】productId={}, 当前库存={}, 需要数量={}", productId, currentStock, quantity);
         return currentStock >= quantity;
     }
 }
