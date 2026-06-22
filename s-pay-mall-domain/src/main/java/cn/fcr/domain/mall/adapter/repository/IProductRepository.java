@@ -29,7 +29,14 @@ public interface IProductRepository {
      */
     List<ProductEntity> findByIds(List<Long> ids);
 
-    int saveProduct(ProductEntity product);
+    /**
+     * 保存商品（新增或更新）
+     * 新增时返回带自增ID的 Entity，更新时返回原 Entity
+     *
+     * @param product 商品实体
+     * @return 保存后的商品实体（含ID）
+     */
+    ProductEntity saveProduct(ProductEntity product);
 
     int deleteProduct(Long id);
 

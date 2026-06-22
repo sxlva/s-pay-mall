@@ -15,6 +15,8 @@ import java.math.BigDecimal;
  *
  * 【核心功能】
  * 1. queryProductByProductId(): 根据商品ID查询商品信息（模拟数据）
+ *
+ * @deprecated 旧 Order Domain 占位实现，当前主流程已迁移至 Mall Domain，此类暂未启用
  */
 @Service
 public class ProductRPC {

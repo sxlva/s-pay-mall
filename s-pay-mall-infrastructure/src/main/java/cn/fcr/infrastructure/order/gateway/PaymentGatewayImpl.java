@@ -3,6 +3,7 @@ package cn.fcr.infrastructure.order.gateway;
 import cn.fcr.domain.order.gateway.IPaymentGateway;
 import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.service.PayOrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -22,6 +23,7 @@ import javax.annotation.Resource;
  * 【依赖说明】
  * - PayOrderService: 支付订单服务
  */
+@Slf4j
 @Component
 public class PaymentGatewayImpl implements IPaymentGateway {
 
@@ -35,5 +37,7 @@ public class PaymentGatewayImpl implements IPaymentGateway {
 
     @Override
     public void updatePayOrderInfo(PayOrderEntity payOrderEntity) {
+        // TODO: 待实现 - 更新支付订单信息
+        log.warn("updatePayOrderInfo 暂未实现，orderNo={}", payOrderEntity.getOrderNo());
     }
 }

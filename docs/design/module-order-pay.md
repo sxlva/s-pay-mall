@@ -62,7 +62,7 @@ sequenceDiagram
         TX-->>S: OrderCreateVO
     end
     S->>S: orderPaymentGateway.sendDelayCloseMessage(orderNo)
-    Note over S: 发送延时关单消息 (topic: order-close-topic)
+    Note over S: 发送延时关单消息 (topic: order-timeout-topic)
     S-->>C: payUrl
     C-->>U: 渲染支付宝收银台
 ```
@@ -182,12 +182,9 @@ flowchart LR
 | Topic | 发送方 | 消费者 | 消息类型 | 说明 |
 |-------|--------|--------|----------|------|
 | `order_paid` | `RocketMqOrderEventPublisher` | `OrderPaidRocketListener` | `PaySuccessMessage` | 支付成功异步履约 |
-| `order-timeout-topic` | —（仅有消费者） | `OrderTimeoutCloseRocketListener` | `String (orderNo)` | 延时关单 |
-| `order-close-topic` | `OrderEventGatewayImpl`、`OrderPaymentGatewayImpl` | —（仅有生产者） | `String (orderNo)` | 延时关单消息发送 |
+| `order-timeout-topic` | `OrderPaymentGatewayImpl`、`OrderEventGatewayImpl` | `OrderTimeoutCloseRocketListener` | `String (orderNo)` | 延时关单 |
 | `pay-success-topic` | `OrderEventGatewayImpl` | —（仅有生产者） | 业务通知 | 待接入消费者 |
 | `product-stock-change-topic` | —（仅有消费者） | `ProductStockChangeRocketListener` | `StockChangeMsgDTO` | 库存变更幂等消费 |
-
-> **已知不一致**：`order-close-topic`（发送）与 `order-timeout-topic`（消费）是两个不同的 Topic 名称，需确认延时消息的实际投递路径。
 
 ---
 
@@ -205,7 +202,7 @@ sequenceDiagram
 
     TX->>TX: 创建订单事务提交
     TX->>GW: sendDelayCloseMessage(orderNo)
-    GW->>MQ: syncSend("order-close-topic", orderNo, 3000ms)
+    GW->>MQ: syncSend("order-timeout-topic", orderNo, 3000ms)
     Note over MQ: 延时消息在 Broker 等待
     MQ->>L: 延时到达后投递 (topic: order-timeout-topic)
     L->>S: handleTimeoutCloseOrder(orderNo)
@@ -237,7 +234,15 @@ sequenceDiagram
 
 ## 八、兜底定时任务
 
-`NoPayNotifyOrderJob` — 当前已注释禁用（`@Component` 和 `@Scheduled` 均被注释）。原设计为每 3s 查询未收到回调的订单，调用支付宝查询接口主动核实支付状态。如需启用，取消注释即可恢复。
+`NoPayNotifyOrderJob` — 每 30 秒扫描 `pay_order` 表中创建超过 5 分钟且状态仍为
+`WAIT_PAY` 的订单，调用 `IAlipayQueryGateway.queryTradeSuccess()` 主动向支付宝核实
+交易状态，对确认支付成功的订单执行补单（`changeOrderPaySuccess()`），作为支付回调
+丢失场景的兜底保障。
+
+SQL：`WHERE status = 'WAIT_PAY' AND create_time < DATE_SUB(NOW(), INTERVAL 5 MINUTE)`
+
+调用链：`NoPayNotifyOrderJob → OrderApplicationService → OrderService →
+OrderRepository → IOrderDao`
 
 ---
 

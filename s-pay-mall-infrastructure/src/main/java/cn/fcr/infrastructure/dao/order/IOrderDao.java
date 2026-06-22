@@ -81,12 +81,11 @@ public interface IOrderDao {
     List<String> queryTimeoutCloseOrderList();
 
     /**
-     * 查询已支付但未成功回调的订单
-     * 查找状态为 PAID 的订单（用于补推回调）
+     * 查询等待支付超过5分钟但未收到支付宝回调的订单（pay_order.status = WAIT_PAY），用于主动补单
      *
-     * @return 需要补推回调的订单ID列表
+     * @return 需要主动补单的订单ID列表
      */
-    @Select("select order_id from pay_order where status = 'PAID'")
+    @Select("select order_id from pay_order where status = 'WAIT_PAY' and create_time < DATE_SUB(NOW(), INTERVAL 5 MINUTE)")
     List<String> queryNoPayNotifyOrder();
 
     /**

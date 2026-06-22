@@ -89,8 +89,9 @@ public class DomainServiceConfig {
     // ==================== 商城商品服务 ====================
 
     @Bean
-    public IMallProductService mallProductService(IProductRepository productRepository) {
-        return new MallProductServiceImpl(productRepository);
+    public IMallProductService mallProductService(IProductRepository productRepository,
+                                                  IStockGateway stockGateway) {
+        return new MallProductServiceImpl(productRepository, stockGateway);
     }
 
     // ==================== 商城用户服务 ====================

@@ -1,6 +1,7 @@
 package cn.fcr.domain.mall.service.impl;
 
 import cn.fcr.domain.mall.adapter.repository.IProductRepository;
+import cn.fcr.domain.mall.gateway.IStockGateway;
 import cn.fcr.domain.mall.model.command.ProductSaveCommand;
 import cn.fcr.domain.mall.model.entity.ProductEntity;
 import cn.fcr.domain.mall.model.exception.CategoryHasProductsException;
@@ -18,9 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 public class MallProductServiceImpl implements IMallProductService {
 
     private final IProductRepository productRepository;
+    private final IStockGateway stockGateway;
 
-    public MallProductServiceImpl(IProductRepository productRepository) {
+    public MallProductServiceImpl(IProductRepository productRepository, IStockGateway stockGateway) {
         this.productRepository = productRepository;
+        this.stockGateway = stockGateway;
     }
 
     @Override
@@ -66,7 +69,12 @@ public class MallProductServiceImpl implements IMallProductService {
                 .stock(command.getStock())
                 .status(command.getStatus())
                 .build();
-        return productRepository.saveProduct(product);
+        ProductEntity saved = productRepository.saveProduct(product);
+
+        // DB 保存成功后同步库存到 Redis
+        stockGateway.syncStockFromDB(saved.getId());
+
+        return 1;
     }
 
     @Override

@@ -43,6 +43,8 @@ public class OrderPaymentGatewayImpl implements IOrderPaymentGateway {
 
     @Override
     public void updatePayOrderInfo(PayOrderEntity payOrderEntity) {
+        // TODO: 待实现 - 更新支付订单信息
+        log.warn("updatePayOrderInfo 暂未实现，orderNo={}", payOrderEntity.getOrderNo());
     }
 
     @Override

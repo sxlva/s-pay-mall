@@ -63,17 +63,15 @@ export const useProductStore = defineStore('product', () => {
   }
 
   /**
-   * 初始化数据（仅首次加载）
-   * - 先加载分类
-   * - 再加载商品
-   * - 标记已初始化
+   * 加载数据
+   * - 分类：每次都重新加载，保证新增分类及时显示
+   * - 商品：首次加载后跳过（queryParams watch 会在筛选变更时自动触发加载）
    */
   const loadData = async () => {
+    await loadCategories()
     if (initialized.value) {
-      await loadProducts()
       return
     }
-    await loadCategories()
     await loadProducts()
     initialized.value = true
   }

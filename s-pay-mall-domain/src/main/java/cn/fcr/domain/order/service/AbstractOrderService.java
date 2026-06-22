@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * @deprecated 旧 Order Domain 基类，当前订单创建主流程使用 MallOrderServiceImpl
+ */
 @Slf4j
 public abstract class AbstractOrderService implements IOrderService {
 

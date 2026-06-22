@@ -103,12 +103,14 @@ public class ProductRepository implements IProductRepository {
     }
 
     @Override
-    public int saveProduct(ProductEntity product) {
+    public ProductEntity saveProduct(ProductEntity product) {
         if (product.getId() == null) {
             Product prod = toProductPO(product);
             prod.setCreateTime(LocalDateTime.now());
             prod.setUpdateTime(LocalDateTime.now());
-            return productDao.insert(prod);
+            productDao.insert(prod);
+            // MyBatis-Plus IdType.AUTO 回填了 prod.getId()，构建带 ID 的 Entity 返回
+            return buildProductEntity(prod);
         }
         LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Product::getId, product.getId());
@@ -119,7 +121,8 @@ public class ProductRepository implements IProductRepository {
         updateWrapper.set(Product::getStock, product.getStock());
         updateWrapper.set(Product::getStatus, product.getStatus());
         updateWrapper.set(Product::getUpdateTime, LocalDateTime.now());
-        return productDao.update(null, updateWrapper);
+        productDao.update(null, updateWrapper);
+        return product;
     }
 
     @Override
