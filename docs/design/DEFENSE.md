@@ -4,41 +4,7 @@
 
 ---
 
-## 一、我的工作内容
-
-### 1. 微信 AccessToken 缓存迁移：Guava Cache → Redis
-
-我在审查认证模块时发现，原有的 AccessToken 缓存实现使用的是 Guava Cache——这是一个 JVM 本地缓存，服务重启即丢失，且在多实例部署时每个节点都要独立请求微信 API。于是我把这块迁移到了 Redis。
-
-具体实现是 `WeixinGatewayImpl.getAccessToken()` 方法。它的逻辑是：先从 Redis 查 key=`wechat:access_token:{appid}`，命中就返回；未命中则调用微信 `cgi-bin/token` 接口获取新 token，写入 Redis 时设 TTL=110 分钟，比微信官方的 7200 秒提前 10 分钟过期。这样做的目的是提前续期，避免在 token 刚好过期的边界时刻调用微信 API 失败。全项目没有使用 Guava Cache，你可以搜索 `CacheBuilder` 验证——零结果。
-
-### 2. 引入 RocketMQ 替换进程内事件总线
-
-早期的版本使用 Guava EventBus 在进程内同步发布事件，这意味着支付回调线程必须等发货、通知、积分等所有后置业务都完成后才能返回。我引入了 Apache RocketMQ，将支付成功后的履约链路全面异步化。
-
-核心实现：支付回调到达 `AliPayController.payNotify()` 后，验签通过即返回 "success"，然后在事务外通过 `RocketMqOrderEventPublisher.convertAndSend("order_paid", message)` 发送消息。消费者是 `OrderPaidRocketListener`，它订阅 `order_paid` topic，收到消息后调用 `OrderApplicationService.paySuccess()` 更新订单状态，再调用 `WeixinGatewayImpl.sendPaymentSuccessNotification()` 发送微信模板消息。
-
-### 3. 设计基于 Redisson RAtomicLong 的库存预扣方案
-
-库存扣减是电商最核心也最容易出问题的地方——高并发下传统 `SELECT ... FOR UPDATE` 行锁只能撑 1k QPS 左右。我设计了 "Redis 预扣 + DB 异步同步" 的双层架构。
-
-核心实现在 `StockGatewayImpl.deductStock()`，只有 10 行代码但逻辑严密：直接执行 `RAtomicLong.addAndGet(-quantity)` 原子递减，然后判断剩余库存是否小于 0。如果小于 0，说明并发请求已经越过预检查把库存扣完了，立即执行 `addAndGet(quantity)` 回滚并抛异常。这里的关键是预检查（L1）放在了 `MallOrderServiceImpl.checkAndDeductStock()` 里——我做了一次 DDD 重构，把业务判断上移到 Domain 层，Infrastructure 层只保留原子操作和竞态补偿，这样 Infrastructure 层不包含任何业务规则。
-
-### 4. DDD 分层架构的重构审查
-
-我对整个项目的 DDD 分层规范执行了全面审查，核心工作包括：
-
-**Infrastructure 层结构审查**：确认了 `config/` 和 `dao/` 两个顶层包的存在（CLAUDE.md 原来只提到 auth/mall/order/shared 四个包），梳理了 `dao/` 包使用 `I*Dao` 命名风格与 Repository 命名规范的不一致性。
-
-**Application 层定位纠正**：发现真正的 Application Service（`OrderApplicationService` 和 `OrderTransactionService`，两者都带 `@Service` 和 `@Transactional` 注解）实际位于 trigger 模块的 `cn.fcr.trigger.application` 包下，而非 CLAUDE.md 描述的 `s-pay-mall-app` 模块。这是因为避免循环依赖的妥协设计，我在代码注释中也标注了这是已知遗留项。
-
-**Domain 层纯 POJO 规范验证**：验证了 Domain 层所有 Service 实现类（12 个）均无 Spring 注解，全部通过 `DomainServiceConfig` 以 `@Bean` 方式手动注册。这意味着领域层可以脱离 Spring 单独进行单元测试。
-
-**MQ Topic 命名统一修复**：发现 `OrderEventGatewayImpl` 和 `OrderPaymentGatewayImpl` 两个 Producer 发送的延时关单 Topic 与消费者 `OrderTimeoutCloseRocketListener` 监听的 Topic 不一致，已将两处 Producer 的发送目标从 `order-close-topic` 修正为 `order-timeout-topic`，确保完整闭环。
-
----
-
-## 二、老师可能问的基础问题（30秒口答版）
+## 一、老师可能问的基础问题（30秒口答版）
 
 ### 1. Redis 的 setex 命令是什么意思？项目中哪里用了？
 
@@ -82,7 +48,7 @@ BCrypt 自带随机盐值，每次加密同一个密码结果都不一样，有�
 
 ---
 
-## 三、代码级问题准备
+## 二、代码级问题准备
 
 ### 1. WeixinGatewayImpl.getAccessToken() — AccessToken Redis 缓存
 
@@ -205,7 +171,7 @@ public boolean tryAcquire(String businessType, String businessNo) {
 
 ---
 
-## 四、系统设计亮点（答辩主动陈述用）
+## 三、系统设计亮点（答辩主动陈述用）
 
 ### 亮点一：Redis 缓存 + RocketMQ 异步的组合解耦
 
@@ -229,24 +195,9 @@ public boolean tryAcquire(String businessType, String businessNo) {
 
 ---
 
-## 五、"是不是你自己做的"验证问题
+## 四、"是不是你自己做的"验证问题
 
-### 问题 1：你的 Infrastructure 层结构和教科书 DDD 有什么不同？
 
-答：有两个明显不同。第一，我的 Application Service（`OrderApplicationService` 和 `OrderTransactionService`）放在了 trigger 模块的 `cn.fcr.trigger.application` 包下，而不是 s-pay-mall-app 模块。这不是教科书的标准做法，是为了避免循环依赖的妥协。`OrderApplicationService` 的类注释里也写了："已知遗留项：Application 层理想上应独立于 Trigger 模块，后续可新建独立 application 模块解决。" 第二，我的 Infrastructure 层除了 auth/mall/order 三个领域子包外，还有 `config/`（Spring 配置）和 `dao/`（MyBatis Mapper）两个顶层包，`dao/` 包使用 `I*Dao` 命名风格而非 DDD 标准的 `I*Repository`。
-
-### 问题 2：你的 MQ Topic 命名有没有问题？
-
-答：之前有一个不一致的问题，我已经修了。最初 `OrderEventGatewayImpl` 和 `OrderPaymentGatewayImpl` 两个 Producer 的延时关单发送目标是 `order-close-topic`，但消费者 `OrderTimeoutCloseRocketListener` 监听的是 `order-timeout-topic`——两个名字不一样。现在两处 Producer 都已经统一改为 `order-timeout-topic`，用的都是 `rocketMQTemplate.syncSend("order-timeout-topic", orderNo, 3000)`。另外一个命名风格不统一的是 `order_paid`（下划线）和 `order-timeout-topic`（连字符），这是因为不同时期开发的遗留问题，但功能不受影响。
-
-### 问题 3：订单状态枚举在哪里定义？有几个版本？
-
-答：有三个版本，存在一定冗余。`OrderStatusVO` 在 `cn.fcr.domain.order.model.valobj`，值有 CREATE、PAY_WAIT、PAY_SUCCESS、DEAL_DONE、CLOSE 五个。`Constants.OrderStatusEnum` 在 `cn.fcr.types.common`，值和 OrderStatusVO 完全一致，属于重复定义。还有一个 `OrderState` 在 `cn.fcr.domain.mall.model.entity`，值是 INIT、PAID、SHIPPED、DONE、CANCELED 五个，多了 `dbStatus` 字段用于数据库状态映射。支付状态用的是 `PayStatus` 枚举，在 `cn.fcr.domain.shared.model.vo`，有 WAIT_PAY、PAYING、PAID、TRADE_DONE、CLOSED、FAILED 六个值。实际的状态机流转用的是 `OrderState`（Mall Domain）和 `OrderStatusVO`（Order Domain）两套，因为订单领域正在从旧的 Order Domain 向新的 Mall Domain 迁移。
-
-### 问题 4：微信 Access Token 的 TTL 是多少？为什么不用 7200 秒？
-
-答：TTL 是 110 分钟（6600 秒），不是 7200 秒。微信官方 access_token 有效期是 7200 秒（120 分钟），我设 110 分钟是为了提前续期——如果缓存刚好在 7200 秒那一刻过期，而新的请求还没到，那下一个用户的请求就会在边界时刻调用微信 API，万一微信响应慢，用户体验就差了。代码在 `WeixinGatewayImpl.getAccessToken()` 第 161 行：`stringRedisTemplate.opsForValue().set(key, accessToken, 110, TimeUnit.MINUTES)`。常量 Key 前缀是 `wechat:access_token:`，不是旧文档里写的 `wx:token:appid`，你可以直接看 `Constants.REDIS_WECHAT_ACCESS_TOKEN_PREFIX`。
-
-### 问题 5：库存扣减为什么要做两次检查而不是一次？
+### 问题 1：库存扣减为什么要做两次检查而不是一次？
 
 答：因为一次检查不够。如果只做一次预检查——比如先 `get()` 看到库存=1，再 `addAndGet(-1)` 扣减——在并发场景下，线程 A 和线程 B 可能同时通过预检查（都看到库存=1），然后先后执行扣减。A 先扣到 0，B 再扣到 -1，就超卖了。所以我设计的方案是：L2 直接原子递减（不做前置读判断），L3 递减后检查结果是否为负。如果为负说明并发冲突了，立即回滚。L1 预检查放在 Domain 层是为了快速失败，避免不必要的原子操作和回滚。三层合在一起才能既保性能又防超卖。你可以看代码：`StockGatewayImpl` 第 56-63 行只有 L2+L3，第 53 行注释写明了"预检查已上移至 Domain 层（MallOrderServiceImpl）"。
