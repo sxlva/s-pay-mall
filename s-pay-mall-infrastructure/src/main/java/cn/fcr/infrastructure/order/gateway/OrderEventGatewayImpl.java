@@ -32,7 +32,7 @@ public class OrderEventGatewayImpl implements IOrderEventGateway {
     @Override
     public void sendDelayCloseMessage(String orderNo) {
         log.info("发送订单延时关闭消息: orderNo={}", orderNo);
-        rocketMQTemplate.syncSend("order-close-topic", orderNo, 3000);
+        rocketMQTemplate.syncSend("order-timeout-topic", orderNo, 3000);
     }
 
     @Override

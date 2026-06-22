@@ -49,7 +49,7 @@ public class OrderPaymentGatewayImpl implements IOrderPaymentGateway {
     public void sendDelayCloseMessage(String orderNo) {
         log.info("发送订单延时关闭消息: orderNo={}", orderNo);
         try {
-            rocketMQTemplate.syncSend("order-close-topic", orderNo, 3000);
+            rocketMQTemplate.syncSend("order-timeout-topic", orderNo, 3000);
             log.info("订单延时关闭消息发送成功: orderNo={}", orderNo);
         } catch (Exception e) {
             log.error("发送订单延时关闭消息失败: orderNo={}, error={}", orderNo, e.getMessage(), e);

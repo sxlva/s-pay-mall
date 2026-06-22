@@ -1,8 +1,8 @@
 # 模块三：库存服务（Stock Service）
 
-> **领域上下文**：Mall Context（独立 Stock 限界上下文）  
-> **核心场景**：高并发下库存预扣、异步同步、幂等闭环、防超卖  
-> **依赖外部**：Redis / Redisson、RocketMQ、MySQL  
+> **领域上下文**：Mall Context
+> **核心场景**：高并发下库存预扣、异步同步 DB、幂等闭环、防超卖
+> **依赖外部**：Redis / Redisson (RAtomicLong)、RocketMQ、MySQL
 > **关键性质**：**系统重难点**——分布式原子性、最终一致性、幂等性
 
 ---
@@ -11,261 +11,286 @@
 
 库存是电商系统的**核心资源**，直接关联交易可用性与资金安全。本系统设计 **"Redis 预扣 + DB 异步同步"** 的双层架构：
 
-| 层级 | 角色 | 一致性要求 |
-|------|------|------------|
-| Redis（Redisson RAtomicLong） | 库存事实来源（高频读写） | 最终一致 |
-| MySQL（product.stock） | 库存持久层（低频最终落库） | 强一致 |
-| RocketMQ | 库存变更事件总线 | 至少一次 |
+| 层级 | 角色 | 一致性要求 | 实现 |
+|------|------|------------|------|
+| Redis（Redisson RAtomicLong） | 库存事实来源（高频读写） | 最终一致 | `StockGatewayImpl` |
+| MySQL（product.stock） | 库存持久层（低频最终落库） | 强一致 | `IProductRepository.decreaseStock()` 乐观锁 |
+| RocketMQ | 库存变更事件总线 | 至少一次 | `product-stock-change-topic` |
 
 **为什么不在 DB 直接扣减？**
-- DB 单行更新在 1k QPS 量级已是极限，难以承载秒杀场景
-- Redis `INCR/DECR` 性能可达 10w+ QPS，且 RAtomicLong 提供原子操作
+- DB 单行更新在 1k QPS 量级已是极限，难以承载高并发场景
+- Redis `addAndGet()` 性能可达 10w+ QPS，且 RAtomicLong 提供原子操作保证
 
 ---
 
 ## 二、库存预扣减：核心流程
 
-### 2.1 时序图
+### 2.1 时序图（含三层检查分布）
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant U as 用户
-    participant C as OrderController
-    participant S as OrderService
-    participant StockSvc as StockService
-    participant GW as IStockGateway
-    participant R as Redisson (RAtomicLong)
-    participant MQ as RocketMQ
-    participant Listener as StockChangeListener
+    participant C as MallOrderController
+    participant S as OrderApplicationService
+    participant M as MallOrderServiceImpl
+    participant Stock as StockGatewayImpl
+    participant R as Redis (RAtomicLong)
 
     U->>C: 下单请求
-    C->>S: createOrder()
-    S->>StockSvc: deductStock(productId, qty)
-    StockSvc->>GW: deductStock(productId, qty)
-    GW->>R: get(stockKey) [预检]
-    
-    alt 库存不足
-        R-->>GW: currentStock < qty
-        GW-->>StockSvc: throw STOCK_INSUFFICIENT
-        StockSvc-->>S: 异常
-        S-->>C: 业务异常
-    else 预检通过
-        GW->>R: addAndGet(-qty) [原子扣减]
-        R-->>GW: remainingStock
-        alt remainingStock < 0
-            Note over GW: 竞态条件触发
-            GW->>R: addAndGet(+qty) [回滚]
-            GW-->>StockSvc: throw STOCK_INSUFFICIENT
-        else 扣减成功
-            GW-->>StockSvc: remainingStock
-            StockSvc-->>S: ok
-            S->>S: 继续创建订单
-            S->>MQ: 发送 product-stock-change-topic
-            Note over MQ: 异步同步到 DB
+    C->>S: createOrder(userId, address)
+    S->>M: checkAndDeductStock(cart)
+
+    loop 逐商品检查
+        M->>M: hasEnoughStock(productId, qty)
+        Note over M: L1 预检查：stockGateway.getStock() >= qty
+        alt 库存不足
+            M->>M: restoreDeductedStock() 回滚已扣项
+            M-->>S: throw IllegalArgumentException
+        else 预检通过
+            M->>Stock: deductStock(productId, quantity)
+            Stock->>R: addAndGet(-quantity)
+            Note over Stock: L2 原子递减
+            alt remainingStock < 0
+                Stock->>R: addAndGet(quantity)
+                Note over Stock: L3 竞态补偿回滚
+                Stock-->>M: throw AppException("STOCK_INSUFFICIENT")
+                M->>M: restoreDeductedStock() 回滚已扣项
+            else 扣减成功
+                Stock-->>M: remainingStock
+            end
         end
     end
+
+    M-->>S: deductedItems
+    S->>S: buildAndSaveOrder() 创建订单
 ```
 
-### 2.2 关键代码：双检查防超卖
+### 2.2 关键代码：双层检查 + 补偿回滚
+
+**StockGatewayImpl.deductStock() — 原子扣减（L2 + L3）**
 
 ```java
+// 文件: s-pay-mall-infrastructure/.../mall/gateway/StockGatewayImpl.java (第49-67行)
+
 @Override
 public long deductStock(Long productId, Integer quantity) {
-    RAtomicLong stockCounter = redissonClient.getAtomicLong(STOCK_KEY_PREFIX + productId);
-    
-    // L1：预检
-    long currentStock = stockCounter.get();
-    if (currentStock < quantity) {
-        throw new AppException("STOCK_INSUFFICIENT", "商品库存不足");
-    }
-    
-    // L2：原子扣减
+    String stockKey = STOCK_KEY_PREFIX + productId;         // "mall:product:stock:{id}"
+    RAtomicLong stockCounter = redissonClient.getAtomicLong(stockKey);
+
+    // 【DDD】预检查已上移至 Domain 层（MallOrderServiceImpl），
+    // 本方法仅保留原子操作和竞态补偿，不再做前置读判断。
+
+    // L2：原子递减 — 直接执行 addAndGet(-qty)
     long remainingStock = stockCounter.addAndGet(-quantity);
-    
-    // L3：二次校验（处理竞态）
+
+    // L3：竞态补偿 — 多个并发请求同时扣减时，若结果库存为负则回滚
     if (remainingStock < 0) {
-        stockCounter.addAndGet(quantity); // 回滚
-        throw new AppException("STOCK_INSUFFICIENT", "商品库存不足");
+        stockCounter.addAndGet(quantity);                   // 回滚已扣数量
+        throw new AppException("STOCK_INSUFFICIENT", "商品库存不足，无法下单");
     }
-    
+
+    log.info("【库存扣减成功】productId={}, 扣减后库存={}", productId, remainingStock);
     return remainingStock;
 }
 ```
 
-**为什么需要 L3 二次校验？**
-- 线程 A 与线程 B 同时通过 L1 预检（都看到 stock=1）
-- 线程 A 抢到锁扣减成功（stock=0）
-- 线程 B 抢到锁扣减后 stock=-1 → 触发回滚
-- 这是 **CAS（Compare-And-Swap）思想** 在 Redis 端的体现
+**MallOrderServiceImpl.checkAndDeductStock() — 预检查 + 回滚编排（L1）**
+
+```java
+// 文件: s-pay-mall-domain/.../mall/service/impl/MallOrderServiceImpl.java (第38-59行)
+
+public List<CartItemVO> checkAndDeductStock(List<CartItemVO> cart) {
+    List<CartItemVO> deductedItems = new ArrayList<>();
+
+    for (CartItemVO item : cart) {
+        // L1：预检查 — 在调用 Redis 原子操作之前，先检查库存是否充足
+        if (!hasEnoughStock(item.getProductId(), item.getQuantity())) {
+            restoreDeductedStock(deductedItems);            // 回滚已扣项
+            throw new IllegalArgumentException("商品库存不足: productId=" + item.getProductId());
+        }
+        try {
+            stockGateway.deductStock(item.getProductId(), item.getQuantity());
+            deductedItems.add(item);
+        } catch (Exception e) {
+            restoreDeductedStock(deductedItems);            // Redis 异常也回滚
+            throw e;
+        }
+    }
+    return deductedItems;
+}
+```
+
+### 2.3 三层检查总览
+
+| 检查层 | 位置 | 机制 | 作用 |
+|--------|------|------|------|
+| **L1 预检查** | `MallOrderServiceImpl.hasEnoughStock()` | `stockGateway.getStock() >= qty`（读 Redis 当前值） | 快速失败，避免不必要的原子操作 |
+| **L2 原子递减** | `StockGatewayImpl.deductStock()` L56 | `RAtomicLong.addAndGet(-quantity)`（原子操作） | 实际执行库存扣减 |
+| **L3 竞态补偿** | `StockGatewayImpl.deductStock()` L59-63 | `remainingStock < 0` → `addAndGet(quantity)` 回滚 | 兜底保护并发的"最后一单位"超卖 |
+
+**为什么需要 L3？**
+
+线程 A 与线程 B 同时通过 L1 预检查（都看到 stock=1）→ A 先执行 L2 扣减成功（stock=0）→ B 再执行 L2 扣减到 -1 → L3 触发回滚。这本质上是 **CAS 思想**在 Redis 端的实现。
 
 ---
 
-## 三、库存同步：MQ 异步链路
+## 三、库存同步：MQ + SETNX 幂等
 
 ### 3.1 时序图
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Producer as 库存变更 Producer
+    participant Producer as StockChangeMsgDTO 生产者
     participant MQ as RocketMQ<br/>(product-stock-change-topic)
-    participant Consumer as ProductStockChangeListener
-    participant IdemGW as IIdempotentGateway
-    participant R as Redisson (SETNX)
-    participant StockGW as IStockGateway
-    participant DB as MySQL
+    participant Consumer as ProductStockChangeRocketListener
+    participant Handler as StockChangeHandler<br/>(DeductHandler/RestoreHandler/AdminUpdateHandler)
+    participant Stock as StockGatewayImpl
+    participant R as Redis (SETNX)
 
-    Producer->>MQ: send(StockChangeMessageDTO)
+    Producer->>MQ: send(StockChangeMsgDTO)
     MQ->>Consumer: onMessage(message)
-    Consumer->>IdemGW: tryAcquire("STOCK_CHANGE", messageId)
-    IdemGW->>R: trySet(key, "PROCESSING", 24h)
-    
+    Consumer->>Consumer: 根据 changeType 路由到对应 Handler
+
+    Consumer->>Handler: handle(message)
+    Handler->>Stock: checkMessageIdempotent(messageId)
+    Stock->>R: trySet("mall:stock:msg:processed:{messageId}", "1", 24h)
+
     alt SETNX 失败（重复消费）
-        R-->>IdemGW: false
-        IdemGW-->>Consumer: skip
+        R-->>Stock: false
+        Stock-->>Handler: false (跳过)
+        Handler-->>Consumer: skip
         Consumer-->>MQ: ACK
     else SETNX 成功（首次处理）
-        R-->>IdemGW: true
-        IdemGW-->>Consumer: continue
-        Consumer->>StockGW: setStock(productId, newStock)
-        StockGW->>R: set(stockKey, newStock)
-        Consumer->>DB: UPDATE product SET stock=? WHERE id=?
+        R-->>Stock: true
+        Stock-->>Handler: true (继续)
+        Handler->>Stock: deductStock() / restoreStock() / setStock()
+        Note over Handler: 执行对应库存变更操作
+        Handler-->>Consumer: 处理完成
         Consumer-->>MQ: ACK
     end
 ```
 
 ### 3.2 同步场景与变更类型
 
-| 变更类型 | 触发场景 | 消息流向 |
-|----------|----------|----------|
-| `ADMIN_UPDATE` | 后台管理员修改库存 | DB → Redis（覆盖） |
-| `PAY_DEDUCT` | 支付成功扣减 | Redis 已扣减 → DB 持久化 |
-| `ORDER_RESTORE` | 订单取消/超时恢复 | Redis 恢复 → DB 持久化 |
+| 变更类型 | Handler | 触发场景 | 操作 |
+|----------|---------|----------|------|
+| `PAY_DEDUCT` | `DeductHandler` | 支付成功扣减 | Redis 已预扣 → DB 持久化 |
+| `ORDER_RESTORE` | `RestoreHandler` | 订单取消/超时恢复 | Redis 恢复 → DB 持久化 |
+| `ADMIN_UPDATE` | `AdminUpdateHandler` | 后台管理员修改库存 | Redis `set()` 覆盖 |
 
----
-
-## 四、幂等闭环：双重 SETNX 设计
-
-### 4.1 第一道幂等：业务主键
+### 3.3 幂等 Key 规范
 
 ```java
-// StockChangeMessageDTO 必须包含全局唯一 messageId
-public class StockChangeMessageDTO {
-    private String messageId;   // UUID，全局唯一
-    private Long productId;
-    private Integer newStock;
-    private String changeType;
-}
-```
+// 文件: StockGatewayImpl.java (第141-155行)
 
-### 4.2 第二道幂等：Redisson trySet
-
-```java
-@Override
 public boolean checkMessageIdempotent(String messageId) {
-    String key = "mall:stock:msg:processed:" + messageId;
-    RBucket<String> bucket = redissonClient.getBucket(key);
-    
-    // 24h TTL，SETNX 语义
-    boolean isFirst = bucket.trySet("1", 86400, TimeUnit.SECONDS);
-    return isFirst;
+    String idempotentKey = "mall:stock:msg:processed:" + messageId;
+    RBucket<String> bucket = redissonClient.getBucket(idempotentKey);
+
+    // trySet 实现 SETNX（仅在 key 不存在时设置成功）
+    boolean isFirstProcess = bucket.trySet("1", 86400, TimeUnit.SECONDS);
+    return isFirstProcess;
 }
 ```
-
-**幂等闭环关键原则：**
-- **首次处理**：SETNX 返回 true → 执行业务 → 保持 Key 24h（防重复消费）
-- **业务异常**：调用 `release()` 删除 Key → 允许 MQ 重试
-- **重复消息**：SETNX 返回 false → 直接 ACK，跳过执行
-
-### 4.3 幂等 Key 规范
 
 | 维度 | 规范 |
 |------|------|
-| **前缀** | `stock:event:` 业务类型 / `mall:stock:msg:processed:` 消息ID |
-| **TTL** | 24h（覆盖 MQ 重试窗口） |
-| **值** | `PROCESSING` / `1`（无业务含义，仅作为标记） |
+| Key 前缀 | `mall:stock:msg:processed:` |
+| TTL | 24h（86400s），覆盖 MQ 重试窗口 |
+| 值 | `"1"`（无业务含义，仅作为处理标记） |
 
 ---
 
-## 五、订单取消：库存恢复链路
+## 四、订单取消：库存恢复链路
 
 ```mermaid
 sequenceDiagram
-    participant U as 用户
-    participant C as OrderController
-    participant S as OrderService
-    participant MQ as RocketMQ
-    participant L as StockChangeListener
-    participant StockGW as StockGateway
-    participant R as Redisson
+    participant U as 用户/系统
+    participant S as OrderApplicationService
+    participant SM as OrderStateMachineServiceImpl
+    participant Stock as StockGatewayImpl
+    participant R as Redis
+    participant DB as MySQL
 
-    U->>C: 取消订单
-    C->>S: cancelOrder(orderId)
-    S->>S: 检查订单状态（仅 CREATED/PAY_WAIT 可取消）
-    S->>MQ: 发送 stock-change (ORDER_RESTORE)
-    S-->>C: ok
-    MQ->>L: onMessage
-    L->>StockGW: restoreStock(productId, qty)
-    StockGW->>R: addAndGet(+qty)
-    StockGW->>DB: UPDATE product SET stock = stock + ?
-    R-->>StockGW: newStock
+    U->>S: cancelOrder(orderId) / handleTimeoutCloseOrder(orderNo)
+    S->>SM: cancel(orderNo)
+    SM->>SM: order.canCancel() 状态守卫
+    alt 状态不允许取消
+        SM-->>S: false
+    else 允许取消
+        SM->>SM: 判断是否已支付 (isPaid)
+        SM->>DB: UPDATE order_main status='CANCELED'
+        SM->>DB: UPDATE pay_order status='CLOSED' (未支付时)
+
+        loop 逐商品恢复
+            SM->>Stock: restoreStock(productId, quantity)
+            Stock->>R: addAndGet(quantity) (Redis 恢复)
+            opt 已支付
+                SM->>Stock: syncDBStockRestore(productId, quantity)
+                Stock->>DB: UPDATE product SET stock=stock+quantity (MySQL 恢复)
+            end
+        end
+        SM-->>S: true
+    end
 ```
 
 ---
 
-## 六、库存预热：冷启动优化
+## 五、库存预热：冷启动优化
 
 ```mermaid
 flowchart LR
-    A[应用启动] --> B[StockPreheatRunner]
-    B --> C[查询所有在售商品]
-    C --> D[批量加载到 Redis]
-    D --> E[mall:product:stock:{id}]
+    A["应用启动<br/>ApplicationRunner"] --> B["StockPreheatRunner.run()<br/>@Order(2)"]
+    B --> C["productRepository<br/>.queryAllActiveProductIds()"]
+    C --> D["查询所有上架商品 ID"]
+    D --> E["stockGateway<br/>.batchSyncStock(productIds)"]
+    E --> F["逐个 syncStockFromDB()<br/>→ stockCounter.set(stockFromDB)"]
+    F --> G["Redis: mall:product:stock:{id}<br/>全部预热完成"]
 ```
 
-**必要性：**
-- 避免冷启动期首个请求穿透到 DB
-- 保证后续扣减操作的 Redis 命中率
+**实现细节（StockPreheatRunner）：**
+
+- 实现 `ApplicationRunner`，`@Order(2)`，在管理员初始化之后执行
+- 查询所有 `status=1`（上架）商品，批量调用 `stockGateway.batchSyncStock()`
+- 单个商品同步失败不影响整体，逐条 `catch` 后继续
+- 预热失败不影响应用启动，仅记录日志，Redis 库存将在首次访问时懒加载
 
 ---
 
-## 七、容错与降级
+## 六、容错与降级
 
 | 场景 | 现象 | 降级策略 |
 |------|------|----------|
-| Redis 不可用 | 扣减操作失败 | 拒绝下单（保护资金安全，不允许穿透 DB） |
-| MQ 消费失败 | 库存未同步到 DB | 触发重试（最多 16 次），最终进入死信队列人工处理 |
-| DB 扣减失败 | `affectedRows = 0` | 异步恢复 Redis 库存，告警通知 |
-| 网络分区 | 主从切换 | 等待 Redis Sentinel 重新选主，期间拒绝写操作 |
+| Redis 不可用 | `getAtomicLong()` 失败 | 拒绝下单（保护资金安全，不允许穿透 DB） |
+| MQ 消费失败 | 库存未同步到 DB | RocketMQ 自动重试（最多 16 次），最终进入死信队列 |
+| DB 扣减失败 | `affectedRows = 0` | Redis 已预扣不改，DB 失败仅记日志（最终一致性） |
+| 批量预热异常 | 单个商品同步失败 | catch 后继续处理其他商品，不影响整体预热 |
 
 ---
 
-## 八、技术亮点与面试高频考点
+## 七、技术亮点与面试高频考点
 
 | 维度 | 考点 | 标准答案 |
 |------|------|----------|
-| **超卖防御** | 如何确保不超卖？ | Redis RAtomicLong 原子扣减 + 双检查（预判 + 扣减后校验） + DB 乐观锁兜底 |
-| **Redis vs DB 扣减** | 为什么用 Redis？ | 性能（10w+ QPS vs 1k QPS）、原子性（RAtomicLong.addAndGet） |
-| **CAP 取舍** | 库存系统的一致性？ | AP 系统：保证可用性（Redis 优先），最终一致通过 MQ 异步同步 |
-| **幂等性** | MQ 重复消息如何处理？ | SETNX 幂等键（24h TTL）+ 业务主键唯一性 + 状态机校验 |
-| **重试机制** | MQ 消费失败怎么办？ | RocketMQ 自带重试（最多 16 次），业务可设置重试次数；最终失败进入死信队列 |
-| **冷启动** | 如何解决 Redis 冷启动？ | 应用启动时 `StockPreheatRunner` 批量预热 |
-| **分布式锁** | 为什么不直接用分布式锁？ | 分布式锁性能开销大，RAtomicLong 原子操作更轻量 |
-| **库存一致性** | Redis 与 DB 如何最终一致？ | DB 事务为权威源，Redis 异步同步，DB 失败可回滚 Redis |
-| **秒杀热点** | 极端并发下如何优化？ | Redis Cluster 分片 + 本地缓存（Caffeine）+ 限流 + 排队 |
-| **SETNX vs SET** | 为什么用 SETNX？ | 原子判断+赋值，避免竞态；TTL 防死锁 |
+| **超卖防御** | 如何确保不超卖？ | 三层检查：Domain 层预检查 (L1) + Redis RAtomicLong 原子递减 (L2) + 竞态负库存回滚 (L3) |
+| **Redis vs DB** | 为什么用 Redis 扣库存？ | 性能差 100 倍（10w+ vs 1k QPS），RAtomicLong.addAndGet() 保证原子性 |
+| **预检查上移** | 为什么 L1 在 Domain 层？ | DDD 原则：业务规则归 Domain；Infrastructure 层仅负责原子操作，不包含业务判断 |
+| **幂等性** | MQ 重复消息如何处理？ | SETNX 幂等键 `mall:stock:msg:processed:{messageId}`，24h TTL + trySet 原子性 |
+| **冷启动** | Redis 重启后库存丢失？ | StockPreheatRunner 应用启动时批量同步 DB → Redis |
+| **CAP 取舍** | 库存系统一致性模型？ | AP 偏向：Redis 优先保证可用性，DB 通过 MQ 异步同步最终一致 |
+| **DB 兜底** | DB 扣减失败怎么办？ | MySQL 乐观锁 (`UPDATE WHERE stock >= ?`)，Redis 为主事实源，DB 失败不影响主流程 |
+| **边扣边回滚** | 多商品下单中途失败？ | checkAndDeductStock 逐项扣减，失败时 restoreDeductedStock 回滚已扣项 |
 
 ---
 
-## 九、关键源码索引
-
-- 网关实现：[`StockGatewayImpl`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/gateway/StockGatewayImpl.java)
-- 幂等网关：[`IdempotentGatewayImpl`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/gateway/IdempotentGatewayImpl.java)
-- 分布式锁：[`RedisDistributedLock`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/config/RedisDistributedLock.java)
-- 库存监听器：[`ProductStockChangeRocketListener`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/listener/ProductStockChangeRocketListener.java)
-- 预热任务：[`StockPreheatRunner`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/job/StockPreheatRunner.java)
-
----
-
-> **核心设计哲学**：库存系统是 **CP 偏向 AP** 的工程实践——通过 **多层幂等 + 异步同步 + 状态机校验** 的组合拳，在保证最终一致性的前提下，将系统可用性提升到极致。
+> **关键源码索引**：
+> - 原子扣减：[`StockGatewayImpl.deductStock()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/mall/gateway/StockGatewayImpl.java#L49)
+> - 预检查编排：[`MallOrderServiceImpl.checkAndDeductStock()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/mall/service/impl/MallOrderServiceImpl.java#L38)
+> - 状态机库存同步：[`OrderStateMachineServiceImpl`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/mall/service/impl/OrderStateMachineServiceImpl.java)
+> - 幂等检查：[`StockGatewayImpl.checkMessageIdempotent()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/mall/gateway/StockGatewayImpl.java#L141)
+> - 库存预热：[`StockPreheatRunner`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/job/StockPreheatRunner.java)
+> - MQ 消费：[`ProductStockChangeRocketListener`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/listener/ProductStockChangeRocketListener.java)
+> - Handler 策略：[`DeductHandler`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/mall/service/handler/DeductHandler.java) / [`RestoreHandler`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/mall/service/handler/RestoreHandler.java)
+> - Domain 接口：[`IStockGateway`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/mall/gateway/IStockGateway.java)
