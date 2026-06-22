@@ -6,31 +6,45 @@ import cn.fcr.domain.shared.model.vo.PayStatus;
 import cn.fcr.types.util.DateUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter; // 替换 @Data，拒绝外界盲目 Setter
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections; // 引入只读防御
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-@Getter // 仅允许外部读取
+/**
+ * 订单实体（充血模型），封装订单状态机和金额计算等核心业务逻辑。
+ *
+ * @author 傅崇睿
+ */
+@Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderEntity {
 
+    /** 订单主键ID */
     private Long id;
+    /** 订单号 */
     private String orderNo;
+    /** 用户ID */
     private Long userId;
+    /** 订单总金额 */
     private BigDecimal totalAmount;
+    /** 收货地址 */
     private String address;
+    /** 订单状态 */
     private OrderState state;
+    /** 创建时间 */
     private LocalDateTime createTime;
+    /** 更新时间 */
     private LocalDateTime updateTime;
 
+    /** 订单商品项列表 */
     @Builder.Default
     private List<OrderItemEntity> items = new ArrayList<>();
 

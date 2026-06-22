@@ -7,6 +7,11 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
+/**
+ * 认证Token网关实现
+ *
+ * @author 傅崇睿
+ */
 @Component
 public class AuthTokenGatewayImpl implements IAuthTokenGateway {
 

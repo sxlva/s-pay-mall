@@ -10,25 +10,29 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * @description 检测未接收到或未正确处理的支付回调通知
+ * 支付回调补偿Job
  *
- * <p>支付宝交易查询逻辑已封装至 {@link IAlipayQueryGateway}，
- * 本 Job 不再直接依赖 Alipay SDK。</p>
- *
- * @note 当前已禁用：因 IOrderDao.queryNoPayNotifyOrder 方法未绑定，导致每3秒抛出异常
- *       需在 IOrderDao 中正确配置该方法后再启用
+ * @author 傅崇睿
  */
 @Slf4j
-//@Component()
+@Component()
 public class NoPayNotifyOrderJob {
 
+    /** 订单应用层服务 */
     @Resource
     private OrderApplicationService orderApplicationService;
 
+    /** 支付宝交易查询网关 */
     @Resource
     private IAlipayQueryGateway alipayQueryGateway;
 
-    //@Scheduled(cron = "0/3 * * * * ?")
+    /**
+     * 定时补偿未收到回调的支付订单
+     *
+     * <p>每30秒执行一次，查询未正确处理的支付回调通知，
+     * 通过支付宝交易查询接口主动确认支付状态。</p>
+     */
+    @Scheduled(cron = "0/30 * * * * ?")
     public void exec() {
         try {
             log.info("任务；检测未接收到或未正确处理的支付回调通知");

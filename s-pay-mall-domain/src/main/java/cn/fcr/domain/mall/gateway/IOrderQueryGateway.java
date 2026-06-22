@@ -3,11 +3,10 @@ package cn.fcr.domain.mall.gateway;
 import cn.fcr.domain.mall.model.valobj.OrderSummaryVO;
 
 /**
- * 订单查询网关接口
- * 提供 mall 领域所需的订单只读查询操作
- * <p>
- * 【DDD 解耦】此接口定义在 mall 领域，作为对 order 领域的抽象依赖，
- * 由 Infrastructure 层实现，避免 mall 领域直接依赖 order 领域
+ * 订单查询网关接口（DDD 解耦），定义 mall 领域所需的订单只读查询操作，
+ * 由 Infrastructure 层实现，避免 mall 领域直接依赖 order 领域。
+ *
+ * @author 傅崇睿
  */
 public interface IOrderQueryGateway {
 

@@ -15,25 +15,40 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * 订单支付成功 RocketMQ 消息监听器，触发后续履约与微信通知。
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 @Component
 @RocketMQMessageListener(topic = "order_paid", consumerGroup = "s-pay-mall-order-paid-consumer")
 public class OrderPaidRocketListener implements RocketMQListener<PaySuccessMessageEvent.PaySuccessMessage> {
 
+    /** 订单应用服务 */
     @Resource
     private OrderApplicationService orderApplicationService;
 
+    /** 订单查询网关 */
     @Resource
     private IMallOrderQueryGateway mallOrderQueryGateway;
 
+    /** 用户绑定网关 */
     @Resource
     private IUserBindingGateway userBindingGateway;
 
+    /** 微信网关 */
     @Resource
     private IWeChatGateway weChatGateway;
 
+    /** 支付时间格式化器 */
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /**
+     * 消费支付成功消息：更新订单状态并发送微信模板消息通知。
+     *
+     * @param message 支付成功消息体
+     */
     @Override
     public void onMessage(PaySuccessMessageEvent.PaySuccessMessage message) {
         log.info("【RocketMQ 核心链路】收到支付成功消息，开始执行后续核心业务逻辑。订单号: {}, 交易号: {}",

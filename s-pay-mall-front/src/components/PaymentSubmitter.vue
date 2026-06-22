@@ -12,15 +12,17 @@
 <script setup lang="ts">
 /**
  * PaymentSubmitter 组件
- * 
+ *
  * 用途：
  * - 接收后端返回的支付表单 HTML 字符串
  * - 自动将 HTML 注入到页面并提交表单
  * - 完成后自动隐藏
- * 
+ *
  * 使用场景：
  * - 支付宝/微信等第三方支付的表单提交
  * - 需要自动提交的支付场景
+ *
+ * @author 傅崇睿
  */
 import { ref, watch, onMounted, nextTick } from 'vue'
 
@@ -137,7 +139,7 @@ onMounted(() => {
   // 使用 nextTick 确保 DOM 已经完全渲染
   if (props.payHtml) {
     nextTick(() => {
-      submitPaymentForm(props.payHtml)
+      submitPaymentForm(props.payHtml!)
     })
   }
 })

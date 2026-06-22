@@ -10,6 +10,8 @@ import cn.fcr.api.vo.UserProfileVO;
 /**
  * 商城用户认证外观接口
  * 对外暴露用户注册、登录、微信绑定、个人信息等认证相关接口
+ *
+ * @author 傅崇睿
  */
 public interface IMallAuthFacade {
 

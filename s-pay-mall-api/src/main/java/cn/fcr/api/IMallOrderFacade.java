@@ -12,6 +12,8 @@ import java.util.List;
 /**
  * 商城订单外观接口
  * 对外暴露购物车和订单相关的操作接口
+ *
+ * @author 傅崇睿
  */
 public interface IMallOrderFacade {
 

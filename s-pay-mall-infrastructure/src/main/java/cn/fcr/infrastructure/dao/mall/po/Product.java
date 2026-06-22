@@ -10,7 +10,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 商品实体类
+ * 商品实体类（product表）
+ *
+ * @author 傅崇睿
  */
 @Data
 @TableName("product")

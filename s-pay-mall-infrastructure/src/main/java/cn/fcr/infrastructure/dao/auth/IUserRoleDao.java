@@ -9,9 +9,9 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 /**
- * 用户角色关系数据访问接口
- * 负责用户与角色之间的多对多关联关系操作
- * 主要用于权限控制和角色鉴定
+ * 用户角色关系数据访问接口（MyBatis-Plus BaseMapper）
+ *
+ * @author 傅崇睿
  */
 @Mapper
 public interface IUserRoleDao extends BaseMapper<UserRole> {

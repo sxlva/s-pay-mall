@@ -11,10 +11,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 购物车仓储实现（MyBatis-Plus）
+ *
+ * @author 傅崇睿
+ */
 @Repository
 public class CartRepository implements ICartRepository {
 

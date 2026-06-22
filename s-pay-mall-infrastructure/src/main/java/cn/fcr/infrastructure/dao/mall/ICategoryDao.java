@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 商品分类数据访问接口
- * 继承 MyBatis-Plus BaseMapper，提供分类的 CRUD 操作
- * 自定义方法支持获取各分类下的商品数量统计
+ * 商品分类数据访问接口（MyBatis-Plus BaseMapper）
+ *
+ * @author 傅崇睿
  */
 @Mapper
 public interface ICategoryDao extends BaseMapper<Category> {

@@ -11,21 +11,9 @@ import javax.annotation.Resource;
 import java.util.Date;
 
 /**
- * @description 支付订单网关实现类
+ * 支付订单网关实现
  *
- * 【职责说明】
- * - 处理支付订单状态的持久化操作
- * - 实现领域层定义的IPayOrderGateway接口
- * - 负责更新支付状态、关闭订单等操作
- *
- * 【核心功能】
- * 1. updatePayStatusToPaid(): 更新支付状态为已支付
- * 2. updatePayStatusToTradeDone(): 更新支付状态为交易完成
- * 3. closePayOrder(): 关闭支付订单
- * 4. getPayStatus(): 获取支付状态
- *
- * 【依赖说明】
- * - IOrderDao: 订单数据访问接口
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

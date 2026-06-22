@@ -7,7 +7,9 @@ import cn.fcr.domain.mall.model.valobj.UserProfile;
 import java.util.List;
 
 /**
- * 用户领域服务接口
+ * 用户领域服务接口，定义注册、登录和用户管理的抽象。
+ *
+ * @author 傅崇睿
  */
 public interface IMallUserService {
     

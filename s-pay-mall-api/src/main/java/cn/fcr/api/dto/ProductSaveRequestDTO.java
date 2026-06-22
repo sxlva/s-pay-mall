@@ -1,6 +1,5 @@
 package cn.fcr.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -11,6 +10,8 @@ import java.math.BigDecimal;
  * 商品保存请求DTO
  * <p>
  * 用于创建或更新商品的请求参数封装
+ *
+ * @author 傅崇睿
  */
 @Data
 public class ProductSaveRequestDTO {

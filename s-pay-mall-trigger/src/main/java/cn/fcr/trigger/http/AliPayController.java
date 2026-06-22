@@ -15,8 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 支付宝支付控制器
- * 处理支付宝支付相关的接口
+ * 支付宝支付Controller
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @RestController()
@@ -24,14 +25,21 @@ import java.util.Map;
 @RequestMapping("/pay-api/${app.config.api-version}/alipay/")
 public class AliPayController {
 
+    /** 支付宝公钥，用于支付回调验签 */
     @Value("${alipay.alipay_public_key}")
     private String alipayPublicKey;
 
+    /** 订单应用层服务 */
     @Resource
     private OrderApplicationService orderApplicationService;
 
     /**
      * 创建支付订单
+     *
+     * <p>根据商品ID生成支付宝支付单，返回支付页面的跳转URL</p>
+     *
+     * @param createPayRequestDTO 创建支付请求，包含 userId 和 productId
+     * @return 支付URL
      */
     @RequestMapping(value = "create_pay_order", method = RequestMethod.POST)
     public Response<String> createPayOrder(@RequestBody CreatePayRequestDTO createPayRequestDTO) {
@@ -62,6 +70,14 @@ public class AliPayController {
         }
     }
 
+    /**
+     * 支付宝支付异步回调通知
+     *
+     * <p>接收支付宝服务器发送的支付结果通知，验签后更新订单支付状态</p>
+     *
+     * @param request HTTP请求，包含支付宝POST过来的回调参数
+     * @return "success" 表示处理成功，"false" 表示处理失败
+     */
     @RequestMapping(value = "alipay_notify_url", method = RequestMethod.POST)
     public String payNotify(HttpServletRequest request) {
         try {
@@ -69,7 +85,7 @@ public class AliPayController {
         } catch (Exception e) {
             log.warn("设置请求编码失败", e);
         }
-        
+
         log.info("支付回调，消息接收 trade_status:{}", request.getParameter("trade_status"));
 
         if (!"TRADE_SUCCESS".equals(request.getParameter("trade_status"))
@@ -81,7 +97,7 @@ public class AliPayController {
 
         boolean signVerified = orderApplicationService.verifyPayCallbackSign(params, alipayPublicKey);
         if (!signVerified) {
-            log.error("支付回调，签名验证失败。公钥长度: {}, 公钥前100字符: {}, 接收参数: {}", 
+            log.error("支付回调，签名验证失败。公钥长度: {}, 公钥前100字符: {}, 接收参数: {}",
                     alipayPublicKey != null ? alipayPublicKey.length() : 0,
                     alipayPublicKey != null && alipayPublicKey.length() > 100 ? alipayPublicKey.substring(0, 100) : alipayPublicKey,
                     params);
@@ -97,6 +113,12 @@ public class AliPayController {
         return "success";
     }
 
+    /**
+     * 从 HttpServletRequest 提取所有参数为 Map
+     *
+     * @param request HTTP请求
+     * @return 参数 key-value Map
+     */
     private Map<String, String> extractParams(HttpServletRequest request) {
         Map<String, String[]> requestParams = request.getParameterMap();
         Map<String, String> params = new HashMap<>();

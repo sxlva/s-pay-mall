@@ -1,10 +1,10 @@
 package cn.fcr.domain.mall.service;
 
 /**
- * 订单状态机服务接口
- * 统一处理 order_main 和 pay_order 的状态流转，确保数据一致性
- * 
- * 【DDD 原则】状态机作为领域服务，封装所有状态转换的业务规则和约束
+ * 订单状态机服务接口，统一处理 order_main 和 pay_order 的状态流转，
+ * 确保数据一致性，封装所有状态转换的业务规则和约束。
+ *
+ * @author 傅崇睿
  */
 public interface IOrderStateMachineService {
 

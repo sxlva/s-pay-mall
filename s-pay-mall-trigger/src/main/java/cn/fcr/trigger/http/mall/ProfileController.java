@@ -12,15 +12,29 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+/**
+ * 用户个人信息Controller
+ *
+ * <p>【DDD 触发层】处理用户个人信息查询，通过JWT自动识别当前用户。</p>
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 @RestController
 @CrossOrigin("${app.config.cross-origin}")
 @RequestMapping("/mall-api/${app.config.api-version}")
 public class ProfileController extends BaseController {
 
+    /** 商城用户领域服务 */
     @Resource
     private IMallUserService mallUserService;
 
+    /**
+     * 获取当前用户个人信息
+     *
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 用户个人信息
+     */
     @GetMapping("/profile")
     public Response<UserProfileVO> getProfile(HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);

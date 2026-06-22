@@ -7,8 +7,9 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 商城订单查询网关
- * 提供订单查询、统计等只读操作
+ * 商城订单查询网关，提供订单查询、统计等只读操作。
+ *
+ * @author 傅崇睿
  */
 public interface IMallOrderQueryGateway {
 

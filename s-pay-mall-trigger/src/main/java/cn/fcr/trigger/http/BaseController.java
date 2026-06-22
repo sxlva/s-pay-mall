@@ -11,12 +11,13 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 /**
- * 基础控制器类
+ * 控制器公共基类
  *
- * <p>提供控制器通用的工具方法，包括响应封装和JWT解析
+ * @author 傅崇睿
  */
 public class BaseController {
 
+    /** JWT签名密钥 */
     @Value("${security.jwt.secret:REPLACED_DEFAULT_JWT_SECRET}")
     private String jwtSecret;
 
@@ -54,10 +55,11 @@ public class BaseController {
      * 从请求头解析当前用户ID
      *
      * <p>从Authorization头中提取JWT token，解析出用户ID。
-     * 如果token无效或不存在，抛出IllegalArgumentException。
+     * 如果token无效或不存在，抛出IllegalArgumentException。</p>
      *
      * @param request HTTP请求对象
      * @return 当前用户ID
+     * @throws IllegalArgumentException token不存在或格式不正确
      */
     protected Long currentUserId(HttpServletRequest request) {
         String auth = request.getHeader("Authorization");
@@ -71,6 +73,12 @@ public class BaseController {
         return ((Number) claims.get("uid")).longValue();
     }
 
+    /**
+     * 将Object安全转为BigDecimal
+     *
+     * @param value 原始值，可为null
+     * @return 转换后的BigDecimal，null返回BigDecimal.ZERO
+     */
     protected BigDecimal toBigDecimal(Object value) {
         if (value == null) {
             return BigDecimal.ZERO;
@@ -91,6 +99,12 @@ public class BaseController {
         }
     }
 
+    /**
+     * 将Object转为Map
+     *
+     * @param obj 待转换对象
+     * @return Map形式的数据
+     */
     @SuppressWarnings("unchecked")
     protected Map<String, Object> toMap(Object obj) {
         return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(obj, Map.class);

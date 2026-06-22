@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 统计服务接口
+ * 统计领域服务接口，定义销售趋势和分类占比查询的抽象。
+ *
+ * @author 傅崇睿
  */
 public interface IMallStatisticsService {
     

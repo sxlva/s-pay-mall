@@ -65,8 +65,13 @@
 </template>
 
 <script setup>
+/**
+ * 管理后台仪表盘：统计数据 + ECharts 销售走势图 + 分类占比图
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { ElMessage } from 'element-plus'
 import { 
   User, 
   Goods, 

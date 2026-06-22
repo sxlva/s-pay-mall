@@ -1,4 +1,9 @@
-// 应用入口：注册路由并挂载根组件
+/**
+ * 应用入口：注册 Pinia、Element Plus、Vue Router 并挂载根组件
+ *
+ * @author 傅崇睿
+ */
+
 import './assets/main.css'
 
 import { createApp } from 'vue'

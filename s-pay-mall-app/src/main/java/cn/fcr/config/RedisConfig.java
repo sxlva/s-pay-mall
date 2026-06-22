@@ -13,21 +13,33 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
  * Redis 配置类
+ *
+ * <p>手动配置 Lettuce 连接工厂及 StringRedisTemplate，
+ * 覆盖 Spring Boot 默认自动配置。</p>
+ *
+ * @author 傅崇睿
  */
 @Configuration
 public class RedisConfig {
 
-    // 1. 读取自定义配置
+    /** Redis 主机地址 */
     @Value("${redis.sdk.config.host}")
     private String host;
+    /** Redis 端口 */
     @Value("${redis.sdk.config.port}")
     private int port;
+    /** Redis 密码 */
     @Value("${redis.sdk.config.password}")
     private String password;
+    /** Redis 数据库索引 */
     @Value("${redis.sdk.config.database}")
     private int database;
 
-    // 2. 创建并配置连接工厂 (关键点：这里必须手动设置连接参数)
+    /**
+     * 创建 Lettuce Redis 连接工厂
+     *
+     * @return RedisConnectionFactory
+     */
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
@@ -36,14 +48,18 @@ public class RedisConfig {
         config.setPassword(RedisPassword.of(password));
         config.setDatabase(database);
 
-        // 如果你需要配置连接池 (Lettuce 需要添加 commons-pool2 依赖)
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
                 .build();
 
         return new LettuceConnectionFactory(config, clientConfig);
     }
 
-    // 3. 使用配置好的连接工厂
+    /**
+     * 创建 StringRedisTemplate
+     *
+     * @param connectionFactory Redis 连接工厂
+     * @return StringRedisTemplate，使用字符串序列化
+     */
     @Bean
     public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
         StringRedisTemplate template = new StringRedisTemplate();

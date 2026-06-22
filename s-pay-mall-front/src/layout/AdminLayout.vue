@@ -65,6 +65,12 @@
 </template>
 
 <script setup>
+/**
+ * 管理后台布局组件：左侧菜单 + 顶部导航 + 内容区
+ *
+ * @author 傅崇睿
+ */
+
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

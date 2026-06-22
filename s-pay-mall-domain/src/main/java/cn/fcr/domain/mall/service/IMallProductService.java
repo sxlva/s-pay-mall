@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 商品领域服务接口
+ * 商品领域服务接口，定义商品分类管理和商品 CRUD 的抽象。
+ *
+ * @author 傅崇睿
  */
 public interface IMallProductService {
 

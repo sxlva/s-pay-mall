@@ -1,10 +1,20 @@
+/**
+ * 支付状态管理 Store
+ * 职责：支付轮询、倒计时、状态管理
+ * DDD 分层：Application/Domain Layer（应用层/领域层）
+ *
+ * @author 傅崇睿
+ */
+
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { PayOrder, PollingState, PayResult } from '../types/payment';
 import { orderRepository } from '../repositories/orderRepository';
 import type { Order } from '../types/order';
 
+/** 轮询间隔（毫秒） */
 const POLLING_INTERVAL = 3000;
+/** 最大轮询次数（3秒 x 60次 = 3分钟） */
 const MAX_POLLING_COUNT = 60;
 
 export const usePaymentStore = defineStore('payment', () => {
@@ -22,6 +32,11 @@ export const usePaymentStore = defineStore('payment', () => {
   const isPaid = computed(() => pollingState.value === 'success');
   const isFailed = computed(() => pollingState.value === 'failed' || pollingState.value === 'timeout');
 
+  /**
+   * 开始轮询支付状态
+   * @param orderNo 订单号
+   * @param initialCountdown 初始倒计时秒数（默认 180）
+   */
   const startPolling = (orderNo: string, initialCountdown: number = 180) => {
     if (pollingTimer) {
       stopPolling();
@@ -44,6 +59,7 @@ export const usePaymentStore = defineStore('payment', () => {
     }, POLLING_INTERVAL);
   };
 
+  /** 停止轮询并清理定时器 */
   const stopPolling = () => {
     if (pollingTimer) {
       clearInterval(pollingTimer);
@@ -57,6 +73,10 @@ export const usePaymentStore = defineStore('payment', () => {
     pollingCount.value = 0;
   };
 
+  /**
+   * 检查支付状态（轮询回调）
+   * @param orderNo 订单号
+   */
   const checkPaymentStatus = async (orderNo: string) => {
     if (pollingState.value !== 'polling') {
       return;
@@ -83,28 +103,42 @@ export const usePaymentStore = defineStore('payment', () => {
     }
   };
 
+  /** 处理支付成功 */
   const handlePaymentSuccess = () => {
     stopPolling();
     pollingState.value = 'success';
     console.log('支付成功');
   };
 
+  /** 处理支付超时 */
   const handleTimeout = () => {
     stopPolling();
     pollingState.value = 'timeout';
     error.value = '支付超时，请重新下单';
   };
 
+  /**
+   * 处理支付失败
+   * @param errorMessage 错误信息
+   */
   const handlePaymentFailed = (errorMessage: string) => {
     stopPolling();
     pollingState.value = 'failed';
     error.value = errorMessage;
   };
 
+  /**
+   * 设置支付链接
+   * @param url 支付链接或 HTML 表单
+   */
   const setPayUrl = (url: string | null) => {
     payUrl.value = url;
   };
 
+  /**
+   * 初始化支付订单
+   * @param result 支付结果
+   */
   const initPayOrder = (result: PayResult) => {
     currentPayOrder.value = {
       orderNo: result.orderNo,

@@ -1,10 +1,12 @@
-import { getAdminUsers, updateAdminUserStatus, deleteAdminUser } from '../api/admin'
-import type { UserVO, UserQueryParams } from '../types/adminUser'
-
 /**
  * 管理员用户服务
  * 负责用户管理相关的业务编排逻辑
+ *
+ * @author 傅崇睿
  */
+
+import { getAdminUsers, updateAdminUserStatus, deleteAdminUser } from '../api/admin'
+import type { UserVO, UserQueryParams } from '../types/adminUser'
 export class AdminUserService {
   /**
    * 获取用户列表

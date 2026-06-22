@@ -30,8 +30,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 管理员控制器
- * 处理后台管理相关的接口，包括用户管理、商品管理、订单管理、统计分析等
+ * 管理后台Controller（mall-api）
+ *
+ * <p>【DDD 触发层】提供管理后台所有接口，包含用户管理、商品管理、订单管理、统计分析。
+ * 无 Spring Security 注解校验，权限由 Gateway/Interceptor 层控制。</p>
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @RestController
@@ -39,20 +43,32 @@ import java.util.stream.Collectors;
 @RequestMapping("/mall-api/${app.config.api-version}/admin")
 public class MallAdminController extends BaseController {
 
+    /** 商城用户领域服务 */
     @Resource
     private IMallUserService mallUserService;
 
+    /** 商城商品领域服务 */
     @Resource
     private IMallProductService mallProductService;
 
+    /** 商城统计领域服务 */
     @Resource
     private IMallStatisticsService mallStatisticsService;
 
+    /** 订单应用层服务 */
     @Resource
     private OrderApplicationService orderApplicationService;
 
     // ==================== 用户管理 ====================
 
+    /**
+     * 查询用户列表（含角色名称映射）
+     *
+     * @param username 用户名（模糊匹配，可选）
+     * @param status   用户状态（可选）
+     * @param roleCode 角色编码（可选）
+     * @return 用户列表
+     */
     @GetMapping("/users")
     public Response<List<UserVO>> listUsers(
             @RequestParam(required = false) String username,
@@ -73,6 +89,12 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 新增或更新用户
+     *
+     * @param request 用户信息
+     * @return 影响行数
+     */
     @PostMapping("/users")
     public Response<Integer> saveUser(@RequestBody UserSaveRequestDTO request) {
         log.info("保存用户: username={}", request.getUsername());
@@ -86,6 +108,13 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 更新用户状态
+     *
+     * @param userId 用户ID
+     * @param status 新状态
+     * @return 影响行数
+     */
     @PutMapping("/users/{userId}/status")
     public Response<Integer> updateUserStatus(
             @PathVariable Long userId,
@@ -95,6 +124,12 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除用户
+     *
+     * @param userId 用户ID
+     * @return 影响行数
+     */
     @DeleteMapping("/users/{userId}")
     public Response<Integer> deleteUser(@PathVariable Long userId) {
         log.info("删除用户: id={}", userId);
@@ -104,6 +139,11 @@ public class MallAdminController extends BaseController {
 
     // ==================== 分类管理 ====================
 
+    /**
+     * 查询分类列表
+     *
+     * @return 分类列表
+     */
     @GetMapping("/categories")
     public Response<List<CategoryVO>> listCategories() {
         List<cn.fcr.domain.mall.model.valobj.CategoryVO> categories = mallProductService.listCategory();
@@ -118,6 +158,12 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 新增或更新分类
+     *
+     * @param request 分类信息
+     * @return 影响行数
+     */
     @PostMapping("/categories")
     public Response<Integer> saveCategory(@RequestBody CategorySaveRequestDTO request) {
         log.info("保存分类: name={}", request.getName());
@@ -125,6 +171,12 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除分类
+     *
+     * @param categoryId 分类ID
+     * @return 影响行数
+     */
     @DeleteMapping("/categories/{categoryId}")
     public Response<Integer> deleteCategory(@PathVariable Long categoryId) {
         log.info("删除分类: id={}", categoryId);
@@ -134,6 +186,16 @@ public class MallAdminController extends BaseController {
 
     // ==================== 商品管理 ====================
 
+    /**
+     * 查询商品列表
+     *
+     * @param categoryId 分类ID（可选）
+     * @param keyword    关键词（可选）
+     * @param minPrice   最低价（可选）
+     * @param maxPrice   最高价（可选）
+     * @param status     状态（可选）
+     * @return 商品列表
+     */
     @GetMapping("/products")
     public Response<List<ProductVO>> listProducts(
             @RequestParam(required = false) Long categoryId,
@@ -159,6 +221,12 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 新增或更新商品
+     *
+     * @param request 商品信息
+     * @return 影响行数
+     */
     @PostMapping("/products")
     public Response<Integer> saveProduct(@RequestBody @Valid ProductSaveRequestDTO request) {
         log.info("保存商品: name={}", request.getName());
@@ -175,6 +243,12 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除商品
+     *
+     * @param productId 商品ID
+     * @return 影响行数
+     */
     @DeleteMapping("/products/{productId}")
     public Response<Integer> deleteProduct(@PathVariable Long productId) {
         log.info("删除商品: id={}", productId);
@@ -184,6 +258,15 @@ public class MallAdminController extends BaseController {
 
     // ==================== 订单管理 ====================
 
+    /**
+     * 查询订单列表
+     *
+     * @param userId    用户ID（可选）
+     * @param status    订单状态（可选）
+     * @param startTime 开始时间（可选）
+     * @param endTime   结束时间（可选）
+     * @return 订单列表
+     */
     @GetMapping("/orders")
     public Response<List<OrderVO>> listOrders(
             @RequestParam(required = false) Long userId,
@@ -191,7 +274,7 @@ public class MallAdminController extends BaseController {
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
         List<cn.fcr.domain.mall.model.valobj.OrderVO> orders = orderApplicationService.listOrders(userId, status, startTime, endTime);
-        
+
         List<OrderVO> result = orders.stream().map(o -> {
             OrderVO vo = new OrderVO();
             vo.setId(o.getId());
@@ -204,11 +287,17 @@ public class MallAdminController extends BaseController {
             vo.setCreateTime(o.getCreateTime());
             return vo;
         }).collect(Collectors.toList());
-        
+
         log.info("【订单查询】管理后台查询订单数量: {}", result.size());
         return success(result);
     }
 
+    /**
+     * 一键发货
+     *
+     * @param orderId 订单ID
+     * @return 影响行数
+     */
     @PutMapping("/orders/{orderId}/deliver")
     public Response<Integer> deliverOrder(@PathVariable Long orderId) {
         log.info("一键发货: orderId={}", orderId);
@@ -216,6 +305,12 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 取消订单
+     *
+     * @param orderId 订单ID
+     * @return 影响行数
+     */
     @PutMapping("/orders/{orderId}/cancel")
     public Response<Integer> cancelOrder(@PathVariable Long orderId) {
         log.info("取消订单: orderId={}", orderId);
@@ -223,6 +318,12 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除订单
+     *
+     * @param orderId 订单ID
+     * @return 影响行数
+     */
     @DeleteMapping("/orders/{orderId}")
     public Response<Integer> deleteOrder(@PathVariable Long orderId) {
         log.info("删除订单: id={}", orderId);
@@ -232,6 +333,11 @@ public class MallAdminController extends BaseController {
 
     // ==================== 统计分析 ====================
 
+    /**
+     * 获取销售趋势
+     *
+     * @return 销售趋势数据列表
+     */
     @GetMapping("/statistics/sales-trend")
     public Response<List<SalesTrendVO>> getSalesTrend() {
         List<Map<String, Object>> trend = mallStatisticsService.getSalesTrend();
@@ -245,6 +351,11 @@ public class MallAdminController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 获取分类销售占比
+     *
+     * @return 分类占比数据列表
+     */
     @GetMapping("/statistics/category-ratio")
     public Response<List<CategoryRatioVO>> getCategoryRatio() {
         List<Map<String, Object>> ratio = mallStatisticsService.getCategoryRatio();

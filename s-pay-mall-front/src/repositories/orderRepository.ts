@@ -2,6 +2,8 @@
  * 订单仓储层
  * 职责：封装数据访问逻辑，处理 HTTP 请求，将后端原始数据转换为前端业务对象
  * DDD 分层：Infrastructure Layer（基础设施层）
+ *
+ * @author 傅崇睿
  */
 import { mallInstance } from '@/utils/axios'
 import type { Order, OrderCreateResult, OrderListParams } from '@/types/order'

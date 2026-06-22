@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * 商品保存命令
- * 用于封装商品新增或更新的操作指令
+ * 商品保存命令对象，封装商品新增或更新的操作指令。
+ *
+ * @author 傅崇睿
  */
 @Data
 @Builder

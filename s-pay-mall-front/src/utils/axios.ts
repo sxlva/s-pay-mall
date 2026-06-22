@@ -1,20 +1,29 @@
+/**
+ * Axios 实例配置：请求/响应拦截器，统一处理 token 和错误
+ *
+ * @author 傅崇睿
+ */
+
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 import { ElMessage } from 'element-plus'
 
-// 商城端 API (mall-api)
+/** 商城端 Axios 实例（baseURL: /mall-api/v1） */
 const mallInstance: AxiosInstance = axios.create({
   baseURL: '/mall-api/v1',
   timeout: 10000
 })
 
-// 管理端 API (mall-api) - 统一使用 mall-api 前缀
+/** 管理端 Axios 实例（baseURL: /mall-api/v1） */
 const adminInstance: AxiosInstance = axios.create({
   baseURL: '/mall-api/v1',
   timeout: 10000
 })
 
-// 请求拦截器：自动添加 Authorization token
+/**
+ * 设置请求拦截器：自动附加 Bearer token
+ * @param instance Axios 实例
+ */
 const setupRequestInterceptor = (instance: AxiosInstance) => {
   instance.interceptors.request.use(
     (config) => {
@@ -30,7 +39,10 @@ const setupRequestInterceptor = (instance: AxiosInstance) => {
   )
 }
 
-// 响应拦截器：统一处理响应格式
+/**
+ * 设置响应拦截器：统一处理成功/错误响应，提取 data 或弹出错误
+ * @param instance Axios 实例
+ */
 const setupResponseInterceptor = (instance: AxiosInstance) => {
   instance.interceptors.response.use(
     (response) => {

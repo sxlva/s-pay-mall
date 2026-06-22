@@ -7,6 +7,8 @@ import cn.fcr.api.response.Response;
  * 支付外观接口
  * <p>
  * 对外暴露支付相关的操作接口，提供订单支付能力
+ *
+ * @author 傅崇睿
  */
 public interface IPayFacade {
 

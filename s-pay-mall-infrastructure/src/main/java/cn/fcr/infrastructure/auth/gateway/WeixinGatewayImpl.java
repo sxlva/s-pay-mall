@@ -19,22 +19,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @description 微信网关实现类
+ * 微信网关实现（Retrofit2调用微信公众号API）
  *
- * 【职责说明】
- * - 封装微信公众号API的调用逻辑
- * - 实现领域层定义的IWeChatGateway接口
- * - 负责获取Access Token、创建二维码、发送模板消息等操作
- *
- * 【核心功能】
- * 1. createQrCodeTicket(): 生成微信二维码票据
- * 2. sendLoginNotification(): 发送登录通知模板消息
- * 3. sendPaymentSuccessNotification(): 发送支付成功通知模板消息
- *
- * 【依赖说明】
- * - IWeixinApiService: Retrofit2声明式接口，用于HTTP调用
- * - Cache: Guava缓存，用于缓存Access Token
- * - 配置文件: 微信app-id、app-secret、template_id等
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

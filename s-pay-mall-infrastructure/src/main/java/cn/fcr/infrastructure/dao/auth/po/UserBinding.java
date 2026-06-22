@@ -9,10 +9,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 用户第三方联合绑定表实体类
+ * 用户第三方联合绑定表实体类（user_binding表）
  *
- * <p>用于存储用户与第三方平台（微信公众号、支付宝、手机号等）的绑定关系
- * 采用一对多设计，为后续扩展多种登录方式留出空间
+ * @author 傅崇睿
  */
 @Data
 @TableName("user_binding")

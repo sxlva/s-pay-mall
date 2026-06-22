@@ -76,9 +76,14 @@
 </template>
 
 <script setup>
+/**
+ * 管理后台订单管理：订单列表、一键发货、取消订单
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Check } from '@element-plus/icons-vue'
 import { getAdminOrders, deliverOrder, cancelOrder } from '../../api/admin'
 
 const orders = ref([])

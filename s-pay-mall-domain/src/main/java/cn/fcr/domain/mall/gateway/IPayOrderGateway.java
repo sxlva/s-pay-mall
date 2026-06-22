@@ -3,10 +3,9 @@ package cn.fcr.domain.mall.gateway;
 import cn.fcr.domain.shared.model.vo.PayStatus;
 
 /**
- * 支付订单网关接口
- * 提供支付订单状态更新的能力
- * 
- * 【DDD 原则】Domain 层定义接口，Infrastructure 层实现具体技术细节
+ * 支付订单网关接口，提供支付订单状态更新的能力。
+ *
+ * @author 傅崇睿
  */
 public interface IPayOrderGateway {
 

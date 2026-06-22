@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
+ * 订单仓储实现（订单落库、支付状态更新与事件投递）
+ *
  * @author 傅崇睿
- * @date 2025/7/28 22:27
- * @description 订单仓储实现，负责订单落库、支付状态更新与支付事件投递
  */
 @Slf4j
 @Repository

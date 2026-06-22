@@ -1,18 +1,10 @@
 package cn.fcr.domain.mall.gateway;
 
 /**
- * 幂等性检查网关接口
- * 提供消息幂等性检查能力，防止重复处理
+ * 幂等性检查网关接口，提供消息幂等性检查能力，防止重复处理。
+ * 幂等 Key 格式统一为 stock:event:{业务类型}:{业务单号}，过期时间 24 小时。
  *
- * 【DDD 原则】Domain 层定义接口，Infrastructure 层实现具体技术细节（如 Redis）
- *
- * 【幂等 Key 规范】统一使用 stock:event:{业务类型}:{业务单号} 格式
- * 【过期时间】24 小时
- *
- * 【业务类型常量】
- * - deduct: 支付扣减库存
- * - restore: 订单取消恢复库存
- * - admin_update: 管理员更新库存
+ * @author 傅崇睿
  */
 public interface IIdempotentGateway {
 

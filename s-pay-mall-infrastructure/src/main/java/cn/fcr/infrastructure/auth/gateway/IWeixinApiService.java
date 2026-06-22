@@ -11,16 +11,9 @@ import retrofit2.http.POST;
 import retrofit2.http.Query;
 
 /**
- * @description 微信API服务接口 - Retrofit2声明式接口
+ * 微信API声明式接口（Retrofit2）
  *
- * 【职责说明】
- * - 定义微信公众号API的调用契约
- * - 包含获取Access Token、创建二维码、发送模板消息等接口
- * - 由Retrofit2自动生成实现，无需手动编写
- *
- * 【依赖说明】
- * - 使用retrofit2进行HTTP调用
- * - 依赖微信相关DTO类
+ * @author 傅崇睿
  */
 public interface IWeixinApiService {
 

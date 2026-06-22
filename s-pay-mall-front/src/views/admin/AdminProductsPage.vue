@@ -81,9 +81,15 @@
 </template>
 
 <script setup>
+/**
+ * 管理后台商品管理：商品列表、新增、编辑、删除
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete, Edit } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import { getAdminProducts, getAdminCategories, saveAdminProduct, deleteAdminProduct } from '../../api/admin'
 
 const products = ref([])

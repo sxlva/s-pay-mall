@@ -79,6 +79,12 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 订单列表页：订单展示、状态筛选、继续支付
+ *
+ * @author 傅崇睿
+ */
+
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -180,7 +186,7 @@ const handleContinuePay = async (order: Order) => {
 
     const payHtml = result.payUrl || result._html || result.html;
 
-    if (payHtml && typeof payHtml === 'string' && payHtml.includes('<form')) {
+    if (payHtml && payHtml.includes('<form')) {
       initPayOrder({
         orderNo: order.orderNo,
         totalAmount: order.totalAmount,

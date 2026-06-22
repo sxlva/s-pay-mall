@@ -5,10 +5,10 @@ import cn.fcr.domain.auth.repository.IWeChatTokenRepository;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 微信绑定服务
+ * 微信绑定服务，负责微信公众号绑定的状态管理，
+ * 通过 IWeChatTokenRepository 抽象接口操作缓存。
  *
- * <p>负责处理微信公众号绑定的状态管理
- * 通过 IWeChatTokenRepository 抽象接口操作缓存
+ * @author 傅崇睿
  */
 @Slf4j
 public class WeixinBindService {

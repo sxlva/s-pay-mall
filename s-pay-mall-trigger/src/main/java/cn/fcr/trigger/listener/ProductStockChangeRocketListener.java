@@ -11,18 +11,9 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * 库存变更消息消费者
- * 监听 product-stock-change-topic，通过策略模式路由到对应的处理器
+ * 库存变更 RocketMQ 消息监听器，通过策略模式路由到对应的变更处理器。
  *
- * 【策略模式】
- * - 通过 List<StockChangeHandler> 自动匹配对应的变更类型
- * - 每个 Handler 只处理一种变更类型（单一职责）
- * - 新增变更类型只需添加新的 Handler，无需修改此类
- *
- * 【消息来源】
- * - 后台管理员修改库存（ADMIN_UPDATE）-> AdminUpdateHandler
- * - 支付成功扣减库存（PAY_DEDUCT）-> DeductHandler
- * - 订单取消恢复库存（ORDER_RESTORE）-> RestoreHandler
+ * @author 傅崇睿
  */
 @Slf4j
 @Component
@@ -32,9 +23,15 @@ import java.util.List;
 )
 public class ProductStockChangeRocketListener implements RocketMQListener<StockChangeMsgDTO> {
 
+    /** 库存变更策略处理器列表，Spring 自动注入所有 StockChangeHandler 实现 */
     @Resource
     private List<StockChangeHandler> stockChangeHandlers;
 
+    /**
+     * 消费库存变更消息，按变更类型匹配策略处理器并执行。
+     *
+     * @param message 库存变更消息体
+     */
     @Override
     public void onMessage(StockChangeMsgDTO message) {
         Long productId = message.getProductId();

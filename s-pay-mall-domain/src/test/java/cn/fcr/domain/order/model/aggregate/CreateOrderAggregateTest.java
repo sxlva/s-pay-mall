@@ -9,6 +9,8 @@ import static org.junit.Assert.*;
 /**
  * CreateOrderAggregate 单元测试
  * 验证订单聚合的静态工厂方法和对象组装逻辑
+ *
+ * @author 傅崇睿
  */
 public class CreateOrderAggregateTest {
 

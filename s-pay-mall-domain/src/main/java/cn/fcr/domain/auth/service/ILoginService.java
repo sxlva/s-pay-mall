@@ -1,9 +1,9 @@
 package cn.fcr.domain.auth.service;
 
 /**
+ * 登录服务接口
+ *
  * @author 傅崇睿
- * @date 2025/7/26 14:57
- * @description 登陆服务接口
  */
 public interface ILoginService {
 

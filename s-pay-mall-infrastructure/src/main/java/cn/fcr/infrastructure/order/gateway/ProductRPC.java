@@ -6,15 +6,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 
 /**
- * @description 商品RPC服务（模拟实现）
+ * 商品RPC服务（已弃用，仅保留模拟实现）
  *
- * 【职责说明】
- * - 模拟商品服务的RPC调用
- * - 提供商品查询接口，返回模拟数据
- * - 实际生产环境应替换为真实的RPC调用
- *
- * 【核心功能】
- * 1. queryProductByProductId(): 根据商品ID查询商品信息（模拟数据）
+ * @author 傅崇睿
+ * @deprecated 旧 Order Domain 占位实现，当前主流程已迁移至 Mall Domain，此类暂未启用
  */
 @Service
 public class ProductRPC {

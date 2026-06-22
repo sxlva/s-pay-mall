@@ -10,6 +10,13 @@ import cn.fcr.domain.shared.model.vo.PayStatus;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * 订单领域服务实现，继承 AbstractOrderService 的模板方法流程。
+ * handleTimeoutCloseOrder 已迁移至 AbstractOrderService，
+ * 父类方法使用 order.closeByTimeout() 进行状态变更，无需重复实现。
+ *
+ * @author 傅崇睿
+ */
 public class OrderService extends AbstractOrderService {
 
     public OrderService(IOrderRepository repository, IProductGateway productGateway, IPaymentGateway paymentGateway) {
@@ -59,7 +66,4 @@ public class OrderService extends AbstractOrderService {
     public boolean changeOrderClose(String orderId) {
         return repository.changeOrderClose(orderId);
     }
-
-    // 【DDD 重构】handleTimeoutCloseOrder 已迁移至 AbstractOrderService
-    // 父类方法已使用 order.closeByTimeout() 进行状态变更，无需重复实现
 }

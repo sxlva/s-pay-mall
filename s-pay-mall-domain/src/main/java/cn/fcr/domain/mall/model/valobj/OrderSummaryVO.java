@@ -10,11 +10,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 订单摘要值对象
- * <p>
- * 【上下文边界模型】定义在 mall 领域，仅包含 mall 模块真正关心的支付订单字段。
- * 由 Infrastructure 层的 Gateway 适配器从 order 领域的数据转换而来，
- * 避免 mall 领域直接依赖 order 领域的数据结构。
+ * 订单摘要值对象（上下文边界模型），仅包含 mall 模块需要的支付订单字段，
+ * 由 Infrastructure 层 Gateway 适配器从 order 领域转换而来。
+ *
+ * @author 傅崇睿
  */
 @Getter
 @Builder

@@ -1,10 +1,10 @@
 package cn.fcr.domain.order.adapter.event;
 
 /**
- * 订单事件发布接口
- * <p>
- * 【DDD 解耦】定义在 Domain 层的接口，由 Infrastructure 层实现具体的技术细节
- * （如 RocketMQ、Spring Event 等），领域层仅依赖此抽象。
+ * 订单事件发布接口（DDD 解耦），由 Infrastructure 层实现 RocketMQ 等技术细节，
+ * 领域层仅依赖此抽象。
+ *
+ * @author 傅崇睿
  */
 public interface IOrderEventPublisher {
 

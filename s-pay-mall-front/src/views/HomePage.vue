@@ -127,6 +127,12 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 首页：Hero 区 + 商品展示 + 分类筛选
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

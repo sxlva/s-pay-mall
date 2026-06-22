@@ -5,11 +5,10 @@ import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import java.util.Map;
 
 /**
- * 支付网关接口
- * <p>
- * 【DDD 防腐层 (ACL)】定义在 mall 领域，抽象外部支付系统的业务操作，
+ * 支付网关接口（DDD 防腐层 ACL），抽象外部支付系统的业务操作，
  * 由 Infrastructure 层实现具体支付技术（如支付宝 SDK）。
- * 领域层通过此接口与外部支付系统交互，不直接依赖任何支付 SDK。
+ *
+ * @author 傅崇睿
  */
 public interface IPayGateway {
 

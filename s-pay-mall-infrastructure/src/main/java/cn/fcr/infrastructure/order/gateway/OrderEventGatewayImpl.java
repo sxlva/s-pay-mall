@@ -8,19 +8,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 /**
- * @description 订单事件网关实现
+ * 订单事件网关实现（RocketMQ消息发送）
  *
- * 【职责说明】
- * - 封装订单事件的消息发送逻辑
- * - 实现领域层定义的IOrderEventGateway接口
- * - 负责发送订单延时关闭消息、支付成功消息等
- *
- * 【核心功能】
- * 1. sendDelayCloseMessage(): 发送订单延时关闭消息到MQ
- * 2. sendPaySuccessMessage(): 发送支付成功消息到MQ
- *
- * 【依赖说明】
- * - RocketMQTemplate: RocketMQ消息发送模板
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

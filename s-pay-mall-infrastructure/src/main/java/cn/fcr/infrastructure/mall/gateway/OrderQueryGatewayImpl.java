@@ -12,10 +12,9 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 /**
- * 订单查询网关基础设施实现
- * <p>
- * 【跨域桥接】位于 infrastructure/shared 层，桥接 mall 域与 order 域。
- * 实现 mall 域定义的 IOrderQueryGateway 接口，委托 order 域的 IOrderRepository 完成数据查询。
+ * 订单查询网关基础设施实现（跨域桥接）
+ *
+ * @author 傅崇睿
  */
 @Component
 public class OrderQueryGatewayImpl implements IOrderQueryGateway {

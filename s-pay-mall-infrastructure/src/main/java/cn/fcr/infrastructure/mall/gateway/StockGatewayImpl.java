@@ -14,11 +14,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 库存网关实现
- * 使用 Redisson RAtomicLong 保证库存操作的原子性
+ * 库存网关实现（Redisson RAtomicLong原子操作）
  *
- * 【Key 规范】统一使用 mall:product:stock:{productId} 格式
- * 【幂等性】使用 mall:stock:msg:processed:{messageId} 实现消息幂等检查
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

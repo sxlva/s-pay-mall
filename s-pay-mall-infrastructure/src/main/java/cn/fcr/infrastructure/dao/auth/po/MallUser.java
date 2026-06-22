@@ -11,10 +11,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 用户实体类
+ * 用户实体类（mall_user表）
  *
- * <p>基础用户表，存储核心登录信息
- * 第三方绑定信息（微信、支付宝、手机号）存储在 user_binding 表中
+ * @author 傅崇睿
  */
 @Data
 @TableName("mall_user")

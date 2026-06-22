@@ -8,18 +8,10 @@ import cn.fcr.domain.mall.service.StockChangeHandler;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 订单取消恢复库存策略处理器
- * 处理订单取消或超时关闭时恢复 Redis 库存的业务逻辑
+ * 订单取消或超时关闭时恢复 Redis 库存的策略处理器。
+ * 幂等 Key 格式：stock:event:restore:{orderId}。
  *
- * 【职责】订单取消时，将之前预扣的库存释放回 Redis
- * 【触发场景】用户取消订单、订单超时未支付、支付失败等场景
- * 【幂等性】基于 businessType + businessNo（orderId）实现幂等检查
- *         幂等 Key 格式：stock:event:restore:{orderId}
- *
- * 【执行语义】
- * - tryAcquire=true: 获取锁成功，执行恢复逻辑，成功后不删除 Key（24小时自动过期）
- * - tryAcquire=false: 锁已被占用，跳过执行，返回当前库存
- * - 异常处理: 恢复失败时调用 release() 删除 Key，允许重试消费
+ * @author 傅崇睿
  */
 @Slf4j
 public class RestoreHandler implements StockChangeHandler {

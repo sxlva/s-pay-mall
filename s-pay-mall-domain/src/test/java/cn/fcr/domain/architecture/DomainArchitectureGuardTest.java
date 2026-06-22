@@ -15,6 +15,11 @@ import static com.tngtech.archunit.lang.conditions.ArchConditions.not;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
+/**
+ * DDD 领域层架构边界自动化守卫测试
+ *
+ * @author 傅崇睿
+ */
 @DisplayName("DDD 领域层架构边界自动化守卫测试")
 public class DomainArchitectureGuardTest {
 

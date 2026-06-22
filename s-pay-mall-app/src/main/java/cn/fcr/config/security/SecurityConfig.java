@@ -14,17 +14,32 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import javax.annotation.Resource;
 
 /**
- * @author fcr
- * @description Spring Security安全配置类，配置HTTP安全策略、JWT过滤器链和密码编码器
+ * Spring Security 安全配置
+ *
+ * <p>配置 HTTP 安全策略、JWT 过滤器链和密码编码器。
+ * 无状态 Session 策略，管理接口需 ADMIN 角色。</p>
+ *
+ * @author 傅崇睿
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    /** JWT 认证过滤器 */
     @Resource
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * 配置安全过滤链
+     *
+     * <p>禁用 CSRF、使用无状态Session、配置路径访问权限、
+     * 注册 JWT 过滤器到 UsernamePasswordAuthenticationFilter 之前。</p>
+     *
+     * @param http HttpSecurity
+     * @return SecurityFilterChain
+     * @throws Exception 配置异常
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -60,6 +75,11 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * 密码编码器
+     *
+     * @return BCryptPasswordEncoder
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

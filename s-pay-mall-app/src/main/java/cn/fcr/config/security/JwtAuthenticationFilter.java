@@ -20,20 +20,37 @@ import java.io.IOException;
 import java.util.Collections;
 
 /**
- * @author fcr
- * @description JWT鉴权过滤器，从请求头解析令牌并写入安全上下文
+ * JWT 认证过滤器
+ *
+ * <p>从请求头 Authorization 中解析 JWT token，验证后写入 Spring Security 安全上下文。
+ * 解析失败不影响请求继续执行。</p>
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    /** JWT Token 提供者 */
     @Resource
     private JwtTokenProvider jwtTokenProvider;
 
+    /**
+     * 对每个请求执行 JWT 认证
+     *
+     * <p>从 Authorization 头中提取 Bearer token，解析出用户名和角色，
+     * 构建 Authentication 对象并写入 SecurityContextHolder。</p>
+     *
+     * @param request     HTTP请求
+     * @param response    HTTP响应
+     * @param filterChain 过滤器链
+     * @throws ServletException Servlet异常
+     * @throws IOException      IO异常
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader("Authorization");
-        
+
         if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
             try {
                 String token = header.substring(7);

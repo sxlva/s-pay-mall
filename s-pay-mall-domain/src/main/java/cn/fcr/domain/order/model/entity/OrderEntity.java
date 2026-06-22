@@ -10,30 +10,35 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 【DDD 充血模型】订单实体
- * 业务逻辑封装在 Entity 内部，而非 Service 层
+ * 订单实体，封装订单生命周期状态机与金额校验等核心业务规则。
  *
  * @author 傅崇睿
- * @date 2025/7/28 19:43
  */
-@Getter // 仅允许外部读取，防止状态被外部随意篡改
+@Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderEntity {
 
+    /** 商品 ID */
     private String productId;
 
+    /** 商品名称 */
     private String productName;
 
+    /** 订单号（唯一标识） */
     private String orderId;
 
+    /** 订单创建时间 */
     private Date orderTime;
 
+    /** 订单总金额 */
     private BigDecimal totalAmount;
 
-    private OrderStatusVO orderStatusVO; // 使用枚举类型替代 String
+    /** 订单状态值对象 */
+    private OrderStatusVO orderStatusVO;
 
+    /** 支付链接（支付宝/微信支付） */
     private String payUrl;
 
     /* ==========================================
@@ -75,7 +80,7 @@ public class OrderEntity {
     }
 
     /* ==========================================
-     * 状态变迁方法（带防御性检查）
+     * 状态变迁方法
      * ========================================== */
 
     /**
@@ -93,7 +98,7 @@ public class OrderEntity {
 
     /**
      * 标记订单支付成功
-     * 【防御性编程】必须校验当前状态是否为 WAIT_PAY
+     * 必须校验当前状态是否为 PAY_WAIT
      * @throws IllegalStateException 当前状态不允许此操作
      */
     public void paySuccess() {
@@ -107,7 +112,7 @@ public class OrderEntity {
 
     /**
      * 取消订单
-     * 【防御性编程】必须校验当前状态是否为 CREATE 或 PAY_WAIT
+     * 必须校验当前状态是否为 CREATE 或 PAY_WAIT
      * @throws IllegalStateException 当前状态不允许此操作（已支付或已完成的订单不可取消）
      */
     public void cancel() {
@@ -121,7 +126,7 @@ public class OrderEntity {
 
     /**
      * 订单发货
-     * 【防御性编程】必须校验当前状态是否为 PAY_SUCCESS
+     * 必须校验当前状态是否为 PAY_SUCCESS
      * @throws IllegalStateException 当前状态不允许此操作
      */
     public void deliver() {
@@ -135,7 +140,7 @@ public class OrderEntity {
 
     /**
      * 交易完成
-     * 【防御性编程】必须校验当前状态是否为 DEAL_DONE
+     * 必须校验当前状态是否为 DEAL_DONE
      * @throws IllegalStateException 当前状态不允许此操作
      */
     public void complete() {
@@ -149,7 +154,7 @@ public class OrderEntity {
 
     /**
      * 超时关单
-     * 【防御性编程】必须校验当前状态是否为 CREATE
+     * 必须校验当前状态是否为 CREATE
      * @throws IllegalStateException 当前状态不允许此操作
      */
     public void closeByTimeout() {
@@ -187,7 +192,7 @@ public class OrderEntity {
 
     /**
      * 验证金额是否有效
-     * 【防御性编程】使用 BigDecimal 确保精度，使用 compareTo 而非 equals
+     * 使用 BigDecimal 确保精度，使用 compareTo 而非 equals
      * @param expectedAmount 期望的金额
      * @return true=金额匹配，false=金额不匹配
      */
@@ -218,7 +223,7 @@ public class OrderEntity {
 
     /**
      * 设置支付链接
-     * 【防御性编程】校验状态和参数
+     * 校验状态和参数
      * @param payUrl 支付链接
      * @throws IllegalStateException 当前状态不允许此操作
      * @throws IllegalArgumentException 支付链接为空

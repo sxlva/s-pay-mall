@@ -1,7 +1,13 @@
 <script setup lang="ts">
+/**
+ * 商品列表页：分类筛选 + 搜索 + 商品网格展示
+ *
+ * @author 傅崇睿
+ */
+
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, ShoppingCart } from '@element-plus/icons-vue'
+import { Search } from '@element-plus/icons-vue'
 import { useProduct } from '@/hooks/useProduct'
 import { useCart } from '@/hooks/useCart'
 import type { ProductVO } from '@/types/product'
@@ -206,16 +212,6 @@ const handleAddToCart = async (product: ProductVO) => {
   border: none;
 }
 
-.category-menu .el-menu-item {
-  margin: 4px 0;
-  border-radius: 8px;
-}
-
-.category-menu .el-menu-item.active {
-  background: #e8f4ff;
-  color: #409EFF;
-}
-
 .products-area {
   flex: 1;
 }
@@ -252,18 +248,6 @@ const handleAddToCart = async (product: ProductVO) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.image-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #c0c4cc;
 }
 
 .category-tag {

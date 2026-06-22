@@ -6,6 +6,8 @@ import cn.fcr.api.response.Response;
  * 认证外观接口
  * <p>
  * 对外暴露认证登录相关的操作接口，提供微信扫码登录能力
+ *
+ * @author 傅崇睿
  */
 public interface IAuthFacade {
 

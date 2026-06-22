@@ -14,6 +14,8 @@ import static org.junit.Assert.*;
 /**
  * OrderEntity 单元测试
  * 验证订单状态流转、金额计算、工厂方法等核心业务逻辑
+ *
+ * @author 傅崇睿
  */
 public class OrderEntityTest {
 

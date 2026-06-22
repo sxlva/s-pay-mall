@@ -8,6 +8,8 @@ import lombok.Data;
  * 分类保存请求DTO
  * <p>
  * 用于创建或更新商品分类的请求参数封装
+ *
+ * @author 傅崇睿
  */
 @Data
 public class CategorySaveRequestDTO {

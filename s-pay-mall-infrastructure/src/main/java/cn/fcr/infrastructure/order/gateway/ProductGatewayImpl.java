@@ -12,21 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.Resource;
 
 /**
- * @description 产品网关实现
+ * 商品网关实现（MySQL + Redis双写库存恢复）
  *
- * 【职责说明】
- * - 处理商品相关的网关操作
- * - 实现领域层定义的IProductGateway接口
- * - 负责查询商品信息、恢复商品库存等
- *
- * 【核心功能】
- * 1. queryProductByProductId(): 根据商品ID查询商品信息
- * 2. restoreStock(): 恢复商品库存（MySQL + Redis）
- *
- * 【依赖说明】
- * - ProductRPC: 商品RPC服务
- * - IProductDao: 商品数据访问接口
- * - IStockGateway: 库存网关接口
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

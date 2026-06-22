@@ -1,9 +1,9 @@
 package cn.fcr.domain.auth.repository;
 
 /**
- * 微信凭证仓储接口
- * 
- * <p>定义微信绑定状态管理的抽象接口，由基础设施层实现
+ * 微信凭证仓储接口，定义微信绑定状态管理的抽象，由基础设施层实现。
+ *
+ * @author 傅崇睿
  */
 public interface IWeChatTokenRepository {
     

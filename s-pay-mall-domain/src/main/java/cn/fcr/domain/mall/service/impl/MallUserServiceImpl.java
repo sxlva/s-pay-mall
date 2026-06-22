@@ -14,6 +14,11 @@ import cn.fcr.types.exception.AppException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 用户领域服务实现，负责注册、登录、微信绑定和用户数据管理。
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 public class MallUserServiceImpl implements IMallUserService {
 

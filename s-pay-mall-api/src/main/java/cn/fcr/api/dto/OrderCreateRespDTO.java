@@ -21,6 +21,8 @@ import java.math.BigDecimal;
  * <p>NOTE: createOrder 和 continuePay 共用此 DTO。
  * 两者返回的都是同一份 OrderCreateVO 数据，前端均只读取 payUrl 字段，
  * 不依赖 orderNo/orderId 的具体值。</p>
+ *
+ * @author 傅崇睿
  */
 @Data
 @Builder

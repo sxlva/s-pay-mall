@@ -82,7 +82,13 @@
 </template>
 
 <script setup>
-import { onMounted, computed, watch } from 'vue'
+/**
+ * 购物车页：商品列表、数量修改、选中/全选、去结算
+ *
+ * @author 傅崇睿
+ */
+
+import { computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ShoppingCart, Plus, Minus, Delete, ArrowRight, Picture } from '@element-plus/icons-vue'
@@ -238,12 +244,6 @@ watch(() => route.path, (newPath) => {
   font-weight: 500;
   color: #303133;
   margin: 0 0 4px;
-}
-
-.item-category {
-  font-size: 13px;
-  color: #909399;
-  margin: 0 0 auto;
 }
 
 .item-bottom {

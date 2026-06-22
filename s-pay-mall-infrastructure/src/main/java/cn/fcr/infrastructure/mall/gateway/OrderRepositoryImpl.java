@@ -23,6 +23,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 商城订单仓储实现（MyBatis-Plus）
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 @Repository
 public class OrderRepositoryImpl implements IMallOrderQueryGateway {

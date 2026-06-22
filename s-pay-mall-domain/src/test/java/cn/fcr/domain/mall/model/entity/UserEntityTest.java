@@ -5,6 +5,11 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+/**
+ * UserEntity 单元测试
+ *
+ * @author 傅崇睿
+ */
 public class UserEntityTest {
 
     @Test

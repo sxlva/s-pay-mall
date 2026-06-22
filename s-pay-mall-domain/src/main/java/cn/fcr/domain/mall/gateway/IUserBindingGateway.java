@@ -1,8 +1,9 @@
 package cn.fcr.domain.mall.gateway;
 
 /**
- * 用户绑定网关接口
- * 提供用户与第三方平台绑定关系的查询能力
+ * 用户绑定网关接口，提供用户与第三方平台绑定关系的查询与绑定能力。
+ *
+ * @author 傅崇睿
  */
 public interface IUserBindingGateway {
 

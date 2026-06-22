@@ -9,12 +9,30 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.util.concurrent.*;
 
+/**
+ * 线程池配置
+ *
+ * <p>启用 Spring 异步支持，根据 ThreadPoolConfigProperties 配置创建线程池。</p>
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 @EnableAsync
 @Configuration
 @EnableConfigurationProperties(ThreadPoolConfigProperties.class)
 public class ThreadPoolConfig {
 
+    /**
+     * 创建线程池
+     *
+     * <p>支持四种拒绝策略：AbortPolicy、DiscardPolicy、DiscardOldestPolicy、CallerRunsPolicy</p>
+     *
+     * @param properties 线程池配置属性
+     * @return ThreadPoolExecutor
+     * @throws ClassNotFoundException 反射异常
+     * @throws InstantiationException 反射异常
+     * @throws IllegalAccessException 反射异常
+     */
     @Bean
     @ConditionalOnMissingBean(ThreadPoolExecutor.class)
     public ThreadPoolExecutor threadPoolExecutor(ThreadPoolConfigProperties properties) throws ClassNotFoundException, InstantiationException, IllegalAccessException {

@@ -8,6 +8,11 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * OrderEntity clearItems() 边界测试
+ *
+ * @author 傅崇睿
+ */
 @DisplayName("OrderEntity clearItems() 边界测试")
 public class OrderEntityClearItemsTest {
 

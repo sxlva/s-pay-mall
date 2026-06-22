@@ -10,6 +10,8 @@ import java.util.List;
 /**
  * 商城商品外观接口
  * 对外暴露商品查询、分类查询等接口
+ *
+ * @author 傅崇睿
  */
 public interface IMallProductFacade {
 

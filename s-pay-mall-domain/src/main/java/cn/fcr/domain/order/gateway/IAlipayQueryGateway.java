@@ -1,14 +1,10 @@
 package cn.fcr.domain.order.gateway;
 
 /**
- * 支付宝交易查询网关接口
- * <p>
- * 【DDD 防腐层 (ACL)】定义在 order 领域，抽象支付宝交易状态查询操作，
- * 由 Infrastructure 层实现具体支付宝 SDK 调用。
- * 领域层通过此接口查询支付宝交易状态，不直接依赖 Alipay SDK。
- * </p>
+ * 支付宝交易查询网关接口（DDD 防腐层 ACL），抽象支付宝交易状态查询操作，
+ * 领域层通过此接口查询支付状态，不直接依赖 Alipay SDK。
  *
- * @author fcr
+ * @author 傅崇睿
  */
 public interface IAlipayQueryGateway {
 

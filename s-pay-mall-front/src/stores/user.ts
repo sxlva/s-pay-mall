@@ -1,10 +1,13 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-
 /**
  * 用户状态管理 Store
  * 基于 DDD 值对象思想，统一管理用户身份信息
+ *
+ * @author 傅崇睿
  */
+
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+
 export const useUserStore = defineStore('user', () => {
   // 状态定义
   const userId = ref<string | null>(localStorage.getItem('userId') || null)

@@ -7,6 +7,8 @@ import lombok.Data;
  * 购物车添加请求DTO
  * <p>
  * 用于将商品添加到购物车的请求参数封装
+ *
+ * @author 傅崇睿
  */
 @Data
 public class CartAddRequestDTO {

@@ -3,7 +3,12 @@
 </template>
 
 <script setup>
-// App.vue 作为根组件，只负责渲染路由视图
+/**
+ * 根组件：渲染路由视图，全局样式重置
+ *
+ * @author 傅崇睿
+ */
+
 // 导航栏由 Layout.vue 组件负责，登录页独立显示
 </script>
 

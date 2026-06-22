@@ -9,7 +9,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 用户实体
+ * 用户实体，封装用户登录状态验证和密码校验等核心业务逻辑。
+ *
+ * @author 傅崇睿
  */
 @Data
 @Builder
@@ -17,20 +19,28 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class UserEntity {
 
+    /** 用户ID */
     private Long id;
 
+    /** 用户名 */
     private String username;
 
+    /** 加密密码 */
     private String password;
 
+    /** 用户状态：0=禁用，1=正常 */
     private Integer status;
 
+    /** 创建时间 */
     private LocalDateTime createTime;
 
+    /** 更新时间 */
     private LocalDateTime updateTime;
 
+    /** 角色编码 */
     private String roleCode;
 
+    /** 角色ID */
     private Long roleId;
 
     /**

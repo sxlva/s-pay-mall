@@ -7,6 +7,8 @@ import lombok.Data;
  * 用户登录请求DTO
  * <p>
  * 用于用户登录的请求参数封装
+ *
+ * @author 傅崇睿
  */
 @Data
 public class UserLoginRequestDTO {

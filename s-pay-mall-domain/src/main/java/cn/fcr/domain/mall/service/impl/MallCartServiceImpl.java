@@ -15,6 +15,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 购物车领域服务实现，使用分布式锁保护并发操作。
+ *
+ * @author 傅崇睿
+ */
 public class MallCartServiceImpl implements IMallCartService {
 
     private final ICartRepository cartRepository;

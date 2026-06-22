@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * 支付订单实体
- * <p>
- * 【共享实体】定义在 shared 模块中，供 order 和 mall 领域共同使用。
- * 代表一笔支付交易的完整信息，包含支付链接、第三方交易号、支付状态等。
+ * 支付订单实体，定义在 shared 模块中供 order 和 mall 领域共同使用，
+ * 代表一笔支付交易的完整信息，包含支付链接、第三方交易号和支付状态。
+ *
+ * @author 傅崇睿
  */
 @Data
 @Builder
@@ -22,17 +22,29 @@ import java.util.Map;
 @NoArgsConstructor
 public class PayOrderEntity {
 
+    /** 主键ID */
     private Long id;
+    /** 订单号 */
     private String orderNo;
+    /** 用户ID */
     private String userId;
+    /** 商品ID（多个以逗号分隔） */
     private String productId;
+    /** 商品名称（多个以顿号分隔） */
     private String productName;
+    /** 订单总金额 */
     private BigDecimal totalAmount;
+    /** 支付状态 */
     private PayStatus status;
+    /** 支付链接URL */
     private String payUrl;
+    /** 第三方交易流水号 */
     private String tradeNo;
+    /** 支付完成时间 */
     private LocalDateTime payTime;
+    /** 创建时间 */
     private LocalDateTime createTime;
+    /** 更新时间 */
     private LocalDateTime updateTime;
 
     public boolean canPay() {

@@ -7,20 +7,12 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 幂等性检查网关实现
- * 使用 Redisson RBucket.trySet() 实现 Redis SETNX 语义
+ * 幂等性检查网关实现（Redisson SETNX）
  *
- * 【幂等 Key 规范】统一使用 stock:event:{业务类型}:{业务单号} 格式
- * 【过期时间】24 小时
- *
- * 【执行语义】
- * - 分支 A (tryAcquire=true): 获取锁成功，执行业务逻辑，成功后不删除 Key（自动过期）
- * - 分支 B (tryAcquire=false): 锁已被占用，跳过执行，返回 ACK 给 MQ
- * - 异常处理: 业务执行异常时调用 release() 删除 Key，允许重试消费
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

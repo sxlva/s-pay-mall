@@ -3,9 +3,21 @@ package cn.fcr.types.sdk.weixin;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * 微信公众号签名验证工具，用于校验请求是否来源于微信服务器
+ *
+ * @author 傅崇睿
+ */
 public class SignatureUtil {
+
     /**
-     * 验证签名
+     * 验证微信签名
+     *
+     * @param token     公众号配置的 Token
+     * @param signature 微信传来的签名
+     * @param timestamp 时间戳
+     * @param nonce     随机数
+     * @return 签名是否匹配
      */
     public static boolean check(String token, String signature, String timestamp, String nonce) {
         String[] arr = new String[]{token, timestamp, nonce};
@@ -30,7 +42,10 @@ public class SignatureUtil {
     }
 
     /**
-     * 将字节数组转换为十六进制字符串
+     * 字节数组转十六进制字符串
+     *
+     * @param byteArray 字节数组
+     * @return 十六进制字符串
      */
     private static String byteToStr(byte[] byteArray) {
         StringBuilder strDigest = new StringBuilder();
@@ -41,7 +56,10 @@ public class SignatureUtil {
     }
 
     /**
-     * 将字节转换为十六进制字符串
+     * 单字节转十六进制字符串
+     *
+     * @param mByte 单个字节
+     * @return 两位十六进制字符串
      */
     private static String byteToHexStr(byte mByte) {
         char[] Digit = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
@@ -52,7 +70,9 @@ public class SignatureUtil {
     }
 
     /**
-     * 进行字典排序
+     * 字符串数组字典序排序（原地排序）
+     *
+     * @param str 待排序字符串数组
      */
     private static void sort(String[] str) {
         for (int i = 0; i < str.length - 1; i++) {

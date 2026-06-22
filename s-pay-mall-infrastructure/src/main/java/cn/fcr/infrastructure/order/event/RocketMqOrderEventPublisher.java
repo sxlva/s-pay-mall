@@ -6,10 +6,9 @@ import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * RocketMQ 订单事件发布器
- * <p>
- * 【DDD 基础设施实现】实现 Domain 层定义的 IOrderEventPublisher 接口，
- * 内部封装 RocketMQTemplate 完成消息发送。领域层不感知 MQ 技术细节。
+ * RocketMQ订单事件发布器
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

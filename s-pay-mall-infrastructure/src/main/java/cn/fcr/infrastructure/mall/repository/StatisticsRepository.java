@@ -3,7 +3,6 @@ package cn.fcr.infrastructure.mall.repository;
 import cn.fcr.domain.mall.adapter.repository.IStatisticsRepository;
 import cn.fcr.infrastructure.dao.mall.ICategoryDao;
 import cn.fcr.infrastructure.dao.order.IOrderMainDao;
-import cn.fcr.infrastructure.dao.mall.IProductDao;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
@@ -11,14 +10,16 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 统计仓储实现（订单与分类统计）
+ *
+ * @author 傅崇睿
+ */
 @Repository
 public class StatisticsRepository implements IStatisticsRepository {
 
     @Resource
     private IOrderMainDao orderMainDao;
-
-    @Resource
-    private IProductDao productDao;
 
     @Resource
     private ICategoryDao categoryDao;

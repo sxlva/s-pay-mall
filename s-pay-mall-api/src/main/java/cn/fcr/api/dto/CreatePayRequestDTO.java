@@ -9,7 +9,6 @@ import lombok.Data;
  * 用于发起支付请求的参数封装
  *
  * @author 傅崇睿
- * @date 2025/8/1 08:08
  */
 @Data
 public class CreatePayRequestDTO {

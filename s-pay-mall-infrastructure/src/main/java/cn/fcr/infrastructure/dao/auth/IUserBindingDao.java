@@ -8,9 +8,9 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 /**
- * 用户绑定关系数据访问接口
- * 支持多种第三方登录方式（微信、手机号等）的用户绑定查询
- * identity_type 用于区分不同登录方式：如 "weixin"、"phone"、"email"
+ * 用户绑定关系数据访问接口（MyBatis-Plus BaseMapper）
+ *
+ * @author 傅崇睿
  */
 @Mapper
 public interface IUserBindingDao extends BaseMapper<UserBinding> {

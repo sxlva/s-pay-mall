@@ -16,6 +16,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 用户仓储实现（MyBatis-Plus）
+ *
+ * @author 傅崇睿
+ */
 @Repository
 public class UserRepository implements IUserRepository {
 

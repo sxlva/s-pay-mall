@@ -9,9 +9,9 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 /**
- * 商城用户数据访问接口
- * 继承 MyBatis-Plus BaseMapper，提供基础的 CRUD 操作
- * 自定义方法支持基于用户名的查询和角色关联查询
+ * 商城用户数据访问接口（MyBatis-Plus BaseMapper）
+ *
+ * @author 傅崇睿
  */
 @Mapper
 public interface IMallUserDao extends BaseMapper<MallUser> {

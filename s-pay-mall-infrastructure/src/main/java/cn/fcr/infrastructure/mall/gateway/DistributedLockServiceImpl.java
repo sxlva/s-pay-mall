@@ -7,6 +7,11 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
+/**
+ * 分布式锁服务实现（基于Redis SETNX）
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 @Component
 public class DistributedLockServiceImpl implements IDistributedLockService {

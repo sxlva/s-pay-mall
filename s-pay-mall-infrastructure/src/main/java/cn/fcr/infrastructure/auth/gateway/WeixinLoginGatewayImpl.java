@@ -18,24 +18,9 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @description 微信登录网关实现类
+ * 微信登录网关实现（用户创建绑定与Token缓存）
  *
- * 【职责说明】
- * - 处理微信扫码登录相关的持久化和缓存操作
- * - 实现领域层定义的IWechatLoginGateway接口
- * - 负责用户绑定关系管理、新用户创建、登录token缓存等功能
- *
- * 【核心功能】
- * 1. findUserIdByOpenid(): 根据OpenID查找用户ID
- * 2. createWechatUserAndBind(): 创建微信用户并建立绑定关系
- * 3. saveLoginToken(): 保存登录token到Redis
- * 4. getLoginToken(): 获取并删除登录token
- *
- * 【依赖说明】
- * - IMallUserDao: 用户数据访问接口
- * - IUserBindingDao: 用户绑定关系数据访问接口
- * - IUserRoleDao: 用户角色数据访问接口
- * - StringRedisTemplate: Redis操作模板
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

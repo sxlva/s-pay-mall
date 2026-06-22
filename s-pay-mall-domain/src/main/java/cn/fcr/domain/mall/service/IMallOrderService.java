@@ -8,7 +8,9 @@ import cn.fcr.domain.mall.model.valobj.OrderVO;
 import java.util.List;
 
 /**
- * 订单领域服务接口
+ * 订单领域服务接口，定义订单创建、支付、发货、取消等核心业务流程抽象。
+ *
+ * @author 傅崇睿
  */
 public interface IMallOrderService {
 

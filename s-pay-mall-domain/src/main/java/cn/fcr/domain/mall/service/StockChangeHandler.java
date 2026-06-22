@@ -3,18 +3,10 @@ package cn.fcr.domain.mall.service;
 import cn.fcr.domain.mall.model.dto.StockChangeMsgDTO;
 
 /**
- * 库存变更策略处理器接口
- * 实现策略模式，支持不同类型的库存变更业务逻辑
+ * 库存变更策略处理器接口，实现策略模式，支持不同类型的库存变更业务逻辑。
+ * 每个策略类只处理一种变更类型，通过 supports() 实现自动路由。
  *
- * 【DDD 原则】
- * - Domain 层定义业务行为接口
- * - 策略实现类负责具体业务逻辑
- * - Infrastructure 层负责技术实现（如 Redis、DB 操作）
- *
- * 【设计原则】
- * - 每个策略类只处理一种变更类型（单一职责）
- * - 通过 supports() 方法实现策略的自动路由
- * - handle() 方法返回处理后的库存值
+ * @author 傅崇睿
  */
 public interface StockChangeHandler {
 

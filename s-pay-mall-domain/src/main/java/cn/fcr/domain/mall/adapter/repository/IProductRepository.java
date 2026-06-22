@@ -7,6 +7,11 @@ import cn.fcr.domain.mall.model.valobj.ProductVO;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * 商品仓储接口，定义商品和分类持久化操作的抽象。
+ *
+ * @author 傅崇睿
+ */
 public interface IProductRepository {
 
     List<CategoryVO> findAllCategories();
@@ -29,7 +34,14 @@ public interface IProductRepository {
      */
     List<ProductEntity> findByIds(List<Long> ids);
 
-    int saveProduct(ProductEntity product);
+    /**
+     * 保存商品（新增或更新）
+     * 新增时返回带自增ID的 Entity，更新时返回原 Entity
+     *
+     * @param product 商品实体
+     * @return 保存后的商品实体（含ID）
+     */
+    ProductEntity saveProduct(ProductEntity product);
 
     int deleteProduct(Long id);
 

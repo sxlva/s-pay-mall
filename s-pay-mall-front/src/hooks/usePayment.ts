@@ -1,15 +1,17 @@
 /**
  * usePayment Hook
- * 
+ *
  * 职责：纯粹的支付业务逻辑处理
  * - 管理支付状态（轮询、倒计时、错误处理）
  * - 初始化支付订单
  * - 重置支付状态
- * 
+ *
  * 架构原则：
  * - 不直接操作 DOM（由 PaymentSubmitter 组件负责）
  * - 不包含 UI 渲染逻辑
  * - 只关注业务状态管理
+ *
+ * @author 傅崇睿
  */
 import { usePaymentStore } from '../stores/payment'
 import { storeToRefs } from 'pinia'

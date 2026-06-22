@@ -10,7 +10,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 订单主表实体类
+ * 订单主表实体类（order_main表）
+ *
+ * @author 傅崇睿
  */
 @Data
 @TableName("order_main")

@@ -3,10 +3,10 @@ package cn.fcr.domain.mall.gateway;
 import java.util.List;
 
 /**
- * 库存网关接口
- * 提供库存预扣减和恢复的原子操作能力
- * 
- * 【DDD 原则】Domain 层定义接口，Infrastructure 层实现具体技术细节
+ * 库存网关接口，提供库存预扣减和恢复的原子操作能力。
+ * Domain 层定义接口，Infrastructure 层实现具体技术细节。
+ *
+ * @author 傅崇睿
  */
 public interface IStockGateway {
 

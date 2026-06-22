@@ -9,9 +9,9 @@ import org.apache.ibatis.annotations.Select;
 import java.math.BigDecimal;
 
 /**
- * 商城订单主表数据访问接口
- * 继承 MyBatis-Plus BaseMapper，提供订单的 CRUD 操作
- * 自定义方法支持销售数据统计（日报表）
+ * 商城订单主表数据访问接口（MyBatis-Plus BaseMapper）
+ *
+ * @author 傅崇睿
  */
 @Mapper
 public interface IOrderMainDao extends BaseMapper<OrderMain> {

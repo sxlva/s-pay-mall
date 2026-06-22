@@ -1,5 +1,10 @@
-<!-- 页面说明：商品详情页 -->
 <script setup>
+/**
+ * 商品详情页：展示商品信息、库存状态、加入购物车
+ *
+ * @author 傅崇睿
+ */
+
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { request } from '../utils/api'

@@ -6,10 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 库存变更消息 DTO
- * 用于策略模式中传递库存变更信息
+ * 库存变更消息 DTO，用于在策略模式中传递库存变更信息。
  *
- * 【DDD 原则】Domain 层定义接口契约，Infrastructure 层实现具体技术细节
+ * @author 傅崇睿
  */
 @Data
 @Builder

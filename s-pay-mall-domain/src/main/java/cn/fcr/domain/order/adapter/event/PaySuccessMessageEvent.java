@@ -11,10 +11,10 @@ import org.apache.commons.lang3.RandomStringUtils;
 import java.util.Date;
 
 /**
- * 支付成功消息事件
- * <p>
- * 纯数据对象（POJO），定义支付成功消息的结构和消息主题。
- * 实例化由 Infrastructure 层的实现类完成。
+ * 支付成功消息事件，定义支付成功消息的结构和消息主题 topic=pay_success。
+ * 实例化由 Infrastructure 层实现。
+ *
+ * @author 傅崇睿
  */
 public class PaySuccessMessageEvent extends BaseEvent<PaySuccessMessageEvent.PaySuccessMessage> {
     @Override
@@ -36,8 +36,11 @@ public class PaySuccessMessageEvent extends BaseEvent<PaySuccessMessageEvent.Pay
     @AllArgsConstructor
     @NoArgsConstructor
     public static class PaySuccessMessage{
+        /** 用户ID */
         private String userId;
+        /** 交易流水号 */
         private String tradeNo;
+        /** 订单号 */
         private String orderNo;
     }
 }

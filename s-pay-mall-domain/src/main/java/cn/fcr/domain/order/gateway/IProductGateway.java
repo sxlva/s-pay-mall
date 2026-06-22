@@ -3,8 +3,9 @@ package cn.fcr.domain.order.gateway;
 import cn.fcr.domain.order.model.entity.ProductEntity;
 
 /**
+ * 商品网关接口，定义商品查询和库存恢复的抽象
+ *
  * @author 傅崇睿
- * @description 产品网关接口
  */
 public interface IProductGateway {
 

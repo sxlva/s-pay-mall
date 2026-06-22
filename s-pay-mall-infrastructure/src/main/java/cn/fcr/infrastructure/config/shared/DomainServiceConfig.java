@@ -42,21 +42,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * 领域服务手动装配配置
- * <p>
- * 【DDD 重构】由于 Domain 层已移除所有 Spring 注解（@Service、@Component、@Resource），
- * 此配置负责将纯 POJO 的领域服务注册为 Spring Bean，并完成依赖注入。
- * <p>
- * 包含：
- * - 微信登录服务：WeixinLoginService
- * - 微信绑定服务：WeixinBindService
- * - 商城购物车服务：MallCartServiceImpl
- * - 商城商品服务：MallProductServiceImpl
- * - 商城用户服务：MallUserServiceImpl
- * - 商城统计服务：MallStatisticsServiceImpl
- * - 订单领域服务：OrderService
- * - 订单状态机服务：OrderStateMachineServiceImpl
- * - 商城订单服务：MallOrderServiceImpl
- * - 库存变更策略处理器：DeductHandler、AdminUpdateHandler、RestoreHandler
+ *
+ * @author 傅崇睿
  */
 @Configuration
 public class DomainServiceConfig {
@@ -89,8 +76,9 @@ public class DomainServiceConfig {
     // ==================== 商城商品服务 ====================
 
     @Bean
-    public IMallProductService mallProductService(IProductRepository productRepository) {
-        return new MallProductServiceImpl(productRepository);
+    public IMallProductService mallProductService(IProductRepository productRepository,
+                                                  IStockGateway stockGateway) {
+        return new MallProductServiceImpl(productRepository, stockGateway);
     }
 
     // ==================== 商城用户服务 ====================

@@ -12,9 +12,9 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 商品数据访问接口
- * 继承 MyBatis-Plus BaseMapper，提供商品的 CRUD 操作
- * 自定义方法支持库存扣减、关联分类查询和条件搜索
+ * 商品数据访问接口（MyBatis-Plus BaseMapper）
+ *
+ * @author 傅崇睿
  */
 @Mapper
 public interface IProductDao extends BaseMapper<Product> {

@@ -24,8 +24,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 订单控制器
- * 处理购物车和订单相关接口
+ * 订单与购物车Controller
+ *
+ * <p>【DDD 触发层】处理购物车和订单相关接口，包括购物车增删改查、
+ * 订单创建、订单列表、继续支付、库存检查。</p>
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @RestController
@@ -33,9 +37,17 @@ import java.util.stream.Collectors;
 @RequestMapping("/mall-api/${app.config.api-version}")
 public class MallOrderController extends BaseController {
 
+    /** 订单应用层服务 */
     @Resource
     private OrderApplicationService orderApplicationService;
 
+    /**
+     * 添加商品到购物车
+     *
+     * @param request     购物车添加请求，包含productId和可选quantity
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 影响行数
+     */
     @PostMapping("/cart")
     public Response<Integer> addCart(@RequestBody CartAddRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
@@ -45,6 +57,12 @@ public class MallOrderController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 查询购物车列表
+     *
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 购物车商品列表
+     */
     @GetMapping("/cart")
     public Response<List<CartItemRespDTO>> listCart(HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
@@ -55,6 +73,13 @@ public class MallOrderController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 更新购物车商品数量
+     *
+     * @param request     购物车更新请求
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 影响行数
+     */
     @PutMapping("/cart/quantity")
     public Response<Integer> updateCartQuantity(@RequestBody CartAddRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
@@ -67,6 +92,13 @@ public class MallOrderController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除购物车商品
+     *
+     * @param itemId      购物车条目ID
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 影响行数
+     */
     @DeleteMapping("/cart/delete")
     public Response<Integer> deleteCartItem(@RequestParam("itemId") Long itemId, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
@@ -76,6 +108,16 @@ public class MallOrderController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 创建订单
+     *
+     * <p>从购物车结算生成订单，执行库存预扣、支付单生成等操作。
+     * 创建成功后返回订单号和支付URL（html字段）。</p>
+     *
+     * @param request     订单创建请求，包含收货地址
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 订单创建结果，含订单号和支付URL
+     */
     @PostMapping("/orders")
     public Response<OrderCreateRespDTO> createOrder(@RequestBody OrderCreateRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
@@ -90,6 +132,15 @@ public class MallOrderController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 查询用户订单列表
+     *
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @param status      订单状态（可选）
+     * @param startTime   开始时间（可选）
+     * @param endTime     结束时间（可选）
+     * @return 订单列表
+     */
     @GetMapping("/orders")
     public Response<List<OrderListRespDTO>> listOrders(HttpServletRequest httpRequest,
                                                        @RequestParam(value = "status", required = false) String status,
@@ -103,6 +154,13 @@ public class MallOrderController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 继续支付未完成订单
+     *
+     * @param orderNo     订单号
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 订单支付信息，含最新支付URL
+     */
     @GetMapping("/orders/{orderNo}/continue-pay")
     public Response<OrderCreateRespDTO> continuePay(@PathVariable("orderNo") String orderNo, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
@@ -118,6 +176,13 @@ public class MallOrderController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 检查订单库存是否充足
+     *
+     * @param orderNo     订单号
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 库存检查结果
+     */
     @GetMapping("/orders/{orderNo}/check-stock")
     public Response<StockCheckRespDTO> checkStock(@PathVariable("orderNo") String orderNo, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);

@@ -12,11 +12,10 @@ import cn.fcr.domain.shared.model.vo.PayStatus;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 订单状态机服务实现
+ * 订单状态机服务实现，封装状态转换业务规则，确保 order_main 和 pay_order 状态一致性。
+ * 支付成功后同步扣减 MySQL 库存（最终一致性）。
  *
- * 【DDD 原则】封装状态转换的业务规则，确保 order_main 和 pay_order 的状态一致性
- * 【事务边界】事务控制已迁移至 Application 层，领域层不感知事务
- * 【库存同步】支付成功后同步扣减 MySQL 库存（最终一致性）
+ * @author 傅崇睿
  */
 @Slf4j
 public class OrderStateMachineServiceImpl implements IOrderStateMachineService {

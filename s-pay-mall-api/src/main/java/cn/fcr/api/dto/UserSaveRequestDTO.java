@@ -8,6 +8,8 @@ import lombok.Data;
  * 用户保存请求DTO
  * <p>
  * 用于创建或更新用户的请求参数封装
+ *
+ * @author 傅崇睿
  */
 @Data
 public class UserSaveRequestDTO {

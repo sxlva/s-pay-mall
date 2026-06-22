@@ -130,6 +130,12 @@
 </template>
 
 <script setup>
+/**
+ * 登录页：用户名密码登录 + 微信扫码登录
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'

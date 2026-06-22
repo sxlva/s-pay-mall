@@ -65,6 +65,12 @@
 </template>
 
 <script setup>
+/**
+ * 注册页：用户名注册表单
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

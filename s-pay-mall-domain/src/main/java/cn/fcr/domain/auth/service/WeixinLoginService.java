@@ -7,6 +7,12 @@ import cn.fcr.types.common.Constants;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 微信扫码登录服务实现，负责创建二维码票据、检查登录状态、
+ * 保存登录状态以及处理微信扫码登录（自动注册与绑定）。
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 public class WeixinLoginService implements ILoginService {
 

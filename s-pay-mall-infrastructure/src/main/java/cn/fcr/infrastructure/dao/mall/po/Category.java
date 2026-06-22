@@ -9,7 +9,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 商品分类实体类
+ * 商品分类实体类（category表）
+ *
+ * @author 傅崇睿
  */
 @Data
 @TableName("category")

@@ -5,6 +5,8 @@ package cn.fcr.domain.mall.model.exception;
  * <p>
  * 在删除分类时，若该分类下仍存在关联商品则抛出此异常。
  * 替代 GlobalExceptionHandler 中解析 SQL 错误消息的反模式。
+ *
+ * @author 傅崇睿
  */
 public class CategoryHasProductsException extends RuntimeException {
 

@@ -69,6 +69,12 @@
 </template>
 
 <script setup>
+/**
+ * 商城前台布局组件：顶部导航 + 内容区 + 底部版权
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

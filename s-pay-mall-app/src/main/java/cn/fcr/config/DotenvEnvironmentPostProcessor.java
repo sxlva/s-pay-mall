@@ -13,12 +13,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 加载 .env 文件中的环境变量
+ * .env 文件环境变量加载处理器
+ *
+ * <p>在 Spring Boot 环境准备阶段加载 .env 文件中的环境变量，
+ * 将其注入 Spring Environment，优先级最高。</p>
+ *
+ * @author 傅崇睿
  */
 public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(DotenvEnvironmentPostProcessor.class);
 
+    /**
+     * 加载 .env 文件中的环境变量到 Spring Environment
+     *
+     * <p>优先从项目根目录加载 .env 文件，若不存在则从 classpath 加载。</p>
+     *
+     * @param environment Spring 环境
+     * @param application Spring 应用
+     */
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         String projectRoot = System.getProperty("user.dir");

@@ -1,7 +1,16 @@
+/**
+ * 订单 Hook：封装 orderStore 的响应式数据和方法
+ *
+ * @author 傅崇睿
+ */
+
 import { useOrderStore } from '../stores/order';
 import { storeToRefs } from 'pinia';
-import type { OrderListParams } from '../types/order';
 
+/**
+ * 订单组合式函数
+ * @returns 订单响应式状态和方法
+ */
 export function useOrder() {
   const orderStore = useOrderStore();
 

@@ -1,3 +1,9 @@
+/**
+ * Vite 构建配置：Vue 插件、路径别名、开发代理
+ *
+ * @author 傅崇睿
+ */
+
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'

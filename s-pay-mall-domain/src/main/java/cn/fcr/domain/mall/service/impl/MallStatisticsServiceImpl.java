@@ -11,6 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 统计领域服务实现，负责近7天销售趋势和分类占比的计算。
+ *
+ * @author 傅崇睿
+ */
 public class MallStatisticsServiceImpl implements IMallStatisticsService {
 
     private final IStatisticsRepository statisticsRepository;

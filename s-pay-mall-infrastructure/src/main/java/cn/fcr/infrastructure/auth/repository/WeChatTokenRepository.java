@@ -9,6 +9,11 @@ import org.springframework.stereotype.Repository;
 import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 微信Token仓储实现（Redis缓存）
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 @Repository
 public class WeChatTokenRepository implements IWeChatTokenRepository {

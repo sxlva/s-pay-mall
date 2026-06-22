@@ -8,28 +8,42 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 购物车商品项实体，管理单个商品在购物车中的数量、价格和选中状态。
+ *
+ * @author 傅崇睿
+ */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class CartItemEntity {
 
+    /** 购物车项ID */
     private Long id;
 
+    /** 用户ID */
     private Long userId;
 
+    /** 商品ID */
     private Long productId;
 
+    /** 商品名称（快照） */
     private String productName;
 
+    /** 商品单价（快照） */
     private BigDecimal productPrice;
 
+    /** 购买数量 */
     private Integer quantity;
 
+    /** 是否选中 */
     private Boolean selected;
 
+    /** 创建时间 */
     private LocalDateTime createTime;
 
+    /** 更新时间 */
     private LocalDateTime updateTime;
 
     public BigDecimal calculateItemAmount() {

@@ -1,8 +1,9 @@
 package cn.fcr.domain.order.gateway;
 
 /**
+ * 订单事件网关接口，定义订单延时关闭和支付成功消息的发送抽象
+ *
  * @author 傅崇睿
- * @description 订单事件网关接口
  */
 public interface IOrderEventGateway {
 

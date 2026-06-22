@@ -5,11 +5,17 @@ import cn.fcr.domain.mall.model.valobj.UserProfile;
 
 /**
  * 用户个人信息装配器
- * <p>
- * 负责 Domain 层 UserProfile → API 层 UserProfileVO 的转换。
+ *
+ * @author 傅崇睿
  */
 public class UserProfileAssembler {
 
+    /**
+     * Domain 层 UserProfile → API 层 UserProfileVO
+     *
+     * @param profile Domain层用户个人信息
+     * @return API层VO，profile为null时返回null
+     */
     public static UserProfileVO toVO(UserProfile profile) {
         if (profile == null) {
             return null;

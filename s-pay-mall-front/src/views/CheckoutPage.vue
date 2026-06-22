@@ -1,4 +1,10 @@
 <script setup lang="ts">
+/**
+ * 结算页：地址填写 + 订单确认 + 支付跳转
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
@@ -6,7 +12,6 @@ import { MapLocation, CreditCard, ArrowLeft } from '@element-plus/icons-vue';
 import { useCart } from '../hooks/useCart';
 import { useOrder } from '../hooks/useOrder';
 import { usePayment } from '../hooks/usePayment';
-import type { CartItem } from '../types/cart';
 
 const router = useRouter();
 const address = ref('');

@@ -14,8 +14,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 商品控制器
- * 处理商品查询、分类查询等接口
+ * 商品Controller
+ *
+ * <p>【DDD 触发层】处理商品查询、分类查询等接口。
+ * 支持多条件筛选：分类、关键词、价格区间、状态。</p>
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @RestController
@@ -23,12 +27,21 @@ import java.util.stream.Collectors;
 @RequestMapping("/mall-api/${app.config.api-version}")
 public class MallProductController extends BaseController {
 
+    /** 商城商品领域服务 */
     @Resource
     private IMallProductService mallProductService;
 
     /**
      * 查询商品列表
-     * 支持多条件筛选：分类、关键词、价格区间、状态
+     *
+     * <p>支持多条件筛选：分类、关键词、价格区间、状态</p>
+     *
+     * @param categoryId 分类ID（可选）
+     * @param keyword    关键词（可选）
+     * @param minPrice   最低价（可选）
+     * @param maxPrice   最高价（可选）
+     * @param status     状态（可选）
+     * @return 商品列表
      */
     @GetMapping("/products")
     public Response<List<ProductVO>> listProducts(
@@ -58,6 +71,8 @@ public class MallProductController extends BaseController {
 
     /**
      * 查询商品分类列表
+     *
+     * @return 分类列表
      */
     @GetMapping("/categories")
     public Response<List<CategoryVO>> listCategories() {

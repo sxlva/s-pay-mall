@@ -18,8 +18,12 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 
 /**
- * 用户认证控制器
- * 处理用户注册、登录等认证相关接口
+ * 用户认证Controller
+ *
+ * <p>【DDD 触发层】处理用户注册、登录、微信绑定等认证相关接口。
+ * 同时映射 /mall-api/v1/auth 和 /mall-api/v1/mall/user 两个路径。</p>
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @RestController
@@ -27,18 +31,25 @@ import javax.annotation.Resource;
 @RequestMapping({"/mall-api/${app.config.api-version}/auth", "/mall-api/${app.config.api-version}/mall/user"})
 public class MallAuthController extends BaseController {
 
+    /** 商城用户领域服务 */
     @Resource
     private IMallUserService mallUserService;
 
+    /** 微信绑定服务 */
     @Resource
     private WeixinBindService weixinBindService;
 
+    /** 登录领域服务 */
     @Resource
     private ILoginService loginService;
 
     /**
      * 用户注册
-     * 支持普通账号注册和微信扫码注册
+     *
+     * <p>支持普通账号注册和微信扫码注册（传入openId时走微信注册流程）</p>
+     *
+     * @param request 注册请求，包含用户名、密码和可选的openId
+     * @return 登录信息（含JWT token）
      */
     @PostMapping("/register")
     public Response<UserLoginVO> register(@RequestBody UserRegisterRequestDTO request) {
@@ -68,7 +79,11 @@ public class MallAuthController extends BaseController {
 
     /**
      * 用户登录
-     * 验证用户名密码，成功返回JWT token
+     *
+     * <p>验证用户名密码，成功返回JWT token</p>
+     *
+     * @param request 登录请求，包含用户名和密码
+     * @return 登录信息（含JWT token）
      */
     @PostMapping("/login")
     public Response<UserLoginVO> login(@RequestBody UserLoginRequestDTO request) {
@@ -85,6 +100,9 @@ public class MallAuthController extends BaseController {
 
     /**
      * 获取用户个人信息
+     *
+     * @param userId 用户ID
+     * @return 用户个人信息
      */
     @GetMapping("/profile")
     public Response<UserProfileVO> getProfile(Long userId) {
@@ -97,9 +115,11 @@ public class MallAuthController extends BaseController {
 
     /**
      * 获取微信绑定二维码ticket
-     * 
+     *
      * <p>生成用于绑定的微信二维码ticket，前端使用此ticket拼接二维码图片URL：
-     * https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket={ticket}
+     * https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket={ticket}</p>
+     *
+     * @return 二维码ticket
      */
     @GetMapping("/bind/qrcode")
     public Response<String> generateBindQrCode() {
@@ -116,8 +136,11 @@ public class MallAuthController extends BaseController {
 
     /**
      * 检查微信绑定状态
-     * 
-     * <p>轮询检查用户是否已扫码完成绑定
+     *
+     * <p>轮询检查用户是否已扫码完成绑定</p>
+     *
+     * @param ticket 二维码ticket
+     * @return 绑定状态（BIND_SUCCESS / BINDING_PENDING / INVALID_CODE）
      */
     @GetMapping("/bind/status")
     public Response<BindStatusVO> checkBindStatus(String ticket) {

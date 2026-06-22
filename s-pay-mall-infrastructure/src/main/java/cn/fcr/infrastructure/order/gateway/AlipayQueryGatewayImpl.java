@@ -12,17 +12,8 @@ import javax.annotation.Resource;
 
 /**
  * 支付宝交易查询网关实现
- * <p>
- * 【职责说明】
- * - 封装支付宝交易状态查询的 SDK 调用细节
- * - 实现领域层定义的 IAlipayQueryGateway 接口
- * - 将 Alipay SDK 的 "10000" 成功码语义转化为 boolean 返回值
- * </p>
  *
- * <p>
- * 【注意】此实现从 NoPayNotifyOrderJob 迁移而来，
- * 原 Job 中直接使用 AlipayClient 和 "10000".equals(code) 的业务码判断已封装于此。
- * </p>
+ * @author 傅崇睿
  */
 @Slf4j
 @Component

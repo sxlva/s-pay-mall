@@ -7,10 +7,9 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * 用户个人信息值对象
- * <p>
- * 【Domain 值对象】仅在领域层内部使用，不暴露给外部 API。
- * 外部表现层通过 Assembler 或 Controller 转换为 API 层的 UserProfileVO。
+ * 用户个人信息值对象，仅在领域层内部使用，外部 API 通过 Assembler 转换。
+ *
+ * @author 傅崇睿
  */
 @Getter
 @Builder

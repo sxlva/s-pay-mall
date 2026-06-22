@@ -3,8 +3,9 @@ package cn.fcr.domain.mall.gateway;
 import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 
 /**
+ * 订单支付网关接口，定义支付链接生成、支付信息更新和延时关闭消息发送的抽象。
+ *
  * @author 傅崇睿
- * @description 订单支付网关接口
  */
 public interface IOrderPaymentGateway {
 

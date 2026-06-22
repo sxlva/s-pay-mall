@@ -1,9 +1,9 @@
 package cn.fcr.domain.auth.gateway;
 
 /**
+ * 微信网关接口，定义微信相关的业务能力抽象
+ *
  * @author 傅崇睿
- * @date 2025/7/26
- * @description 微信网关接口 - 定义微信相关的业务能力
  */
 public interface IWeChatGateway {
 

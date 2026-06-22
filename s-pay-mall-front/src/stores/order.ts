@@ -2,11 +2,13 @@
  * 订单状态管理 Store
  * 职责：状态管理、计算属性、业务逻辑编排
  * DDD 分层：Application/Domain Layer（应用层/领域层）
- * 
+ *
  * 架构原则：
  * - 不直接处理 HTTP 请求（委托给 orderRepository）
  * - 不处理数据清洗（由 orderRepository 完成）
  * - 只关注状态变化和用户交互逻辑
+ *
+ * @author 傅崇睿
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'

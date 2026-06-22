@@ -1,14 +1,15 @@
 package cn.fcr.domain.auth.model.valobj;
 
 /**
- * 用户角色枚举
- * <p>
- * 【共享值对象】定义在 auth 域，封装角色编码与中文描述的映射。
- * 避免展示层字符串硬编码或 Domain 实体中混入显示逻辑。
+ * 用户角色枚举，封装角色编码与中文描述的映射，避免展示层硬编码。
+ *
+ * @author 傅崇睿
  */
 public enum Role {
 
+    /** 管理员 */
     ADMIN("ADMIN", "管理员"),
+    /** 普通会员 */
     USER("USER", "普通会员");
 
     private final String code;
@@ -25,6 +26,8 @@ public enum Role {
 
     /**
      * 获取角色中文描述
+     *
+     * @return 中文描述
      */
     public String getDesc() {
         return desc;

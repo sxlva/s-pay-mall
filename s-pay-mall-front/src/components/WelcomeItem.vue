@@ -1,3 +1,8 @@
+<!--
+  WelcomeItem 脚手架组件（Vite 生成，未被实际业务使用）
+
+  @author 傅崇睿
+-->
 <template>
   <div class="item">
     <i>

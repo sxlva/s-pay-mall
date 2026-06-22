@@ -7,6 +7,11 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * 订单域中的商品快照实体，保存下单时的商品信息。
+ *
+ * @author 傅崇睿
+ */
 @Data
 @Builder
 @AllArgsConstructor
@@ -19,7 +24,7 @@ public class ProductEntity {
     private String productName;
     /** 商品描述 */
     private String productDesc;
-    /** 商品价格 */
+    /** 商品价格（元） */
     private BigDecimal price;
 
 }

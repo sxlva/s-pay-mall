@@ -2,11 +2,13 @@
  * 商品状态管理 Store
  * 职责：状态管理、计算属性、业务逻辑编排
  * DDD 分层：Application/Domain Layer（应用层/领域层）
- * 
+ *
  * 架构原则：
  * - 不直接处理 HTTP 请求（委托给 productRepository）
  * - 不处理数据清洗（由 productRepository 完成）
  * - 只关注状态变化和用户交互逻辑
+ *
+ * @author 傅崇睿
  */
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
@@ -63,17 +65,15 @@ export const useProductStore = defineStore('product', () => {
   }
 
   /**
-   * 初始化数据（仅首次加载）
-   * - 先加载分类
-   * - 再加载商品
-   * - 标记已初始化
+   * 加载数据
+   * - 分类：每次都重新加载，保证新增分类及时显示
+   * - 商品：首次加载后跳过（queryParams watch 会在筛选变更时自动触发加载）
    */
   const loadData = async () => {
+    await loadCategories()
     if (initialized.value) {
-      await loadProducts()
       return
     }
-    await loadCategories()
     await loadProducts()
     initialized.value = true
   }

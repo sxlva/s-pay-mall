@@ -8,18 +8,10 @@ import cn.fcr.domain.mall.service.StockChangeHandler;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 支付成功扣减库存策略处理器
- * 处理支付成功后扣减 Redis 库存的业务逻辑
+ * 支付成功时正式扣减 Redis 库存的策略处理器。
+ * 幂等 Key 格式：stock:event:deduct:{orderId}。
  *
- * 【职责】支付成功时，将 Redis 中预扣的库存正式扣减
- * 【触发场景】用户支付订单成功后触发
- * 【幂等性】基于 businessType + businessNo（orderId）实现幂等检查
- *         幂等 Key 格式：stock:event:deduct:{orderId}
- *
- * 【执行语义】
- * - tryAcquire=true: 获取锁成功，执行扣减逻辑，成功后不删除 Key（24小时自动过期）
- * - tryAcquire=false: 锁已被占用，跳过执行，返回当前库存
- * - 异常处理: 扣减失败时调用 release() 删除 Key，允许重试消费
+ * @author 傅崇睿
  */
 @Slf4j
 public class DeductHandler implements StockChangeHandler {

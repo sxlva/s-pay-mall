@@ -7,6 +7,8 @@ import lombok.Data;
  * 用户注册请求DTO
  * <p>
  * 用于用户注册的请求参数封装，支持普通注册和微信注册
+ *
+ * @author 傅崇睿
  */
 @Data
 public class UserRegisterRequestDTO {

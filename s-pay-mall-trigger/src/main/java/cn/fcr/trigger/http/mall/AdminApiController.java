@@ -23,8 +23,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 管理端API控制器
- * 提供用户管理、商品管理、订单管理、统计分析等后台管理接口
+ * 管理端API控制器（pay-api）
+ *
+ * <p>【DDD 触发层】提供后台管理接口，包含用户管理、商品管理、订单管理、统计分析。
+ * 所有接口需要通过 Spring Security ADMIN 角色校验。</p>
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @RestController
@@ -32,20 +36,32 @@ import java.util.stream.Collectors;
 @RequestMapping("/pay-api/${app.config.api-version}/admin")
 public class AdminApiController extends BaseController {
 
+    /** 商城用户领域服务 */
     @Resource
     private IMallUserService mallUserService;
 
+    /** 商城商品领域服务 */
     @Resource
     private IMallProductService mallProductService;
 
+    /** 商城统计领域服务 */
     @Resource
     private IMallStatisticsService mallStatisticsService;
 
+    /** 订单应用层服务 */
     @Resource
     private OrderApplicationService orderApplicationService;
 
     // ==================== 用户管理 ====================
 
+    /**
+     * 查询用户列表
+     *
+     * @param username 用户名（模糊匹配，可选）
+     * @param status   用户状态（可选）
+     * @param roleCode 角色编码（可选）
+     * @return 用户列表
+     */
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<List<UserVO>> listUsers(
@@ -66,6 +82,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 新增或更新用户
+     *
+     * @param request 用户信息
+     * @return 影响行数
+     */
     @PostMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> saveUser(@RequestBody UserSaveRequestDTO request) {
@@ -80,6 +102,13 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 更新用户状态
+     *
+     * @param userId 用户ID
+     * @param status 新状态
+     * @return 影响行数
+     */
     @PutMapping("/users/{userId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> updateUserStatus(
@@ -90,6 +119,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除用户
+     *
+     * @param userId 用户ID
+     * @return 影响行数
+     */
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> deleteUser(@PathVariable Long userId) {
@@ -100,6 +135,11 @@ public class AdminApiController extends BaseController {
 
     // ==================== 分类管理 ====================
 
+    /**
+     * 查询分类列表
+     *
+     * @return 分类列表
+     */
     @GetMapping("/categories")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<List<CategoryVO>> listCategories() {
@@ -115,6 +155,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 新增或更新分类
+     *
+     * @param request 分类信息
+     * @return 影响行数
+     */
     @PostMapping("/categories")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> saveCategory(@RequestBody CategorySaveRequestDTO request) {
@@ -123,6 +169,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除分类
+     *
+     * @param categoryId 分类ID
+     * @return 影响行数
+     */
     @DeleteMapping("/categories/{categoryId}")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> deleteCategory(@PathVariable Long categoryId) {
@@ -133,6 +185,16 @@ public class AdminApiController extends BaseController {
 
     // ==================== 商品管理 ====================
 
+    /**
+     * 查询商品列表
+     *
+     * @param categoryId 分类ID（可选）
+     * @param keyword    关键词（可选）
+     * @param minPrice   最低价（可选）
+     * @param maxPrice   最高价（可选）
+     * @param status     状态（可选）
+     * @return 商品列表
+     */
     @GetMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<List<ProductVO>> listProducts(
@@ -154,6 +216,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 新增或更新商品
+     *
+     * @param request 商品信息
+     * @return 影响行数
+     */
     @PostMapping("/products")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> saveProduct(@RequestBody @Valid ProductSaveRequestDTO request) {
@@ -171,6 +239,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除商品
+     *
+     * @param productId 商品ID
+     * @return 影响行数
+     */
     @DeleteMapping("/products/{productId}")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> deleteProduct(@PathVariable Long productId) {
@@ -181,6 +255,15 @@ public class AdminApiController extends BaseController {
 
     // ==================== 订单管理 ====================
 
+    /**
+     * 查询订单列表
+     *
+     * @param userId    用户ID（可选）
+     * @param status    订单状态（可选）
+     * @param startTime 开始时间（可选）
+     * @param endTime   结束时间（可选）
+     * @return 订单列表
+     */
     @GetMapping("/orders")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<List<OrderVO>> listOrders(
@@ -200,6 +283,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 一键发货
+     *
+     * @param orderId 订单ID
+     * @return 影响行数
+     */
     @PutMapping("/orders/{orderId}/deliver")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> deliverOrder(@PathVariable Long orderId) {
@@ -208,6 +297,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 取消订单
+     *
+     * @param orderId 订单ID
+     * @return 影响行数
+     */
     @PutMapping("/orders/{orderId}/cancel")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> cancelOrder(@PathVariable Long orderId) {
@@ -216,6 +311,12 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 删除订单
+     *
+     * @param orderId 订单ID
+     * @return 影响行数
+     */
     @DeleteMapping("/orders/{orderId}")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<Integer> deleteOrder(@PathVariable Long orderId) {
@@ -226,6 +327,11 @@ public class AdminApiController extends BaseController {
 
     // ==================== 统计分析 ====================
 
+    /**
+     * 获取销售趋势
+     *
+     * @return 销售趋势数据列表
+     */
     @GetMapping("/statistics/sales-trend")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<List<SalesTrendVO>> getSalesTrend() {
@@ -240,6 +346,11 @@ public class AdminApiController extends BaseController {
         return success(result);
     }
 
+    /**
+     * 获取分类销售占比
+     *
+     * @return 分类占比数据列表
+     */
     @GetMapping("/statistics/category-ratio")
     @PreAuthorize("hasRole('ADMIN')")
     public Response<List<CategoryRatioVO>> getCategoryRatio() {

@@ -10,14 +10,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 购物车实体，负责购物车商品项管理和金额计算。
+ *
+ * @author 傅崇睿
+ */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class CartEntity {
 
+    /** 用户ID */
     private Long userId;
 
+    /** 购物车商品项列表 */
     private List<CartItemEntity> items;
 
     public static CartEntity of(Long userId) {

@@ -1,11 +1,21 @@
 package cn.fcr.domain.mall.model.entity;
 
+/**
+ * 订单状态枚举，封装领域状态码、中文描述与数据库存储状态的映射。
+ *
+ * @author 傅崇睿
+ */
 public enum OrderState {
 
+    /** 待支付 */
     INIT("INIT", "待支付", "CREATED"),
+    /** 已支付 */
     PAID("PAID", "已支付", "PAID"),
+    /** 已发货 */
     SHIPPED("SHIPPED", "已发货", "SHIPPED"),
+    /** 已完成 */
     DONE("DONE", "已完成", "COMPLETED"),
+    /** 已取消 */
     CANCELED("CANCELED", "已取消", "CANCELLED");
 
     private final String code;

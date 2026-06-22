@@ -8,18 +8,10 @@ import cn.fcr.domain.mall.service.StockChangeHandler;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 后台管理员更新库存策略处理器
- * 处理管理员手动修改库存的业务逻辑
+ * 管理员手动修改商品库存时的 Redis 库存同步策略处理器。
+ * 幂等 Key 格式：stock:event:admin_update:{updateRecordId}。
  *
- * 【职责】管理员在后台修改商品库存时，同步更新 Redis 库存
- * 【触发场景】管理员通过后台管理系统修改商品库存
- * 【幂等性】基于 businessType + businessNo（updateRecordId）实现幂等检查
- *         幂等 Key 格式：stock:event:admin_update:{updateRecordId}
- *
- * 【执行语义】
- * - tryAcquire=true: 获取锁成功，执行更新逻辑，成功后不删除 Key（24小时自动过期）
- * - tryAcquire=false: 锁已被占用，跳过执行，返回当前库存
- * - 异常处理: 更新失败时调用 release() 删除 Key，允许重试消费
+ * @author 傅崇睿
  */
 @Slf4j
 public class AdminUpdateHandler implements StockChangeHandler {

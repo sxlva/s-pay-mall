@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * 个人中心页：用户信息、菜单导航、退出登录
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -225,12 +231,6 @@ export default {
   margin: 0 0 8px;
 }
 
-.role-text {
-  font-size: 14px;
-  opacity: 0.9;
-  margin: 0;
-}
-
 .info-card,
 .menu-card {
   background: white;
@@ -277,11 +277,6 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 20px;
-}
-
-.info-icon.blue {
-  background: #e6f7ff;
-  color: #1890ff;
 }
 
 .info-icon.purple {

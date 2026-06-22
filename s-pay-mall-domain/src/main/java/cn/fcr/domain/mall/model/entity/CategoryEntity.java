@@ -9,13 +9,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 【DDD 充血模型】分类实体
- * 业务逻辑封装在 Entity 内部，而非 Service 层
+ * 商城分类实体（充血模型）
  *
- * 【设计说明】
- * - 支持父子层级结构（通过 parentId 关联）
- * - 状态管理：0=禁用，1=启用
- * - 层级限制：最多支持3级分类
+ * <p>业务逻辑封装在 Entity 内部，支持父子层级结构（parentId），
+ * 状态管理 0=禁用/1=启用，层级限制最多 3 级。</p>
  *
  * @author 傅崇睿
  */

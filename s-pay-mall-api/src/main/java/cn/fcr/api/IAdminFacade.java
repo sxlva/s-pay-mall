@@ -18,6 +18,8 @@ import java.util.List;
  * 管理员外观接口
  * 对外暴露后台管理相关的接口，包括用户管理、商品管理、订单管理、统计分析等
  * 所有接口需要 ADMIN 角色权限
+ *
+ * @author 傅崇睿
  */
 public interface IAdminFacade {
 

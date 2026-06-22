@@ -16,10 +16,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 支付宝支付网关实现
- * <p>
- * 【DDD 防腐层 (ACL)】实现 mall 领域定义的 IPayGateway 接口，
- * 封装支付宝 AlipayClient SDK，将外部支付系统的技术细节隔离在基础设施层。
+ * 支付宝支付网关实现（防腐层ACL）
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @Component
@@ -110,7 +109,7 @@ public class AlipayGatewayImpl implements IPayGateway {
             if (value == null || value.isEmpty()) {
                 continue;
             }
-            if (sb.length() > 0) {
+            if (!sb.isEmpty()) {
                 sb.append("&");
             }
             sb.append(key).append("=").append(value);

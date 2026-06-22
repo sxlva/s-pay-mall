@@ -1,4 +1,9 @@
-// 路由配置：定义页面访问路径与权限守卫
+/**
+ * 路由配置：定义页面访问路径与权限守卫
+ *
+ * @author 傅崇睿
+ */
+
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
@@ -19,8 +24,11 @@ import AdminCategoriesPage from '../views/admin/AdminCategoriesPage.vue'
 import AdminProductsPage from '../views/admin/AdminProductsPage.vue'
 import AdminOrdersPage from '../views/admin/AdminOrdersPage.vue'
 
+/** 自定义路由元数据 */
 interface CustomRouteMeta extends Record<string | symbol, unknown> {
+  /** 是否需要登录才能访问 */
   requiresAuth?: boolean
+  /** 需要的角色编码 */
   role?: string
 }
 

@@ -61,9 +61,15 @@
 </template>
 
 <script setup>
+/**
+ * 管理后台分类管理：分类列表、新增、编辑、删除
+ *
+ * @author 傅崇睿
+ */
+
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete, Edit, Folder } from '@element-plus/icons-vue'
+import { Plus, Folder } from '@element-plus/icons-vue'
 import { getAdminCategories, saveAdminCategory, deleteAdminCategory } from '../../api/admin'
 
 const categories = ref([])

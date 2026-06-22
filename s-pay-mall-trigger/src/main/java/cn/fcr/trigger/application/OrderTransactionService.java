@@ -17,19 +17,20 @@ import java.util.List;
 
 /**
  * 订单事务服务
- * <p>
- * 【Trigger 应用层】负责订单创建的事务性 DB 操作。
- * 将事务边界与 MQ 发送解耦，避免事务 hold 问题。
- * <p>
- * 仅被 OrderApplicationService 内部调用，不对外暴露。
+ *
+ * @author 傅崇睿
  */
 @Slf4j
 @Service
 class OrderTransactionService {
 
+    /** 商城购物车领域服务 */
     private final IMallCartService mallCartService;
+    /** 商城订单领域服务 */
     private final IMallOrderService mallOrderService;
+    /** 订单支付网关 */
     private final IOrderPaymentGateway orderPaymentGateway;
+    /** 旧订单领域服务 */
     private final IOrderService orderService;
 
     public OrderTransactionService(IMallCartService mallCartService,
@@ -44,6 +45,9 @@ class OrderTransactionService {
 
     /**
      * 在事务内完成订单创建的所有 DB 操作
+     *
+     * <p>包含库存预扣、订单落库、支付单生成、购物车清空。
+     * 发生异常时自动回滚库存预扣。</p>
      *
      * @param userId  用户ID
      * @param address 收货地址

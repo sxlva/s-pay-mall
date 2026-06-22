@@ -4,6 +4,11 @@ import cn.fcr.domain.mall.model.entity.UserEntity;
 
 import java.util.List;
 
+/**
+ * 用户仓储接口，定义用户持久化操作的抽象。
+ *
+ * @author 傅崇睿
+ */
 public interface IUserRepository {
 
     UserEntity findByUsernameWithRole(String username);

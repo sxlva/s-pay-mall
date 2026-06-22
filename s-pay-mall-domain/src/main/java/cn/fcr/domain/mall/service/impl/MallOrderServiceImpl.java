@@ -16,6 +16,11 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 订单领域服务实现，负责库存预检扣减、订单创建保存、支付状态变更及继续支付。
+ *
+ * @author 傅崇睿
+ */
 @Slf4j
 public class MallOrderServiceImpl implements IMallOrderService {
 

@@ -2,40 +2,51 @@ package cn.fcr.domain.mall.model.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter; // 替换 @Data，拒绝外界盲目 Setter
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 商品实体
- * 【DDD 充血模型】业务逻辑封装在 Entity 内部，而非 Service 层
+ * 商品实体，业务逻辑封装在 Entity 内部，包含销售验证、库存校验等核心能力。
+ *
+ * @author 傅崇睿
  */
-@Getter // 仅允许外部读取，防止状态被外部随意篡改
+@Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProductEntity {
 
+    /** 商品ID */
     private Long id;
 
+    /** 分类ID */
     private Long categoryId;
 
+    /** 商品名称 */
     private String name;
 
+    /** 商品描述 */
     private String description;
 
+    /** 商品价格（元） */
     private BigDecimal price;
 
+    /** 库存数量 */
     private Integer stock;
 
+    /** 分类名称 */
     private String category;
 
+    /** 商品状态：0=下架，1=上架 */
     private Integer status;
 
+    /** 创建时间 */
     private LocalDateTime createTime;
 
+    /** 更新时间 */
     private LocalDateTime updateTime;
 
     /* ==========================================
