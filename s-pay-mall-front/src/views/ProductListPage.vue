@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import { useProduct } from '@/hooks/useProduct'
 import { useCart } from '@/hooks/useCart'
-import type { ProductVO } from '@/types/product'
+import type { ProductVO } from '@/types/domain/product'
 import { isSoldOut } from '@/utils/product'
 
 const router = useRouter()

@@ -154,13 +154,13 @@ public class OrderEntity {
 
     /**
      * 超时关单
-     * 必须校验当前状态是否为 CREATE
+     * 必须校验当前状态是否为 CREATE 或 PAY_WAIT
      * @throws IllegalStateException 当前状态不允许此操作
      */
     public void closeByTimeout() {
-        if (this.orderStatusVO != OrderStatusVO.CREATE) {
+        if (this.orderStatusVO != OrderStatusVO.CREATE && this.orderStatusVO != OrderStatusVO.PAY_WAIT) {
             throw new IllegalStateException(
-                "订单状态为 [" + getSafeStateDesc() + "]，只有创建中的订单才能超时关单"
+                "订单状态为 [" + getSafeStateDesc() + "]，只有创建中或等待支付的订单才能超时关单"
             );
         }
         this.orderStatusVO = OrderStatusVO.CLOSE;

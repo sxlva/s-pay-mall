@@ -14,7 +14,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { productRepository } from '@/repositories/productRepository'
-import type { ProductVO, CategoryVO, ProductQueryParams } from '@/types/product'
+import type { ProductVO, CategoryVO, ProductQueryParams } from '@/types/domain/product'
 
 export const useProductStore = defineStore('product', () => {
   // ==================== 状态定义 ====================

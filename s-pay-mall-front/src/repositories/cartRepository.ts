@@ -5,7 +5,7 @@
  *
  * @author 傅崇睿
  */
-import type { CartItem, CartItemRaw, CartAddParams, CartUpdateQuantityParams } from '../types/cart'
+import type { CartItem, CartItemRaw, CartAddParams, CartUpdateQuantityParams } from '../types/domain/cart'
 
 const API_BASE = '/mall-api/v1'
 

@@ -6,6 +6,6 @@
  */
 
 // 重新导出 domain 层类型
-export type { UserVO, UserQueryParams } from './domain/user'
+export type { UserVO, UserQueryParams } from './user'
 
 // 为保持向后兼容，保留原始接口定义（已被 domain/user.ts 替代）

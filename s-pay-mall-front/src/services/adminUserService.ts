@@ -6,7 +6,7 @@
  */
 
 import { getAdminUsers, updateAdminUserStatus, deleteAdminUser } from '../api/admin'
-import type { UserVO, UserQueryParams } from '../types/adminUser'
+import type { UserVO, UserQueryParams } from '../types/domain/adminUser'
 export class AdminUserService {
   /**
    * 获取用户列表

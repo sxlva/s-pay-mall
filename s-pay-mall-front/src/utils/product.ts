@@ -4,7 +4,7 @@
  * @author 傅崇睿
  */
 
-import type { ProductVO } from '@/types/product'
+import type { ProductVO } from '@/types/domain/product'
 
 /**
  * 规范化库存值为数字

@@ -14,7 +14,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { orderRepository } from '@/repositories/orderRepository'
-import type { Order, OrderCreateResult, OrderListParams } from '@/types/order'
+import type { Order, OrderCreateResult, OrderListParams } from '@/types/domain/order'
 
 export const useOrderStore = defineStore('order', () => {
   // ==================== 状态定义 ====================

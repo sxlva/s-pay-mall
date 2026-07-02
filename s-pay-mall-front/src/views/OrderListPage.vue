@@ -94,8 +94,8 @@ import { usePayment } from '../hooks/usePayment';
 import { orderRepository } from '../repositories/orderRepository';
 import { checkStock, type StockCheckResult } from '../api/order';
 import PaymentSubmitter from '../components/PaymentSubmitter.vue';
-import type { OrderStatus } from '../types/order';
-import type { Order } from '../types/order';
+import type { OrderStatus } from '../types/domain/order';
+import type { Order } from '../types/domain/order';
 
 const router = useRouter();
 const { orders, loading, loadOrders } = useOrder();

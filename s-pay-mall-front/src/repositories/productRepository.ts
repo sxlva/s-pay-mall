@@ -5,7 +5,7 @@
  *
  * @author 傅崇睿
  */
-import type { ProductVO, CategoryVO, ProductQueryParams } from '../types/product'
+import type { ProductVO, CategoryVO, ProductQueryParams } from '../types/domain/product'
 import { normalizeProduct, normalizeProducts } from '../utils/product'
 
 const API_BASE = '/mall-api/v1'

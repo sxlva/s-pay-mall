@@ -6,7 +6,7 @@
  * @author 傅崇睿
  */
 import { mallInstance } from '@/utils/axios'
-import type { Order, OrderCreateResult, OrderListParams } from '@/types/order'
+import type { Order, OrderCreateResult, OrderListParams } from '@/types/domain/order'
 
 /**
  * 订单仓储接口

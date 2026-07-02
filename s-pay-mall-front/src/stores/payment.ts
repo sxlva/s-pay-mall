@@ -8,9 +8,9 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { PayOrder, PollingState, PayResult } from '../types/payment';
+import type { PayOrder, PollingState, PayResult } from '../types/domain/payment';
 import { orderRepository } from '../repositories/orderRepository';
-import type { Order } from '../types/order';
+import type { Order } from '../types/domain/order';
 
 /** 轮询间隔（毫秒） */
 const POLLING_INTERVAL = 3000;

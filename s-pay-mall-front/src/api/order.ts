@@ -5,7 +5,7 @@
  */
 
 import { mallInstance } from '../utils/axios';
-import type { Order, OrderCreateResult, OrderListParams } from '../types/order';
+import type { Order, OrderCreateResult, OrderListParams } from '../types/domain/order';
 
 /** 库存检查结果 */
 export interface StockCheckResult {

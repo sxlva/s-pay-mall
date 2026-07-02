@@ -5,6 +5,8 @@ import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.service.PayOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -39,7 +41,9 @@ public class OrderPaymentGatewayImpl implements IOrderPaymentGateway {
     public void sendDelayCloseMessage(String orderNo) {
         log.info("发送订单延时关闭消息: orderNo={}", orderNo);
         try {
-            rocketMQTemplate.syncSend("order-timeout-topic", orderNo, 3000);
+            // 【延时消息】delayLevel=5 对应 1 分钟，开发环境合理延时
+            Message<String> message = MessageBuilder.withPayload(orderNo).build();
+            rocketMQTemplate.syncSend("order-timeout-topic", message, 3000, 5);
             log.info("订单延时关闭消息发送成功: orderNo={}", orderNo);
         } catch (Exception e) {
             log.error("发送订单延时关闭消息失败: orderNo={}, error={}", orderNo, e.getMessage(), e);

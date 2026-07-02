@@ -14,7 +14,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { cartRepository } from '../repositories/cartRepository'
-import type { CartItem } from '../types/cart'
+import type { CartItem } from '../types/domain/cart'
 
 export const useCartStore = defineStore('cart', () => {
   // ==================== 状态定义 ====================
