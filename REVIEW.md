@@ -1,10 +1,61 @@
-# s-pay-mall 代码审查规则
+# s-pay-mall 代码审查规则（v2）
 
 > 本文件为 Claude Code 审查代码时的最高优先级指导方针,所有审查必须严格遵循以下规则。
+> **本版本新增「零、契约核心检查」，优先级高于第一章 DDD 检查** —— 字段/接口命名问题必须在架构问题之前先拦截，因为它是本项目当前最大的错误来源（详见接口契约审计记录）。
 
 ---
 
-## 一、DDD 架构合规性审查 (最高优先级)
+## 零、契约核心检查（最高优先级，先于一切其他审查项）
+
+**规则**: 任何涉及接口路径、请求/响应字段、DTO/VO/TS interface 命名的新增或修改，必须先核对 `docs/API_CONTRACT.md`，该文件是本项目唯一命名真相源。
+
+**审查要点**:
+- ✅ 新增接口：`API_CONTRACT.md` 中是否已存在对应条目？不存在 → 判 P0，要求先补充契约条目再合并代码
+- ✅ 字段命名：代码中的字段名是否与契约文件逐字一致（包括大小写）？不一致 → 判 P0
+- ❌ **禁止**在 `api/vo` 包新增使用 `@JsonProperty` 进行 snake_case 转换的类；已存在的视为技术债，禁止在其基础上扩展字段
+- ❌ **禁止**前端 TS interface 声明后端契约文件中不存在的字段（即"臆造字段"，如审计中发现的 `stockStatus`）
+- ✅ 若发现代码与契约文件不一致，默认以契约文件为准去改代码；仅当契约文件本身有明显错误时才反向修改契约文件，且必须在审查意见中注明原因
+
+**检查方法**:
+```
+1. 定位本次改动涉及的接口/字段
+2. 在 API_CONTRACT.md 的"二、端点契约表"或"三、对象字段契约表"中搜索对应条目
+3. 逐字段比对：字段名、类型、是否可为空
+4. 不一致 → 停止审查其他项，先报 P0
+```
+
+**示例**:
+```java
+// ❌ 错误: VO 类使用 @JsonProperty 转 snake_case（违反契约文件"全局命名策略"）
+public class ProductVO {
+    @JsonProperty("category_id")
+    private Long categoryId;
+}
+
+// ✅ 正确: 与 API_CONTRACT.md 保持一致的 camelCase
+public class ProductVO {
+    private Long categoryId;
+}
+```
+
+```typescript
+// ❌ 错误: 前端声明契约文件中不存在的字段
+export interface StockCheckResult {
+  success: boolean;
+  message: string;
+  stockStatus: string;  // API_CONTRACT.md 中无此字段，禁止臆造
+}
+
+// ✅ 正确: 与契约文件逐字段对应
+export interface StockCheckResult {
+  success: boolean;
+  message: string;
+}
+```
+
+---
+
+## 一、DDD 架构合规性审查
 
 ### 1.1 分层依赖检查
 
@@ -17,6 +68,8 @@
 - ❌ **禁止**: Domain 依赖任何其他层
 - ❌ **禁止**: Infrastructure 依赖 Application 或 Trigger
 - ❌ **禁止**: Application 依赖 Infrastructure
+
+> **现状说明**：`s-pay-mall-application` 模块当前不存在于磁盘，`OrderApplicationService` 暂存于 `trigger/application` 包内（见 `CLAUDE_project_guide_v2.md` "现状与磁盘实际结构的差异"）。审查该包代码时按 Application 层规则审查，但**不得**以"反正还在 trigger 包里"为由放宽标准。
 
 **检查方法**:
 ```java
@@ -341,7 +394,7 @@ public class ProductRepository implements IProductRepository {
 |------|------|------|--------|
 | API 接口 | `I{Aggregate}Facade` | `IAuthFacade`, `IOrderFacade` | ❌ 禁止 `IAuthService` |
 | DTO | `{Action}RequestDTO` | `UserLoginRequestDTO` | ❌ 禁止 `UserLoginRequest` |
-| VO | `{Entity}VO` | `UserVO`, `OrderVO` | ❌ 禁止返回 `Map<String, Object>` |
+| VO | `{Entity}VO` | `UserVO`, `OrderVO` | ❌ 禁止返回 `Map<String, Object>`；❌ 禁止 `@JsonProperty` snake_case（见「零」） |
 | 领域服务 | `I{Domain}Service` | `IOrderService` | ✅ 接口在 Domain 层 |
 | 仓储接口 | `I{Entity}Repository` | `IOrderRepository` | ✅ 接口在 Domain 层 |
 | 网关接口 | `I{Purpose}Gateway` | `IStockGateway` | ✅ 接口在 Domain 层 |
@@ -352,7 +405,7 @@ public class ProductRepository implements IProductRepository {
 |------|------|------|
 | 组件文件 | PascalCase | `OrderListPage.vue` |
 | API 文件 | camelCase | `order.ts` |
-| 类型定义 | PascalCase | `interface OrderVO` |
+| 类型定义 | PascalCase，字段名与契约文件逐字一致 | `interface OrderVO` |
 | 方法名 | camelCase | `handleCreateOrder` |
 
 ### 2.2 注释完整性检查
@@ -443,9 +496,43 @@ public class OrderService implements IOrderService {
 
 ---
 
-## 三、安全性审查规则
+## 三、设计模式选型审查规则（新增）
 
-### 3.1 参数校验检查
+**规则**: 设计模式的引入必须满足"信号"且不触发"否决条件"，默认不用。目的是防止过度工程化（ROI 原则），同时避免该抽象的地方用 if-else 堆砌。
+
+| 场景信号 | 触发考虑的模式 | 否决条件（满足任一则不用） |
+|---|---|---|
+| 同一 Gateway/Service 存在 2 个以上互斥算法或渠道实现，且步骤结构相似、仅个别步骤不同（如支付宝/微信支付回调验签流程） | 模板方法模式 | 只有 1 种实现；或未来 6 个月内无第二种实现的明确计划 |
+| 领域服务核心流程固定，某几步需按运行时条件切换行为（如库存扣减：预扣减 vs 直接扣减） | 策略模式 | 分支数 ≤ 2 且逻辑简单，`if-else` 可读性更高 |
+| Repository/Gateway 需要按配置切换具体后端实现 | 工厂模式 | Domain 层已通过接口解耦，Spring 按 `@Profile`/`@ConditionalOnProperty` 注入即可满足，无需额外工厂类 |
+| 前端组件存在 3 个以上相似但细节不同的展示变体（如订单卡片按状态显示不同操作按钮） | 组合/插槽模式（Vue slots） | 变体 ≤ 2 且未来无扩展计划，直接用 `v-if` 分支 |
+
+**通用否决规则**: 审查时若无法回答"如果不用这个模式，未来大概率会具体怎么改坏"，一律判定为不需要引入，按 `CLAUDE_project_guide_v2.md` 中"输出前自查③ROI原则"处理。
+
+**示例**:
+```java
+// ✅ 正确: 满足信号（支付宝/微信验签流程高度相似）且无法简单否决，使用模板方法
+public abstract class AbstractPayCallbackHandler {
+    public final void handle(String rawBody) {
+        verifySign(rawBody);
+        PayResult result = parseResult(rawBody);
+        updateOrderStatus(result);
+    }
+    protected abstract void verifySign(String rawBody);
+    protected abstract PayResult parseResult(String rawBody);
+    private void updateOrderStatus(PayResult result) { /* 共用逻辑 */ }
+}
+
+// ❌ 错误: 仅有 1 种库存扣减方式，仍引入策略模式接口 + 工厂 + 3 个实现类，属于过度工程化
+public interface IStockDeductStrategy { void deduct(Long productId, Integer qty); }
+public class StockDeductStrategyFactory { /* 只有一个实现，纯属多余的抽象层 */ }
+```
+
+---
+
+## 四、安全性审查规则
+
+### 4.1 参数校验检查
 
 **规则**: 所有外部输入必须校验,防止非法参数
 
@@ -473,7 +560,7 @@ public class UserLoginRequestDTO {
 }
 ```
 
-### 3.2 敏感信息保护
+### 4.2 敏感信息保护
 
 **规则**: 敏感信息不得明文存储、不得记录到日志
 
@@ -493,7 +580,7 @@ private String privateKey;
 private String privateKey = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASC...";
 ```
 
-### 3.3 SQL 注入防护
+### 4.3 SQL 注入防护
 
 **规则**: 使用参数化查询,禁止字符串拼接 SQL
 
@@ -514,11 +601,11 @@ private String privateKey = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASC...";
 </select>
 ```
 
-### 3.4 MQ Listener 审查规则
+### 4.4 MQ Listener 审查规则
 
 **规则**: Trigger 层的 MQ Listener (消息消费者) 必须遵循以下规范，确保消息可靠处理。
 
-#### 3.4.1 消费幂等性
+#### 4.4.1 消费幂等性
 
 **检查项**:
 - ✅ 消费者必须实现消息幂等性 (防止重复消费)
@@ -562,7 +649,7 @@ public class OrderListener implements RocketMQListener<Message> {
 }
 ```
 
-#### 3.4.2 异常处理与重试
+#### 4.4.2 异常处理与重试
 
 **检查项**:
 - ✅ 消费异常必须抛出 `RuntimeException` 触发重试
@@ -594,7 +681,7 @@ public class OrderListener implements RocketMQListener<Message> {
 }
 ```
 
-#### 3.4.3 死信队列 (DLQ) 处理
+#### 4.4.3 死信队列 (DLQ) 处理
 
 **检查项**:
 - ✅ 必须配置死信队列接收失败消息
@@ -611,7 +698,7 @@ rocketmq:
     maxRetryTimes: 3
 ```
 
-#### 3.4.4 消费顺序性
+#### 4.4.4 消费顺序性
 
 **检查项**:
 - ✅ 有顺序要求的场景必须使用顺序消息
@@ -620,9 +707,9 @@ rocketmq:
 
 ---
 
-## 四、性能优化审查规则
+## 五、性能优化审查规则
 
-### 4.1 数据库查询优化
+### 5.1 数据库查询优化
 
 **检查项**:
 - ✅ 避免 N+1 查询: 使用 JOIN 或批量查询
@@ -630,7 +717,7 @@ rocketmq:
 - ✅ 索引使用: 查询条件字段必须有索引
 - ❌ 禁止 `SELECT *`: 明确指定需要的字段
 
-### 4.2 缓存使用检查
+### 5.2 缓存使用检查
 
 **检查项**:
 - ✅ 热点数据缓存: 如商品信息、分类信息
@@ -638,7 +725,7 @@ rocketmq:
 - ✅ 缓存穿透防护: 空值也缓存
 - ✅ 缓存更新策略: 主动更新或过期更新
 
-### 4.3 并发控制检查
+### 5.3 并发控制检查
 
 **检查项**:
 - ✅ 库存扣减: 使用 Redis 原子操作或分布式锁
@@ -647,9 +734,9 @@ rocketmq:
 
 ---
 
-## 五、幂等性与防御性编程审查规则
+## 六、幂等性与防御性编程审查规则
 
-### 5.1 接口重入检测 (幂等性检查)
+### 6.1 接口重入检测 (幂等性检查)
 
 **规则**: 所有触发状态变更的外部接口必须实现幂等性保护
 
@@ -702,7 +789,7 @@ public class OrderApplicationService {
 ```
 
 **检查项**:
-- ✅ RequestDTO 必须包含幂等键 (`requestId` 或 `orderNo`)
+- ✅ RequestDTO 必须包含幂等键 (`requestId` 或 `orderNo`，命名以 `API_CONTRACT.md` 为准)
 - ✅ Application 层在调用 Domain 服务前必须进行幂等性校验
 - ✅ 使用 Redis SETNX 或数据库唯一索引实现幂等性
 - ✅ 幂等键必须具有足够的随机性 (UUID 或雪花算法)
@@ -761,7 +848,7 @@ public class OrderApplicationService {
 }
 ```
 
-### 5.2 外部调用防御性检查
+### 6.2 外部调用防御性检查
 
 **规则**: 所有外部系统调用 (Gateway) 必须添加超时时间和降级处理
 
@@ -831,7 +918,7 @@ public class WeixinGatewayImpl implements IWeixinGateway {
 }
 ```
 
-### 5.3 集合操作空值检查
+### 6.3 集合操作空值检查
 
 **规则**: 所有集合操作必须进行判空处理，防止 `NullPointerException`
 
@@ -880,23 +967,23 @@ public class OrderService implements IOrderService {
 
 ---
 
-## 六、前端代码审查规则
+## 七、前端代码审查规则
 
-### 6.1 TypeScript 类型检查
+### 7.1 TypeScript 类型检查
 
 **规则**: 必须使用强类型,避免 `any`
 
 **检查项**:
-- ✅ 接口定义: 从后端 API 生成 TypeScript 接口
+- ✅ 接口定义: 从 `API_CONTRACT.md` 派生 TypeScript 接口，不从后端代码反推
 - ✅ 类型导入: 使用 `import type`
 - ❌ 禁止使用 `any` 类型
 
-### 6.2 API 调用规范
+### 7.2 API 调用规范
 
 **规则**: API 调用必须统一封装,错误统一处理
 
 **检查项**:
-- ✅ API 封装: 在 `api/` 目录下统一管理
+- ✅ API 封装: 在 `api/` 目录下统一管理，禁止 `repositories/` 与 `api/` 重复封装同一端点（见现状说明，本次重构需清理重叠层）
 - ✅ 错误处理: 统一拦截器处理错误
 - ✅ 参数验证: 调用前验证必要参数
 
@@ -915,20 +1002,20 @@ const order = await createOrder({ productId: 123, quantity: 1 })
 axios.post('/api/v1/orders', data)
 ```
 
-### 6.3 组件设计规范
+### 7.3 组件设计规范
 
 **检查项**:
 - ✅ 单一职责: 一个组件只负责一个功能
 - ✅ Props 验证: 定义 Props 类型
 - ✅ 事件命名: 使用 `on` 前缀,如 `onClick`, `onSubmit`
 
-### 6.4 前端 DDD 架构映射
+### 7.4 前端 DDD 架构映射
 
 **规则**: 前端逻辑也应尽可能按照业务模块划分，并对齐后端的 Facade 定义。
 
 **重要性**: Vue3 + TS 项目最容易烂尾的地方就是 `any` 的泛滥和 API 的混乱。加上"组件不直接消费 Response"这一条，能帮你省下大量改动数据结构的麻烦。
 
-#### 6.4.1 模块化目录结构
+#### 7.4.1 模块化目录结构
 
 **规则**: `src/views/` 和 `src/api/` 下必须按照业务模块划分目录。
 
@@ -937,134 +1024,95 @@ axios.post('/api/v1/orders', data)
 ```
 s-pay-mall-front/
 ├── src/
-│   ├── api/                          # API 层
+│   ├── api/                          # API 层（唯一封装层，repositories/ 与 services/ 中的重复封装本次一并清理）
 │   │   ├── auth/                    # 对应后端 IAuthFacade
-│   │   │   ├── types.ts             # 认证相关类型定义
+│   │   │   ├── types.ts             # 认证相关类型定义（从 API_CONTRACT.md 派生）
 │   │   │   └── index.ts             # 认证 API 封装
 │   │   ├── mall/                    # 对应后端 IMallProductFacade
-│   │   │   ├── types.ts             # 商品/购物车相关类型定义
-│   │   │   └── index.ts             # 商品/购物车 API 封装
+│   │   │   ├── types.ts
+│   │   │   └── index.ts
 │   │   ├── order/                   # 对应后端 IMallOrderFacade
-│   │   │   ├── types.ts             # 订单相关类型定义
-│   │   │   └── index.ts             # 订单 API 封装
+│   │   │   ├── types.ts
+│   │   │   └── index.ts
 │   │   └── admin/                   # 对应后端 IAdminFacade
 │   │       ├── types.ts
 │   │       └── index.ts
-│   ├── views/                       # 视图层
-│   │   ├── auth/                    # 认证相关页面
-│   │   │   ├── LoginPage.vue
-│   │   │   └── RegisterPage.vue
-│   │   ├── mall/                    # 商城相关页面
-│   │   │   ├── ProductListPage.vue
-│   │   │   ├── ProductDetailPage.vue
-│   │   │   └── CartPage.vue
-│   │   ├── order/                   # 订单相关页面
-│   │   │   ├── OrderListPage.vue
-│   │   │   └── CheckoutPage.vue
-│   │   └── admin/                    # 管理后台页面
-│   │       ├── AdminDashboardPage.vue
-│   │       ├── AdminProductsPage.vue
-│   │       └── AdminOrdersPage.vue
+│   ├── views/
+│   │   ├── auth/
+│   │   ├── mall/
+│   │   ├── order/
+│   │   └── admin/
 ```
 
-#### 6.4.2 类型安全
+> **现状清理项**：审计发现 `src/repositories/`（如 `cartRepository` 用 bare fetch）、`src/services/adminUserService.ts` 与 `api/` 层功能重叠。本次重构目标是**只保留 `api/` 一层**，`repositories/`、`services/` 中的逻辑迁移合并后删除，禁止保留"两套封装并存"的状态。
 
-**规则**: 后端定义的 VO 必须有对应的 TypeScript Interface，严禁在组件中直接使用 `any` 或 JSON 对象字面量。
+#### 7.4.2 类型安全
+
+**规则**: `API_CONTRACT.md` 中定义的每个字段必须有对应的 TypeScript Interface 字段，严禁在组件中直接使用 `any` 或 JSON 对象字面量，严禁声明契约文件中不存在的字段。
 
 **审查要点**:
-- ✅ 必须定义 TypeScript 接口，与后端 VO 一一对应
+- ✅ 必须定义 TypeScript 接口，与 `API_CONTRACT.md` 逐字段对应
 - ✅ 使用 `type` 或 `interface` 关键字
-- ✅ 接口字段必须与后端 VO 字段完全一致
 - ❌ 禁止使用 `any` 类型
 - ❌ 禁止直接使用 JSON 对象字面量
+- ❌ 禁止声明契约文件中不存在的字段（即"臆造字段"）
 
 **类型定义示例**:
 
 ```typescript
-// ✅ 正确: 定义接口并使用 type/interface
+// ✅ 正确: 与 API_CONTRACT.md「三、对象字段契约表」逐字段对应
 // api/order/types.ts
-
-// 后端 OrderVO 对应的 TypeScript 接口
 export interface OrderVO {
-  orderNo: string;       // 订单号
-  totalAmount: number;   // 订单总额
-  status: number;        // 订单状态
-  items: OrderItemVO[];   // 订单商品列表
-  createTime: string;    // 创建时间
+  orderNo: string;
+  totalAmount: number;
+  status: number;
+  items: OrderItemVO[];
+  createTime: string;
 }
 
-export interface OrderItemVO {
-  productId: number;
-  productName: string;
-  price: number;
-  quantity: number;
-}
-
-// 后端 OrderCreateRequestDTO 对应的 TypeScript 接口
 export interface OrderCreateRequest {
+  requestId: string;  // 幂等键，见契约文件
   productId: number;
   quantity: number;
 }
-
-// ✅ 正确: 使用类型导入
-import type { OrderVO } from './types'
 ```
 
 ```typescript
 // ❌ 错误: 使用 any 或 JSON 对象字面量
-// 组件中直接使用
 const order: any = await fetch('/api/v1/orders/123')
-
-// 或者
-const order = {
-  orderNo: 'string',
-  totalAmount: 100,
-  // 没有类型定义，无法享受 IDE 自动补全和类型检查
-}
 ```
 
-#### 6.4.3 数据流转规范
+#### 7.4.3 数据流转规范
 
-**规则**: API 层必须处理后端返回的响应包装（如：拆解 `Response<T>`），组件层仅直接使用 `T` 数据。
+**规则**: API 层必须处理后端返回的响应包装（拆解 `Response<T>`），组件层仅直接使用 `T` 数据。
 
 **审查要点**:
 - ✅ API 层负责解构响应，提取 `data` 字段
 - ✅ 组件层直接使用干净的 VO 对象
 - ❌ 组件层禁止直接消费 `Response<T>` 包装对象
 - ❌ 禁止在组件中多次解构响应
+- ❌ **禁止**因后端字段与前端类型不一致而在 API 层做"映射层强行对齐"（如原 `cartRepository.ts` 将 `price` 映射为 `productPrice`）——发现字段不一致时，应回到 `API_CONTRACT.md` 修正命名并同步改双端，而不是加一层映射掩盖问题
 
 **数据流转示例**:
 
 ```typescript
 // api/order/index.ts
 import type { OrderVO, OrderCreateRequest } from './types'
-import request from '@/utils/request'  // 假设封装了 axios
+import request from '@/utils/request'
 
-/**
- * 获取订单详情
- * @param orderNo 订单号
- * @returns 干净的 OrderVO 对象
- */
 export async function getOrder(orderNo: string): Promise<OrderVO> {
-  // API 层处理响应包装
   const res = await request.get<Response<OrderVO>>(`/orders/${orderNo}`)
-  return res.data  // 组件层拿到的是干净的 VO
+  return res.data
 }
 
-/**
- * 创建订单
- * @param data 订单创建请求
- * @returns 干净的 OrderVO 对象
- */
 export async function createOrder(data: OrderCreateRequest): Promise<OrderVO> {
   const res = await request.post<Response<OrderVO>>('/orders', data)
-  return res.data  // 组件层拿到的是干净的 VO
+  return res.data
 }
 ```
 
 ```vue
 <!-- ✅ 正确: 组件层直接使用干净的 VO -->
-<!-- OrderListPage.vue -->
 <template>
   <div v-for="order in orders" :key="order.orderNo">
     <span>{{ order.orderNo }}</span>
@@ -1074,60 +1122,31 @@ export async function createOrder(data: OrderCreateRequest): Promise<OrderVO> {
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { getOrderList } from '@/api/order'  // 直接使用 API 返回的干净 VO
+import { getOrderList } from '@/api/order'
 import type { OrderVO } from '@/api/order/types'
 
 const orders = ref<OrderVO[]>([])
 
 async function loadOrders() {
-  // 这里拿到的 order 是干净的 OrderVO，不包含 response 包装
   orders.value = await getOrderList()
 }
 </script>
 ```
 
-```vue
-<!-- ❌ 错误: 组件层直接消费 Response<T> -->
-<template>
-  <div>{{ order.data.orderNo }}</div>  <!-- 多层嵌套，不清晰 -->
-</template>
+#### 7.4.4 前端类型与后端字段映射来源
 
-<script setup lang="ts">
-import request from '@/utils/request'
-
-async function loadOrder() {
-  // 直接在组件中调用 axios，没有类型定义
-  const res = await axios.get('/api/v1/orders/123')
-  // res 是 Response<OrderVO>，组件需要知道后端的响应结构
-  this.order = res.data.data  // 双重解构，容易出错
-}
-</script>
-```
-
-#### 6.4.4 前端类型与后端 VO 映射表
-
-**规则**: 前端 TypeScript 类型必须与后端 VO 一一对应。
-
-**映射规范**:
-
-| 后端 VO | 前端 TypeScript Interface | 存放位置 |
-|---------|--------------------------|----------|
-| `OrderVO` | `OrderVO` | `api/order/types.ts` |
-| `OrderItemVO` | `OrderItemVO` | `api/order/types.ts` |
-| `UserVO` | `UserVO` | `api/auth/types.ts` |
-| `ProductVO` | `ProductVO` | `api/mall/types.ts` |
-| `CartItemVO` | `CartItemVO` | `api/mall/types.ts` |
+**规则**: 前端 TypeScript 类型必须与 `API_CONTRACT.md` 的「三、对象字段契约表」一一对应，**不再以后端 VO 代码作为参照源**（因为后端 VO 代码本身可能是待整改的历史遗留状态，见「零、契约核心检查」）。
 
 **字段命名规范**:
-- ✅ 前端使用 camelCase (与 TypeScript 惯例一致)
-- ✅ 后端 VO 使用 camelCase (已在 DTO 设计中约定)
+- ✅ 前后端统一 camelCase（见 `CLAUDE_project_guide_v2.md`"全局序列化与命名策略"决议）
+- ❌ 禁止出现 snake_case 字段（历史遗留 `category_id` 等，本次重构一并清理，双端同步改名）
 - ❌ 禁止混用 snake_case 和 camelCase
 
 ---
 
-## 七、测试审查规则
+## 八、测试审查规则
 
-### 7.1 单元测试检查
+### 8.1 单元测试检查
 
 **检查项**:
 - ✅ Domain 层: 必须有单元测试
@@ -1135,7 +1154,7 @@ async function loadOrder() {
 - ✅ 测试命名: `test{方法名}_{场景}`
 - ✅ Mock 使用: 外部依赖使用 Mock
 
-### 7.2 集成测试检查
+### 8.2 集成测试检查
 
 **检查项**:
 - ✅ API 测试: 测试主要业务流程
@@ -1144,17 +1163,17 @@ async function loadOrder() {
 
 ---
 
-## 八、文档审查规则
+## 九、文档审查规则
 
-### 8.1 API 文档检查
+### 9.1 API 文档检查
 
 **检查项**:
-- ✅ 接口说明: 每个接口必须有说明
+- ✅ 接口说明: 每个接口必须有说明，且与 `API_CONTRACT.md` 对应条目一致
 - ✅ 参数说明: 请求参数必须有注释
 - ✅ 返回值说明: 响应字段必须有注释
 - ✅ 错误码说明: 列出可能的错误码
 
-### 8.2 代码注释检查
+### 9.2 代码注释检查
 
 **检查项**:
 - ✅ 类注释: 说明类的职责
@@ -1164,9 +1183,9 @@ async function loadOrder() {
 
 ---
 
-## 九、Git 提交规范
+## 十、Git 提交规范
 
-### 9.1 提交信息格式
+### 10.1 提交信息格式
 
 **格式**: `<type>(<scope>): <subject>`
 
@@ -1174,7 +1193,7 @@ async function loadOrder() {
 - `feat`: 新功能
 - `fix`: 修复 Bug
 - `refactor`: 重构
-- `docs`: 文档更新
+- `docs`: 文档更新（含 `API_CONTRACT.md` 变更）
 - `test`: 测试相关
 - `chore`: 构建/工具相关
 
@@ -1183,21 +1202,29 @@ async function loadOrder() {
 feat(order): 实现订单超时自动关闭功能
 fix(payment): 修复支付宝回调验签失败问题
 refactor(user): 重构用户登录逻辑,提取领域服务
+docs(contract): 统一 ProductVO.categoryId 命名，更新 API_CONTRACT.md
 ```
 
-### 9.2 代码变更规范
+### 10.2 代码变更规范
 
 **检查项**:
 - ✅ 单次提交: 一个提交只做一件事
 - ✅ 提交粒度: 适中,不要过大或过小
+- ✅ 若涉及字段改名，`API_CONTRACT.md` 的更新必须与代码改动在同一提交或紧邻提交中完成，不得滞后
 - ❌ 禁止提交无关代码
 - ❌ 禁止提交敏感信息 (密码、密钥等)
 
 ---
 
-## 十、审查清单
+## 十一、审查清单
 
 每次代码审查必须检查以下项目:
+
+### 契约核对（新增，优先检查）
+- [ ] 涉及的接口/字段是否已在 `API_CONTRACT.md` 中有对应条目？
+- [ ] 字段命名是否与契约文件逐字一致？
+- [ ] 是否存在 `@JsonProperty` snake_case 转换（应判 P0）？
+- [ ] 前端是否存在契约文件中不存在的臆造字段？
 
 ### 架构合规性
 - [ ] 依赖方向是否正确 (Trigger → Application → Domain ← Infrastructure)
@@ -1218,6 +1245,10 @@ refactor(user): 重构用户登录逻辑,提取领域服务
 - [ ] Infrastructure 层是否避免了跨领域模块的直接耦合？
 - [ ] 是否存在跨模块的类引用（如 MallRepositoryImpl 依赖 OrderRepositoryImpl）？
 - [ ] `infrastructure/shared/` 是否仅包含跨领域共用技术实现？
+
+### 设计模式选型（新增）
+- [ ] 是否存在满足信号但未使用对应模式的场景（如多渠道验签流程仍用大段 if-else）？
+- [ ] 是否存在不满足信号却引入了设计模式的过度工程化情况？
 
 ### 代码质量
 - [ ] 命名是否符合规范
@@ -1247,7 +1278,8 @@ refactor(user): 重构用户登录逻辑,提取领域服务
 - [ ] Vue 组件和 API 请求是否按业务模块（auth, mall, order）存放？
 - [ ] 是否存在任何 `any` 类型定义？
 - [ ] 组件是否直接消费 `Response<T>` 而不是解构后的数据？
-- [ ] TypeScript 接口是否与后端 VO 一一对应？
+- [ ] TypeScript 接口是否与 `API_CONTRACT.md` 一一对应？
+- [ ] 是否存在 `repositories/`、`services/` 与 `api/` 重复封装同一端点？
 - [ ] API 层是否统一处理响应包装？
 - [ ] 路由守卫 (`beforeEach`) 是否正确配置？
 - [ ] 未授权用户是否正确跳转到登录页？
@@ -1259,10 +1291,11 @@ refactor(user): 重构用户登录逻辑,提取领域服务
 ### 文档
 - [ ] API 文档是否完整
 - [ ] 代码注释是否清晰
+- [ ] `API_CONTRACT.md` 是否与本次改动同步更新
 
 ---
 
-## 十一、审查报告格式
+## 十二、审查报告格式
 
 **规则**: 所有代码审查必须以表格形式输出审查结果
 
@@ -1287,6 +1320,7 @@ refactor(user): 重构用户登录逻辑,提取领域服务
 ### 级别判定标准
 
 **P0 (严重问题)**:
+- 字段/接口命名与 `API_CONTRACT.md` 不一致（新增，优先于其他 P0 判定）
 - 违反 DDD 架构原则（如 Domain 层依赖技术框架）
 - 安全漏洞（如 SQL 注入、敏感信息泄露）
 - 数据丢失风险（如事务管理错误）
@@ -1299,6 +1333,7 @@ refactor(user): 重构用户登录逻辑,提取领域服务
 - 参数校验不完整
 - 异常处理不完善
 - 测试覆盖不足
+- 不满足信号却引入设计模式（过度工程化）
 
 **P2 (建议优化)**:
 - 性能优化建议
@@ -1313,10 +1348,10 @@ refactor(user): 重构用户登录逻辑,提取领域服务
 
 | 问题位置 | 级别 | 违反规范 | 修复建议 |
 |---------|------|---------|---------|
+| s-pay-mall-api/src/main/java/cn/fcr/api/vo/ProductVO.java:12 | P0 | 使用 @JsonProperty("category_id") 转 snake_case，与 API_CONTRACT.md 命名策略不一致 | 移除 @JsonProperty，字段名改回 categoryId，同步核对契约文件 |
 | s-pay-mall-domain/src/main/java/cn/fcr/domain/order/service/OrderService.java:45 | P0 | Domain 层依赖了 Spring 框架 (@Autowired) | 移除 @Autowired 注解，改为构造器注入或通过 Gateway 接口抽象依赖 |
-| s-pay-mall-trigger/src/main/java/cn/fcr/trigger/controller/OrderController.java:78 | P1 | RequestDTO 缺少幂等键 requestId | 在 OrderCreateRequestDTO 中添加 requestId 字段并添加 @NotNull 校验 |
-| s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/adapter/gateway/WeixinGatewayImpl.java:32 | P1 | 外部调用缺少超时设置 | 添加 connectTimeout 和 readTimeout 配置 |
-| s-pay-mall-domain/src/main/java/cn/fcr/domain/order/entity/OrderEntity.java:120 | P2 | 方法缺少 JavaDoc 注释 | 添加方法注释说明功能和返回值 |
+| s-pay-mall-trigger/src/main/java/cn/fcr/trigger/controller/OrderController.java:78 | P1 | RequestDTO 缺少幂等键 requestId | 在 OrderCreateRequestDTO 中添加 requestId 字段并添加 @NotNull 校验，同步更新契约文件 |
+| s-pay-mall-front/src/repositories/cartRepository.ts:20 | P1 | 与 api/mall 层重复封装购物车接口 | 迁移逻辑至 api/mall/index.ts，删除本文件 |
 ```
 
 ### 审查命令模板
@@ -1324,9 +1359,9 @@ refactor(user): 重构用户登录逻辑,提取领域服务
 **使用方式**: 在让 Claude 审查代码时，使用以下命令：
 
 ```
-请严格对照 review.md 进行审查，并以表格形式输出：【问题位置】|【级别(P0/P1/P2)】|【违反规范】|【修复建议】。
+请严格对照 review.md 进行审查，优先核对 API_CONTRACT.md，并以表格形式输出：【问题位置】|【级别(P0/P1/P2)】|【违反规范】|【修复建议】。
 ```
 
 ---
 
-**重要提示**: 本文件为最高优先级审查规则,所有代码审查必须严格遵循。如发现违反规则的情况,必须在审查意见中明确指出并要求修复。
+**重要提示**: 本文件为最高优先级审查规则,所有代码审查必须严格遵循。字段/接口命名问题优先于架构问题被拦截。如发现违反规则的情况,必须在审查意见中明确指出并要求修复。
