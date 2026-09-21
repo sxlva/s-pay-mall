@@ -290,3 +290,16 @@ app → trigger → domain → types
 | P0-3 (WeixinLoginGatewayImpl @Transactional) | 跟随 P0-2 一并解决，减少迁移次数 | P0-2 完成后立即跟进 |
 | P0-4 (幂等性设计) | 需前端配合改造请求参数；当前状态机提供了部分防护 | 前端排期支持 |
 | P0-5 (Domain 跨模块依赖) | 需仔细分析影响范围，选方案三选一 | 有时间分析时 |
+
+---
+
+## 十一、附录 F：文档与代码不一致清单（2026-08-23 审计新增）
+
+> 以下为规则体系重构审计中发现的文档与代码不一致项。规则文档已修正为以代码为准，此处登记供回溯参考。
+
+| ID | 问题 | 文档声称 | 代码实际 | 代码位置 | 处置 |
+|----|------|---------|---------|---------|------|
+| DOC-1 | DomainServiceConfig @Bean 数量过时 | "12 个 @Bean"（DEVELOPMENT_GUIDE §2.4 + docs/design/README §三 原文） | **17 个 @Bean** | [DomainServiceConfig.java](../../s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/config/shared/DomainServiceConfig.java) | 新 SSOT 不写死数量，改为引用代码 |
+| DOC-2 | Redis 幂等 Key 格式不一致 | `mall:stock:msg:processed:{messageId}`（DEVELOPMENT_GUIDE §五 原文） | `stock:event:{businessType}:{businessNo}` | [IdempotentGatewayImpl.java](../../s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/mall/gateway/IdempotentGatewayImpl.java) | 新 SSOT 以代码为准，标注差异 |
+| DOC-3 | AdminApiController 路径描述不精确 | "与 MallAdminController 重复路径结构"（DEVELOPMENT_GUIDE §1.6 原文） | 前缀不同（`/pay-api/.../admin` vs `/mall-api/.../admin`），功能 CRUD 重复 | [MallAdminController.java](../../s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/mall/MallAdminController.java) / [AdminApiController.java](../../s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/mall/AdminApiController.java) | API_CONTRACT §4.2 已标注"功能重复"，不再硬编码端点表 |
+| DOC-4 | REVIEW.md 悬空引用 | 引用 `CLAUDE_project_guide_v2.md`（3 处） | 该文件不存在 | [REVIEW.md](../../REVIEW.md) 原 §1.1/§7.4.4/§三 | REVIEW.md v3.0 已修复，改为引用 DDD_ARCHITECTURE_SPEC.md |

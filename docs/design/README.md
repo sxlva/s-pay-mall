@@ -1,33 +1,13 @@
 # s-pay-mall 商城系统 — 架构设计与知识汇总
 
-> 本文档为系统架构设计的完整知识集，遵循 DDD 分层原则，覆盖核心业务链路、技术亮点及面试考点。
+> 本文档为系统架构设计的知识集，覆盖核心业务链路图、DDD 分层 mermaid 图及模块文档导航。
+>
+> **项目概述/技术栈/启动命令/模块结构**: 见 [AGENTS.md](../../AGENTS.md)（项目上下文唯一来源）。
+> **DDD 架构规则**: 见 [DDD_ARCHITECTURE_SPEC.md](../../DDD_ARCHITECTURE_SPEC.md)（架构规则唯一真相源）。
 
 ---
 
-## 一、项目简介
-
-s-pay-mall 是一个基于 **领域驱动设计 (DDD)** 架构的电商商城系统，采用前后端分离架构。支持**微信公众号扫码登录**、**支付宝当面付**、**RocketMQ 异步履约**、**Redis 库存预扣减**等核心电商功能。项目以 Maven 多模块组织，严格遵循 `Trigger → Application → Domain ← Infrastructure` 单向依赖。
-
----
-
-## 二、技术栈
-
-| 分组 | 技术选型 | 说明 |
-|------|----------|------|
-| **后端框架** | Spring Boot 2.7.12 + Java 17 | 应用框架 |
-| **持久层** | MyBatis-Plus + MySQL 8.0 | 数据访问 |
-| **缓存** | Redis (Lettuce) + Redisson 3.x | 缓存与分布式原子操作 |
-| **消息队列** | Apache RocketMQ 5.x | 异步解耦、延时消息 |
-| **认证** | JWT Token | 无状态认证 |
-| **支付** | 支付宝当面付 (Alipay SDK) | 支付渠道 |
-| **微信生态** | 微信公众号扫码登录 | 社交登录 |
-| **API 客户端** | Retrofit2 | 微信 API 调用 |
-| **前端** | Vue 3 + TypeScript + Element Plus 2.3.2 + Vite | SPA |
-| **构建** | Maven 多模块 | 依赖管理 |
-
----
-
-## 三、DDD 分层架构
+## 一、DDD 分层架构图
 
 ```mermaid
 flowchart TB
@@ -54,7 +34,7 @@ flowchart TB
         I2["mall/ gateway/<br/>StockGatewayImpl, AlipayGatewayImpl<br/>OrderPaymentGatewayImpl"]
         I3["order/ gateway/<br/>OrderEventGatewayImpl, PaymentGatewayImpl<br/>event/ RocketMqOrderEventPublisher"]
         I4["dao/ (auth|mall|order)/<br/>MyBatis Mapper + PO"]
-        I5["config/shared/<br/>DomainServiceConfig (12 @Bean)"]
+        I5["config/shared/<br/>DomainServiceConfig"]
     end
 
     T1 --> T4
@@ -71,16 +51,13 @@ flowchart TB
     I3 --> I4
 ```
 
-**依赖规约（强约束）：**
+**依赖规约**: 详见 [DDD_ARCHITECTURE_SPEC.md §1](../../DDD_ARCHITECTURE_SPEC.md)。
 
-- 依赖方向严格单向：`Trigger → Application → Domain ← Infrastructure`
-- 领域层不依赖任何具体技术框架（无 Spring、Redis、MQ 注解）
-- Domain Service 实现类为纯 POJO，通过 `DomainServiceConfig`（12 个 `@Bean`）手动注入容器
-- 基础设施层通过实现 Domain 层接口完成依赖倒置
+> DomainServiceConfig 的 `@Bean` 数量以代码实际为准（见 [DomainServiceConfig.java](../../s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/config/shared/DomainServiceConfig.java)），不在此写死数量。
 
 ---
 
-## 四、核心业务链路全景图
+## 二、核心业务链路全景图
 
 ```mermaid
 flowchart LR
@@ -96,9 +73,11 @@ flowchart LR
     A7 -.->|延时消息| A10["超时关单<br/>OrderTimeoutCloseRocketListener<br/>topic: order-timeout-topic"]
 ```
 
+> 端点完整定义见 [API_CONTRACT.md](../../API_CONTRACT.md)。
+
 ---
 
-## 五、模块文档导航
+## 三、模块文档导航
 
 | 文档 | 描述 | 核心技术点 |
 |------|------|-----------|
@@ -110,64 +89,10 @@ flowchart LR
 
 ---
 
-## 六、快速启动
+## 四、快速启动
 
-### 必需环境变量
-
-```bash
-# 数据库
-DB_HOST=localhost; DB_PORT=3306; DB_NAME=s_pay_mall
-DB_USERNAME=root; DB_PASSWORD=your_password
-
-# Redis
-REDIS_HOST=localhost; REDIS_PORT=6379
-REDIS_PASSWORD=your_redis_password
-
-# 微信
-WECHAT_APP_ID=your_app_id
-WECHAT_APP_SECRET=your_app_secret
-
-# 支付宝
-ALIPAY_APP_ID=your_app_id
-ALIPAY_PRIVATE_KEY=your_private_key
-ALIPAY_PUBLIC_KEY=alipay_public_key
-```
-
-### 启动命令
-
-```bash
-# 后端
-cd s-pay-mall-app && mvn spring-boot:run
-
-# 前端
-cd s-pay-mall-front && npm install && npm run dev
-```
+> 环境变量、启动命令详见 [AGENTS.md §常用命令](../../AGENTS.md)。
 
 ---
 
-## 七、项目结构说明
-
-```
-s-pay-mall/
-├── s-pay-mall-api/              # API 契约 (DTO, VO, Facade 接口)
-├── s-pay-mall-app/              # 启动模块 (Spring Boot 启动 + Config)
-├── s-pay-mall-domain/           # 领域层 (Entity, DomainService, Gateway 接口)
-├── s-pay-mall-infrastructure/   # 基础设施层 (Gateway 实现, DAO, MQ)
-│   ├── auth/                    #   认证领域实现
-│   ├── mall/                    #   商城领域实现
-│   ├── order/                   #   订单领域实现
-│   ├── config/                  #   基础设施配置 (含 shared/)
-│   └── dao/                     #   MyBatis Mapper + PO
-├── s-pay-mall-trigger/          # 触发层 (Controller, Listener, Job, ApplicationService)
-├── s-pay-mall-types/            # 通用类型 (Enum, 错误码, 基础 VO)
-├── s-pay-mall-front/            # 前端 (Vue 3 + Element Plus)
-└── docs/design/                 # 设计文档
-    ├── README.md                # 本文件
-    ├── module-auth.md           # 登录鉴权
-    ├── module-order-pay.md      # 订单支付
-    └── module-stock.md          # 库存服务
-```
-
----
-
-> 最新更新：2026-06
+> 最新更新：2026-08-23

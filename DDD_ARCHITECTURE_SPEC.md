@@ -1,0 +1,270 @@
+# s-pay-mall DDD 架构规范
+
+> **版本**: v1.0 | **生效日期**: 2026-08-23 | **适用范围**: 全体开发者 + AI Agent
+>
+> **本文件是 DDD 架构规则的唯一真相源（SSOT）**。只负责 DDD 分层、依赖、职责、对称性、事务边界。不包含 Git/API/MQ/AI 行为/Review 等内容（见各自 SSOT）。
+
+---
+
+## 1. 分层依赖规则（强制单向）
+
+```
+Trigger → Application → Domain ← Infrastructure
+```
+
+| 层 | 允许依赖 | 禁止依赖 |
+|----|---------|---------|
+| **Domain（领域层）** | 标准 Java 类库、`jakarta.validation` | Spring / Redis / RocketMQ / MyBatis |
+| **Application（应用层）** | Domain 层 | Infrastructure 层 |
+| **Infrastructure（基础设施层）** | Domain 层（实现接口） | Application 层、Trigger 层 |
+| **Trigger（触发层）** | Application 层 | Domain 层（直接调用） |
+
+### 1.1 模块物理归属规则
+
+DDD 分层不仅要求逻辑依赖单向，还要求**物理模块独立**。各层应独立为 Maven 模块：
+
+| 层 | Maven 模块 | 当前状态 |
+|----|-----------|---------|
+| Trigger | `s-pay-mall-trigger` | ✅ 存在 |
+| Application | `s-pay-mall-application` | ❌ 不存在（待创建） |
+| Domain | `s-pay-mall-domain` | ✅ 存在 |
+| Infrastructure | `s-pay-mall-infrastructure` | ✅ 存在 |
+
+**规则**: Application 层**必须**独立为 `s-pay-mall-application` 模块，与 Trigger 层物理分离。Trigger 层通过依赖 `s-pay-mall-application` 模块调用 Application 服务，禁止将 Application 服务放在 Trigger 模块内。
+
+> **DOCUMENT_CODE_MISMATCH（已登记 [TECH_DEBT P0-2](docs/design_wait/TECH_DEBT_ROADMAP.md)）**:
+>
+> 当前 `s-pay-mall-application` 模块**不存在于磁盘**。`OrderApplicationService` + `OrderTransactionService` 暂存于 `trigger/application` 包内，属于**临时过渡状态**，违反本规则。
+>
+> - **修复方案**: 新建 `s-pay-mall-application` 模块，迁移 `OrderApplicationService` + `OrderTransactionService`（详见 TECH_DEBT P0-2）
+> - **过渡期要求**: 迁移完成前，审查 `trigger/application` 包代码仍按 Application 层规则，**不得**以"还在 trigger 包里"为由放宽标准
+> - **迁移约束**: `OrderApplicationService` 与 `OrderTransactionService` 必须**一起移出**，否则产生 `trigger ↔ application` 循环依赖（详见 TECH_DEBT 附录 C.2）
+
+### 1.2 模块依赖事实（pom.xml 验证）
+
+```
+s-pay-mall-app        → trigger + domain + infrastructure
+s-pay-mall-trigger    → domain + infrastructure
+s-pay-mall-infrastructure → domain
+s-pay-mall-domain     → types + api（无技术框架依赖，见 §4）
+```
+
+当前**无循环依赖**。
+
+---
+
+## 2. 各层职责
+
+### 2.1 Trigger 层（触发层）
+
+| 允许 | 禁止 |
+|------|------|
+| 接收 HTTP 请求（`@RestController`、`@GetMapping` 等） | 编写业务逻辑 |
+| `@Valid` 参数校验 | 直接调用 Domain 层服务（必须通过 Application 层） |
+| DTO 与 Command/Query 转换 | 包含 `if (业务条件)` 等业务判断 |
+| MQ Listener 消息接收 | 实现业务规则 |
+| 调用 Application 层服务 | — |
+
+### 2.2 Application 层（应用层）
+
+| 允许 | 禁止 |
+|------|------|
+| 编排多个领域服务 | 包含核心业务规则 |
+| `@Transactional` 事务控制 | 直接操作数据库（必须通过 Repository） |
+| DTO 组装转换 | 复杂业务计算逻辑 |
+
+### 2.3 Domain 层（领域层）— 核心
+
+| 允许 | 禁止 |
+|------|------|
+| 定义 Entity、Value Object | 导入任何技术框架（Spring、Redis、MQ 等） |
+| 实现核心业务逻辑 | 使用 `@Service`、`@Component`、`@Autowired` |
+| 定义 Gateway 接口、Repository 接口 | 使用 `@Transactional` |
+| 定义 Domain Service 接口和实现 | 直接操作数据库/缓存/消息队列 |
+| 使用 `jakarta.validation` 注解 | 导入 `org.springframework.**` |
+
+**Domain 层严禁出现的导入**:
+
+```java
+import org.springframework.*;              // Spring 框架
+import org.apache.rocketmq.*;              // RocketMQ
+import org.redisson.*;                     // Redisson
+import org.springframework.data.redis.*;   // Redis
+import org.apache.ibatis.*;                // MyBatis
+```
+
+### 2.4 Infrastructure 层（基础设施层）
+
+| 允许 | 禁止 |
+|------|------|
+| 实现 Domain 层接口 | 编写核心业务逻辑 |
+| 数据库操作（DAO、MyBatis Mapper） | 包含业务规则判断 |
+| Redis / RocketMQ 操作 | 修改业务状态 |
+| 外部 HTTP 调用 | 跨领域模块直接耦合 |
+
+> **已知违规（已登记 TECH_DEBT P0-3）**: `WeixinLoginGatewayImpl#createWechatUserAndBind` 标注了 `@Transactional`，违反"Infra 层不得有事务注解"。待修复。
+
+---
+
+## 3. Domain 层依赖例外清单
+
+### 3.1 允许的标准 Java 类库
+
+| 包路径 | 典型用途 |
+|--------|---------|
+| `java.util.Optional` | 空值安全处理 |
+| `java.util.Objects` | `requireNonNull`、`equals` |
+| `java.util.Collection` / `List` / `Map` | 集合操作 |
+| `java.lang.String` / `Long` / `Integer` | 基础类型 |
+| `java.time.*` | 日期时间 API |
+| `java.math.BigDecimal` | 高精度数值（金额计算） |
+
+### 3.2 允许的校验注解（`jakarta.validation.constraints`）
+
+| 注解 | 用途 | 使用位置 |
+|------|------|----------|
+| `@NotNull` | 非空校验 | Domain Entity 字段 |
+| `@NotBlank` | 字符串非空校验 | Domain Entity 字段 |
+| `@NotEmpty` | 集合非空校验 | Domain Entity 字段 |
+| `@Size` | 长度/大小校验 | Domain Entity 字段 |
+| `@Min` / `@Max` | 数值范围校验 | Domain Entity 字段 |
+| `@Pattern` | 正则校验 | Domain Entity 字段 |
+
+### 3.3 `@Valid` / `@Validated` 使用限制
+
+| 注解 | 允许使用位置 | 说明 |
+|------|-------------|------|
+| `@Valid` | Trigger 层（Controller） | 触发参数校验 |
+| `@Validated` | Trigger 层（Controller） | 触发参数校验，支持分组 |
+| `@Valid` 嵌套 | **禁止在 Domain 层使用** | Domain Entity 不要使用 `@Valid` 嵌套校验 |
+
+### 3.4 禁止的技术框架
+
+| 框架 | 禁止的注解/类 |
+|------|-------------|
+| Spring Framework | `@Service`、`@Autowired`、`@Component`、`@Transactional` |
+| Spring Boot | `@SpringBootApplication`、`@Configuration` |
+| Redis | `RedisTemplate`、`RedissonClient` |
+| RocketMQ | `@RocketMQMessageListener`、`MQProducer` |
+| MyBatis | `@Mapper`、`SqlSession` |
+
+> **已知债（已登记 TECH_DEBT P1-5）**: `s-pay-mall-domain/pom.xml` 当前包含 `spring-context`、`spring-tx`、`alipay-sdk-java`、`jjwt`、`fastjson` 技术依赖。虽未在 Domain 代码中直接使用，但存在误用风险，待清理。
+
+---
+
+## 4. Infrastructure 模块对称性
+
+Infrastructure 层必须按 Domain 层模块结构对称拆分，确保单一职责与物理隔离。
+
+### 4.1 映射规则
+
+| Domain 层模块 | Infrastructure 层模块 | 包含内容 |
+|---------------|---------------------|----------|
+| `domain/auth/` | `infrastructure/auth/` | 认证仓储实现、网关实现 |
+| `domain/mall/` | `infrastructure/mall/` | 商城仓储实现、网关实现 |
+| `domain/order/` | `infrastructure/order/` | 订单仓储实现、网关实现 |
+| （跨领域） | `infrastructure/shared/` | Redis/MQ 基础封装、DomainServiceConfig |
+
+### 4.2 审查要点
+
+- `infrastructure/{module}/` 包下只能包含该 Domain 模块所需的实现
+- 禁止跨模块类引用（如 `MallRepositoryImpl` 直接依赖 `OrderRepositoryImpl`）
+- 禁止全局大杂烩包（`infrastructure/common/` 下塞满不相关类）
+
+---
+
+## 5. Domain Service Bean 注册策略
+
+### 5.1 规则
+
+- Domain Service 实现类为**纯 POJO**，不加任何 Spring 注解
+- 通过 `infrastructure/config/shared/DomainServiceConfig` 中的 `@Bean` 方法手动注册到 Spring 容器
+- 所有依赖通过**构造器注入**传入
+
+> **注意**: `@Bean` 方法数量以代码实际为准（见 [DomainServiceConfig.java](s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/config/shared/DomainServiceConfig.java)）。**不在此写死数量**，避免文档与代码脱节。
+
+### 5.2 示例
+
+```java
+// ✅ Domain Service 纯 POJO（无 Spring 注解，仅 @Slf4j）
+public class MallOrderServiceImpl implements IMallOrderService {
+    private final IStockGateway stockGateway;
+    public MallOrderServiceImpl(IStockGateway stockGateway) {
+        this.stockGateway = stockGateway;
+    }
+}
+
+// ✅ Infrastructure 层 Config 注册
+@Configuration
+public class DomainServiceConfig {
+    @Bean
+    public IMallOrderService mallOrderService(IStockGateway stockGateway) {
+        return new MallOrderServiceImpl(stockGateway);
+    }
+}
+```
+
+---
+
+## 6. 事务边界约束
+
+### 6.1 规则
+
+| 规则 | 说明 |
+|------|------|
+| `@Transactional` 仅存在于 Application 层 | 只放在 `*ApplicationService` / `*TransactionService` 方法上 |
+| Domain 层严禁 `@Transactional` | 业务逻辑不应与事务边界耦合 |
+| Infrastructure 层严禁 `@Transactional` | 见 §2.4 已知违规 |
+| MQ 发送在事务外 | `sendDelayCloseMessage()` 等 MQ 操作必须在事务提交后执行 |
+| Redis 幂等锁在事务外 | `trySet` / `unlock` 严禁纳入 `@Transactional` 作用域（MySQL 回滚不会回滚 Redis） |
+
+### 6.2 幂等锁正确模式（事务外锁 + 事务内业务）
+
+```java
+@Service
+public class OrderApplicationService {
+    // 外层方法：无事务注解，负责幂等锁
+    public OrderVO createOrder(OrderCreateRequestDTO request) {
+        // 1. 幂等锁（事务外）
+        if (!idempotentGateway.checkAndLock(request.getRequestId())) {
+            throw new BusinessException("请求重复");
+        }
+        try {
+            // 2. 委托带事务的内层方法
+            return createOrderWithTransaction(request);
+        } finally {
+            // 3. 释放锁（事务提交后）
+            idempotentGateway.unlock(request.getRequestId());
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public OrderVO createOrderWithTransaction(OrderCreateRequestDTO request) {
+        OrderEntity order = orderService.createOrder(request);
+        return OrderAssembler.toVO(order);
+    }
+}
+```
+
+---
+
+## 7. 已知违规与已知债索引
+
+本节汇总与 DDD 架构相关的已知问题，详细修复方案见 [TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md)。
+
+| TECH_DEBT ID | 问题 | 本规范条款 | 状态 |
+|-------------|------|----------|------|
+| P0-2 | `s-pay-mall-application` 模块不存在，Application Service 在 trigger 包（违反 §1.1 模块物理归属规则） | §1.1 模块物理归属规则 | 待处理 |
+| P0-3 | `WeixinLoginGatewayImpl` 有 `@Transactional` | §2.4 / §6.1 | 待处理 |
+| P0-5 | Domain 层跨领域反向依赖（PayOrderService import mall.gateway） | §2.3 / §4.2 | 待处理 |
+| P1-5 | Domain pom.xml 含技术依赖 | §3.4 | 待处理 |
+
+> 修改相关代码时，必须先阅读 TECH_DEBT_ROADMAP.md 对应条目，不得擅自修改业务代码绕过问题。
+
+---
+
+## 8. 版本历史
+
+| 版本 | 日期 | 变更 |
+|------|------|------|
+| v1.0 | 2026-08-23 | 初始版本：从 .trae/rules + DEVELOPMENT_GUIDE §2 + REVIEW §1 收敛 DDD 架构规则。@Bean 数量不再写死，引用代码。标注已知违规指向 TECH_DEBT |

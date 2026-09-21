@@ -1,15 +1,21 @@
 # Claude Code 项目上下文入口
 
-本文件是 Claude Code 的自动加载入口，仅作路由，不重复业务内容。
+> 本文件仅作路由，不维护业务内容。
 
-## 强制阅读顺序
+## 强制入口
 
-1. **AGENTS.md** — 项目概述（技术栈、模块结构、核心业务描述）
-2. **DEVELOPMENT_GUIDE.md** — 技术契约（命名规范、DDD 约束、API 设计规范、AI 协作硬边界，强制执行）
-3. **API_CONTRACT.md** — 接口契约（端点定义、DTO 类型映射，新增/修改接口代码前必须核对）
+1. **首先阅读 [AI_AGENT_RULES.md](AI_AGENT_RULES.md)** — AI Agent 统一行为规范（阅读顺序、优先级、冲突处理）
+2. 按任务类型读取对应 SSOT（详见 AI_AGENT_RULES.md §2 阅读顺序表）
 
-## 使用规则
+## SSOT 索引
 
-- 任何代码生成前，先确认 API_CONTRACT.md 中是否存在对应契约条目；不存在则禁止生成代码。
-- 设计模式默认不引入，仅在 DEVELOPMENT_GUIDE.md 决策表触发信号时使用。
-- 本文件不维护业务内容，如需更新项目概述，编辑 AGENTS.md。
+| 规则类别 | 唯一来源 |
+|---------|---------|
+| AI Agent 行为 | [AI_AGENT_RULES.md](AI_AGENT_RULES.md) |
+| DDD 架构 | [DDD_ARCHITECTURE_SPEC.md](DDD_ARCHITECTURE_SPEC.md) |
+| API 契约 | [API_CONTRACT.md](API_CONTRACT.md) |
+| 命名/跨切面规范 | [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) |
+| 代码审查 | [REVIEW.md](REVIEW.md) |
+| 安全缺陷 | [SECURITY_ISSUES.md](SECURITY_ISSUES.md) |
+| 技术债 | [docs/design_wait/TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) |
+| 项目概述 | [AGENTS.md](AGENTS.md) |

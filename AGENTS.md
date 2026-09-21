@@ -61,18 +61,26 @@ cd s-pay-mall-app && mvn spring-boot:run
 cd s-pay-mall-front && npm install && npm run dev
 ```
 
-## 关键项目文件
+## 规则体系（SSOT 索引）
 
-| 文件 | 用途 |
-|------|------|
-| [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) | **技术契约** — 命名规范、DDD约束、API设计、AI协作守则（强制执行） |
-| [API_CONTRACT.md](API_CONTRACT.md) | **接口契约** — 全部39个端点定义、DTO字段、类型映射表 |
-| [CLAUDE.md](CLAUDE.md) | 项目入口（路由到本文件和上述契约） |
-| [docs/design_wait/TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) | 技术债追踪 — 已知问题与修复计划 |
-| [docs/design_wait/FUTURE_FEATURES.md](docs/design_wait/FUTURE_FEATURES.md) | 功能规划 — 待实现功能清单 |
-| [docs/design/README.md](docs/design/README.md) | 系统架构知识集 |
+> AI Agent 必须首先阅读 [AI_AGENT_RULES.md](AI_AGENT_RULES.md) 获取阅读顺序和冲突处理规则。
+
+| 规则类别 | 唯一来源（SSOT） | 用途 |
+|---------|----------------|------|
+| AI Agent 行为 | [AI_AGENT_RULES.md](AI_AGENT_RULES.md) | 阅读顺序、优先级、冲突处理、修改边界 |
+| DDD 架构 | [DDD_ARCHITECTURE_SPEC.md](DDD_ARCHITECTURE_SPEC.md) | 分层、依赖、职责、对称性、事务边界 |
+| API 契约 | [API_CONTRACT.md](API_CONTRACT.md) | 端点、DTO/VO、字段命名、类型映射、错误码 |
+| 命名/跨切面规范 | [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) | 命名、MQ、Redis、异常、Git、注释 |
+| 代码审查 | [REVIEW.md](REVIEW.md) | checklist、检查方法、报告格式 |
+| 安全缺陷 | [SECURITY_ISSUES.md](SECURITY_ISSUES.md) | S-01~S-05 安全问题清单 |
+| 技术债 | [docs/design_wait/TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) | 已知问题与修复计划 |
+| 功能规划 | [docs/design_wait/FUTURE_FEATURES.md](docs/design_wait/FUTURE_FEATURES.md) | 待实现功能清单 |
+| 架构知识集 | [docs/design/README.md](docs/design/README.md) | 业务链路图、模块文档导航 |
+| 路由入口 | [CLAUDE.md](CLAUDE.md) | Claude Code 自动加载，路由到 AI_AGENT_RULES.md |
 
 ## 注释规范
+
+> 详见 [DEVELOPMENT_GUIDE.md §六](DEVELOPMENT_GUIDE.md)。
 
 - 文件头: `/** <职责> \n * @author 傅崇睿 */`
 - public 方法: Javadoc/JSDoc，含参数和返回值说明
