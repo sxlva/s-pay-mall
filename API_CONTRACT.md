@@ -219,9 +219,11 @@
 | 38 | GET | `/admin/statistics/sales-trend` | — | `Response<List<SalesTrendVO>>` | 销售趋势 |
 | 39 | GET | `/admin/statistics/category-ratio` | — | `Response<List<CategoryRatioVO>>` | 分类销售占比 |
 
-### 4.2 AdminApiController（/pay-api/v1/admin）
+### 4.2 ~~AdminApiController（/pay-api/v1/admin）~~（已删除）
 
-功能与 MallAdminController **重复**，加 `@PreAuthorize("hasRole('ADMIN')")` 权限注解。详见 [TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) §一 P0-1。
+~~功能与 MallAdminController **重复**，加 `@PreAuthorize("hasRole('ADMIN')")` 权限注解。详见 [TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) §一 P0-1。~~
+
+> **2026-10-01 变更**：`AdminApiController` 已删除（JV-003 第二批）。该前缀下 16 个管理端端点原本就是 `MallAdminController`（`/mall-api/v1/admin`）的镜像，前端与历史分支均无调用方；SecurityConfig 中 `/pay-api/v1/admin/**` 规则同步移除。管理后台唯一入口为 §4.1。
 
 ### 4.3 Admin DTO 字段
 

@@ -67,7 +67,6 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
                 .antMatchers("/mall-api/v1/admin/**").hasRole("ADMIN")
-                .antMatchers("/pay-api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
