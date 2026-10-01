@@ -18,7 +18,6 @@
 
 | 类型 | 规范 | 正确示例 | 禁止示例 | 所在模块 |
 |------|------|---------|---------|---------|
-| API Facade 接口 | `I{Aggregate}Facade` | `IAuthFacade` | `IAuthService` | `s-pay-mall-api` |
 | 请求 DTO | `{Action}RequestDTO` | `UserLoginRequestDTO` | `UserLoginRequest` | `s-pay-mall-api/dto/` |
 | 响应 DTO | `{Entity}RespDTO` | `CartItemRespDTO`, `OrderListRespDTO` | `CartItemResponse` | `s-pay-mall-api/dto/` |
 | 视图对象 VO | `{Entity}VO` | `UserVO`, `ProductVO` | `UserResponseVO` | `s-pay-mall-api/vo/` |
@@ -57,7 +56,7 @@
 | 层级 | Java 字段 | @JsonProperty | JSON 实际输出 |
 |------|----------|---------------|-------------|
 | `api/dto/` (Controller 返回) | `orderId` | **无** | `"orderId"` (camelCase) |
-| `api/vo/` (Facade 声明) | `order_no` | **有**（历史遗留，禁止扩展） | `"order_no"` (snake_case) |
+| `api/vo/` (Controller 返回 VO) | `order_no` | **有**（历史遗留，禁止扩展） | `"order_no"` (snake_case) |
 | PO (MyBatis 映射) | `orderNo` | 不适用 | 数据库 `order_no` |
 
 > **决议**: 全局统一为 camelCase。`api/vo/` 中的 `@JsonProperty` snake_case 视为技术债，禁止在其基础上扩展字段；新增 VO 一律 camelCase，不加 `@JsonProperty`。

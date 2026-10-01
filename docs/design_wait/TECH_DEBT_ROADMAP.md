@@ -77,7 +77,7 @@
 | 层级 | 当前状态 | JSON 输出 | 问题 |
 |------|---------|----------|------|
 | `api/dto/` (Controller 实际返回) | 无 `@JsonProperty` | camelCase | — |
-| `api/vo/` (Facade 声明) | 全部有 `@JsonProperty` | snake_case | 与 dto 输出策略不一致 |
+| `api/vo/` (Controller 返回 VO) | 全部有 `@JsonProperty` | snake_case | 与 dto 输出策略不一致 |
 
 **影响**: `vo/` 包声明了 snake_case 但 Controller 实际返回的是 dto 包 camelCase，前端同时消费两种命名风格。
 

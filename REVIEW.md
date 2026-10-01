@@ -96,7 +96,6 @@ import org.apache.ibatis.*;                // MyBatis
 
 - ✅ 后端命名是否符合 §1.1 规范表
 - ✅ 前端命名是否符合 §1.4 规范表
-- ❌ 禁止 `IAuthService`（应为 `IAuthFacade`）
 - ❌ 禁止 `UserLoginRequest`（应为 `UserLoginRequestDTO`）
 - ❌ 禁止 `Map<String, Object>` 返回
 - ❌ 禁止 VO 使用 `@JsonProperty` snake_case（见「零」）
@@ -261,7 +260,7 @@ import org.apache.ibatis.*;                // MyBatis
 
 ### 7.4 前端 DDD 架构映射
 
-- ✅ `src/views/` 和 `src/api/` 按业务模块划分目录，对齐后端 Facade
+- ✅ `src/views/` 和 `src/api/` 按业务模块划分目录，对齐后端业务模块
 - ✅ TypeScript 接口与 API_CONTRACT.md 逐字段对应
 - ✅ API 层负责解构 `Response<T>`，组件层直接使用 VO
 - ❌ 禁止组件直接消费 `Response<T>` 包装
