@@ -26,7 +26,7 @@
 | P1-1 | Controller 大面积缺 @Valid | 11 个 Controller 仅 2 个方法使用了 `@Valid` | 逐个 Controller 方法加 `@Valid` + DTO 字段加校验注解 | 待处理 |
 | P1-2 | Redis+DB 跨资源事务一致性 | `cancelOrder()` 在 `@Transactional` 内包含 `stockGateway.restoreStock()`，DB 回滚时 Redis 无法回滚 | 参照 `createOrder` 模式，将库存恢复移到事务外 | 待处理 |
 | P1-3 | OrderPaidRocketListener 含业务编排 | `sendPaymentNotification()` 在 Listener 中直接实现（查订单→查微信→发模板消息） | 提取到 Application Service | 待处理 |
-| P1-4 | MQ 消息发送缺超时参数 | `RocketMqOrderEventPublisher.convertAndSend` 和 `OrderEventGatewayImpl.syncSend` 无超时 | 添加 3000ms 超时参数 | 待处理 |
+| P1-4 | MQ 消息发送缺超时参数 | `RocketMqOrderEventPublisher.convertAndSend` 无超时（`OrderEventGatewayImpl` 已于 2026-10-01 删除） | 添加 3000ms 超时参数 | 待处理 |
 | P1-5 | Domain 层 POM 非必要技术依赖 | POM 含 `spring-context`, `spring-tx`, `alipay-sdk-java`, `jjwt`, `fastjson` → 存在误用风险 | 逐个确认实际引用，移除或替换为标准 API | 待处理 |
 
 ### 🔵 P2 (优化级)
@@ -36,8 +36,8 @@
 | P2-1 | createPayOrder 缺事务保护 | `OrderApplicationService.createPayOrder()` 无 `@Transactional` | 加注事务或委托给 `OrderTransactionService` | 待处理 |
 | P2-2 | 缺死信队列配置 | 3 个 RocketMQ Listener 均未配置 DLQ | 为 `order_paid`, `order-timeout-topic`, `product-stock-change-topic` 配置 DLQ | 待处理 |
 | P2-3 | WeixinGatewayImpl 缺超时配置 | `Retrofit2Config.java` 未显式配置 OkHttpClient 超时 | 设置 `connectTimeout=5s`, `readTimeout=10s` | 待处理 |
-| P2-4 | `pay-success-topic` 无消费者 | `OrderEventGatewayImpl.sendPaySuccessMessage()` 发送消息但无消费者订阅 | 接入消费者或删除未使用的发送逻辑 | 待处理 |
-| P2-5 | 支付成功消息通道重复 | `order_paid` 和 `pay-success-topic` 两个 Topic 职责不清 | 明确职责或合并 | 待处理 |
+| P2-4 | ~~`pay-success-topic` 无消费者~~ | ~~`OrderEventGatewayImpl.sendPaySuccessMessage()` 发送消息但无消费者订阅~~ | ~~接入消费者或删除未使用的发送逻辑~~ | 已处理（2026-10-01，JV-003：删除 `IOrderEventGateway`/`OrderEventGatewayImpl`，topic 随之废弃） |
+| P2-5 | ~~支付成功消息通道重复~~ | ~~`order_paid` 和 `pay-success-topic` 两个 Topic 职责不清~~ | ~~明确职责或合并~~ | 已处理（2026-10-01，JV-003：保留 `order_paid`，删除 `pay-success-topic` 通道） |
 | P2-6 | `WeixinBindService` 方法未使用 | `tryAcquireRegisterLock()` / `releaseRegisterLock()` 定义但未调用 | 接入注册流程或移除 | 待处理 |
 
 ---

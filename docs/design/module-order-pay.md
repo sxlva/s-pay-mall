@@ -182,9 +182,10 @@ flowchart LR
 | Topic | 发送方 | 消费者 | 消息类型 | 说明 |
 |-------|--------|--------|----------|------|
 | `order_paid` | `RocketMqOrderEventPublisher` | `OrderPaidRocketListener` | `PaySuccessMessage` | 支付成功异步履约 |
-| `order-timeout-topic` | `OrderPaymentGatewayImpl`、`OrderEventGatewayImpl` | `OrderTimeoutCloseRocketListener` | `String (orderNo)` | 延时关单 |
-| `pay-success-topic` | `OrderEventGatewayImpl` | —（仅有生产者） | 业务通知 | 待接入消费者 |
+| `order-timeout-topic` | `OrderPaymentGatewayImpl` | `OrderTimeoutCloseRocketListener` | `String (orderNo)` | 延时关单 |
 | `product-stock-change-topic` | —（仅有消费者） | `ProductStockChangeRocketListener` | `StockChangeMsgDTO` | 库存变更幂等消费 |
+
+> 2026-10-01 变更：`IOrderEventGateway`/`OrderEventGatewayImpl` 及 `pay-success-topic` 已删除（JV-003 第一批，见 docs/JV-002_重复接口识别调用矩阵.md）。
 
 ---
 

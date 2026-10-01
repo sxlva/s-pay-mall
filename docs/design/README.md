@@ -32,7 +32,7 @@ flowchart TB
     subgraph Infra["Infrastructure Layer (s-pay-mall-infrastructure)"]
         I1["auth/ gateway/<br/>WeixinGatewayImpl, WeixinLoginGatewayImpl"]
         I2["mall/ gateway/<br/>StockGatewayImpl, AlipayGatewayImpl<br/>OrderPaymentGatewayImpl"]
-        I3["order/ gateway/<br/>OrderEventGatewayImpl, PaymentGatewayImpl<br/>event/ RocketMqOrderEventPublisher"]
+        I3["order/ gateway/<br/>PaymentGatewayImpl<br/>event/ RocketMqOrderEventPublisher"]
         I4["dao/ (auth|mall|order)/<br/>MyBatis Mapper + PO"]
         I5["config/shared/<br/>DomainServiceConfig"]
     end
