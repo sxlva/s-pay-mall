@@ -34,3 +34,14 @@ docs/dev-ops/mysql/data/
 docs/dev-ops/**/*.log
 docs/dev-ops/**/data/
 docs/dev-ops/**/store/
+
+/docs/2027届毕业设计相关管理文件/
+/docs/thesis_template/
+/docs/JV-001_全端点盘点差异清单.md
+/docs/JV-002_重复接口识别调用矩阵.md
+/docs/s-pay-mall_进度明细管理表.xlsx
+/docs/~$论文初稿模板_小型在线支付商城系统的设计与实现.docx
+/docs/开题报告_修订版.docx
+/docs/毕业论文初稿模板_小型在线支付商城系统的设计与实现.docx
+/docs/JV001_其他AI分析.txt
+/docs/论文要求.txt
