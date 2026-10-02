@@ -1,17 +1,18 @@
 package cn.fcr.trigger.http;
 
-import cn.fcr.api.dto.CreatePayRequestDTO;
+import cn.fcr.api.dto.common.req.CreatePayReq;
 import cn.fcr.api.response.Response;
 import cn.fcr.domain.shared.model.entity.PayOrderEntity;
 import cn.fcr.trigger.application.OrderApplicationService;
+import cn.fcr.trigger.http.BaseController;
 import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ import java.util.Map;
 @RestController()
 @CrossOrigin("${app.config.cross-origin}")
 @RequestMapping("/pay-api/${app.config.api-version}/alipay/")
-public class AliPayController {
+public class AliPayController extends BaseController {
 
     /** 支付宝公钥，用于支付回调验签 */
     @Value("${alipay.alipay_public_key}")
@@ -39,17 +40,18 @@ public class AliPayController {
      *
      * <p>根据商品ID生成支付宝支付单，返回支付页面的跳转URL</p>
      *
-     * @param createPayRequestDTO 创建支付请求，包含 userId 和 productId
+     * @param createPayRequestDTO 创建支付请求，包含 productId（userId 由 JWT 解析，不再透传）
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
      * @return 支付URL
      */
     @RequestMapping(value = "create_pay_order", method = RequestMethod.POST)
-    public Response<String> createPayOrder(@RequestBody @Valid CreatePayRequestDTO createPayRequestDTO) {
+    public Response<String> createPayOrder(@RequestBody @Valid CreatePayReq createPayRequestDTO, HttpServletRequest httpRequest) {
+        // 【安全修复 2026-10-02】userId 不再由请求体透传（原实现可将支付单归属到任意用户），
+        // 统一从 JWT 解析当前登录用户
+        String userId = String.valueOf(currentUserId(httpRequest));
+        String productId = createPayRequestDTO.getProductId();
         try {
-            log.info("商品下单，根据商品ID创建支付单开始 userId:{} productId:{}",
-                    createPayRequestDTO.getUserId(), createPayRequestDTO.getProductId());
-
-            String userId = createPayRequestDTO.getUserId();
-            String productId = createPayRequestDTO.getProductId();
+            log.info("商品下单，根据商品ID创建支付单开始 userId:{} productId:{}", userId, productId);
 
             PayOrderEntity payOrderEntity = orderApplicationService.createPayOrder(userId, productId);
 
@@ -62,8 +64,7 @@ public class AliPayController {
                     .data(payOrderEntity.getPayUrl())
                     .build();
         } catch (Exception e) {
-            log.error("商品下单，根据商品ID创建支付单失败 userId:{} productId:{}",
-                    createPayRequestDTO.getUserId(), createPayRequestDTO.getProductId(), e);
+            log.error("商品下单，根据商品ID创建支付单失败 userId:{} productId:{}", userId, productId, e);
             return Response.<String>builder()
                     .code(Constants.ResponseCode.UN_ERROR.getCode())
                     .info(Constants.ResponseCode.UN_ERROR.getInfo())

@@ -2,6 +2,7 @@ package cn.fcr.config.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -46,6 +47,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeRequests(auth -> auth
+                // CORS 预检请求放行（浏览器预检不带 Authorization 头，收窄白名单后必须显式放行）
+                .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // 支付宝同步跳转页与静态资源
                 .antMatchers(
                     "/orders",
                     "/orders/**",
@@ -55,17 +59,15 @@ public class SecurityConfig {
                     "/*.js",
                     "/*.css",
                     "/*.html",
-                    "/pay-api/v1/login/**",
-                    "/pay-api/v1/weixin/**",
-                    "/pay-api/v1/alipay/**",
-                    "/mall-api/v1/auth/**",
-                    "/mall-api/v1/mall/user/**",
-                    "/mall-api/v1/products/**",
-                    "/mall-api/v1/orders/**",
-                    "/mall-api/v1/cart/**",
-                    "/mall-api/v1/profile/**",
                     "/error"
                 ).permitAll()
+                // 微信扫码登录与微信开放网关（登录前流程，必须公开）
+                .antMatchers("/pay-api/v1/login/**", "/pay-api/v1/weixin/**").permitAll()
+                // 支付宝异步回调（支付宝服务器调用，无 JWT，必须公开）
+                .antMatchers("/pay-api/v1/alipay/alipay_notify_url").permitAll()
+                // 商城登录/注册与商品浏览（公开接口；categories 此前漏配白名单导致匿名 403，一并修复）
+                .antMatchers("/mall-api/v1/auth/login", "/mall-api/v1/auth/register").permitAll()
+                .antMatchers("/mall-api/v1/products", "/mall-api/v1/products/**", "/mall-api/v1/categories").permitAll()
                 .antMatchers("/mall-api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

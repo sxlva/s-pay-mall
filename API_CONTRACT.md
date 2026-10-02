@@ -30,7 +30,8 @@
 
 | 场景 | 方式 | Header |
 |------|------|--------|
-| 微信扫码（pay-api） | 无认证/公开 | — |
+| 微信扫码/微信网关/支付回调（pay-api） | 无认证/公开 | — |
+| 支付下单（pay-api `/alipay/create_pay_order`） | JWT Bearer Token | `Authorization: Bearer {token}` |
 | 商城用户端（mall-api） | JWT Bearer Token | `Authorization: Bearer {token}` |
 | 管理后台（admin） | JWT Bearer Token | `Authorization: Bearer {token}` |
 
@@ -48,7 +49,7 @@
 
 | # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
 |---|------|------|-----------|------------|------|
-| 1 | POST | `/alipay/create_pay_order` | `CreatePayRequestDTO` | `Response<String>` | 创建支付宝支付单，返回支付URL |
+| 1 | POST | `/alipay/create_pay_order` | `CreatePayRequestDTO` | `Response<String>` | 创建支付宝支付单，返回支付URL（userId 取自 JWT，不透传） |
 | 2 | POST | `/alipay/alipay_notify_url` | HttpServletRequest (params) | `String` | 支付宝异步回调验签+更新订单状态 |
 | 3 | GET | `/login/weixin_qrcode_ticket` | — | `Response<String>` | 获取微信扫码登录二维码ticket |
 | 4 | GET | `/login/check_login` | `ticket` (query) | `Response<String>` | 轮询检查扫码登录状态，返回JWT token |
@@ -61,8 +62,9 @@
 **CreatePayRequestDTO**:
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| userId | String | ✅ | 用户ID |
 | productId | String | ✅ | 商品ID |
+
+> **2026-10-02 变更**：`userId` 字段已移除，不再由请求体透传，统一从 JWT 解析（修复支付单可归属任意用户的越权问题，见 SECURITY_ISSUES S-01）。
 
 ---
 
@@ -74,7 +76,7 @@
 |---|------|------|-----------|------------|------|
 | 8 | POST | `/auth/register` | `UserRegisterRequestDTO` | `Response<UserLoginVO>` | 用户注册（普通或微信） |
 | 9 | POST | `/auth/login` | `UserLoginRequestDTO` | `Response<UserLoginVO>` | 用户登录 |
-| 10 | GET | `/auth/profile` | `userId` (query) | `Response<UserProfileVO>` | 获取用户资料 |
+| 10 | GET | `/auth/profile` | JWT Header | `Response<UserProfileVO>` | 获取用户资料（2026-10-02 起 userId 取自 JWT，不再接受 query 参数，修复 IDOR 越权） |
 | 11 | GET | `/auth/bind/qrcode` | — | `Response<String>` | 获取微信绑定二维码ticket |
 | 12 | GET | `/auth/bind/status` | `ticket` (query) | `Response<BindStatusVO>` | 轮询微信绑定状态 |
 

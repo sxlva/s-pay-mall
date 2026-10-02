@@ -1,4 +1,4 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.common.req;
 
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
@@ -11,12 +11,7 @@ import lombok.Data;
  * @author 傅崇睿
  */
 @Data
-public class CreatePayRequestDTO {
-
-    /**
-     * 用户ID，实际生产中通过登录模块获取，不需要透传
-     */
-    private String userId;
+public class CreatePayReq {
 
     /**
      * 商品ID

@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 /**
@@ -102,11 +103,16 @@ public class MallAuthController extends BaseController {
     /**
      * 获取用户个人信息
      *
-     * @param userId 用户ID
-     * @return 用户个人信息
+     * <p>【安全修复 2026-10-02】userId 不再从 query 参数获取——原实现存在 IDOR 越权，
+     * 任意匿名请求方可通过遍历 userId 读取任意用户资料。现统一从 JWT 解析当前登录用户，
+     * 与 ProfileController 行为一致。</p>
+     *
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 当前登录用户个人信息
      */
     @GetMapping("/profile")
-    public Response<UserProfileVO> getProfile(Long userId) {
+    public Response<UserProfileVO> getProfile(HttpServletRequest httpRequest) {
+        Long userId = currentUserId(httpRequest);
         UserProfile profile = mallUserService.getProfile(userId);
         if (profile == null) {
             return fail("用户不存在");
