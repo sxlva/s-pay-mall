@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,7 +43,7 @@ public class AliPayController {
      * @return 支付URL
      */
     @RequestMapping(value = "create_pay_order", method = RequestMethod.POST)
-    public Response<String> createPayOrder(@RequestBody CreatePayRequestDTO createPayRequestDTO) {
+    public Response<String> createPayOrder(@RequestBody @Valid CreatePayRequestDTO createPayRequestDTO) {
         try {
             log.info("商品下单，根据商品ID创建支付单开始 userId:{} productId:{}",
                     createPayRequestDTO.getUserId(), createPayRequestDTO.getProductId());

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,7 +50,7 @@ public class MallOrderController extends BaseController {
      * @return 影响行数
      */
     @PostMapping("/cart")
-    public Response<Integer> addCart(@RequestBody CartAddRequestDTO request, HttpServletRequest httpRequest) {
+    public Response<Integer> addCart(@RequestBody @Valid CartAddRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         Integer quantity = request.getQuantity() != null ? request.getQuantity() : 1;
         log.info("添加购物车: userId={}, productId={}, quantity={}", userId, request.getProductId(), quantity);
@@ -81,7 +82,7 @@ public class MallOrderController extends BaseController {
      * @return 影响行数
      */
     @PutMapping("/cart/quantity")
-    public Response<Integer> updateCartQuantity(@RequestBody CartAddRequestDTO request, HttpServletRequest httpRequest) {
+    public Response<Integer> updateCartQuantity(@RequestBody @Valid CartAddRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         Integer quantity = request.getQuantity() != null ? request.getQuantity() : 1;
         if (quantity < 1) {
@@ -119,7 +120,7 @@ public class MallOrderController extends BaseController {
      * @return 订单创建结果，含订单号和支付URL
      */
     @PostMapping("/orders")
-    public Response<OrderCreateRespDTO> createOrder(@RequestBody OrderCreateRequestDTO request, HttpServletRequest httpRequest) {
+    public Response<OrderCreateRespDTO> createOrder(@RequestBody @Valid OrderCreateRequestDTO request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         log.info("创建订单: userId={}, address={}", userId, request.getAddress());
         OrderCreateVO orderVO = orderApplicationService.createOrder(userId, request.getAddress());

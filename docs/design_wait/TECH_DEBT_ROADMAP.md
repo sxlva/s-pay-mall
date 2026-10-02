@@ -23,7 +23,7 @@
 
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
-| P1-1 | Controller 大面积缺 @Valid | 11 个 Controller 仅 2 个方法使用了 `@Valid` | 逐个 Controller 方法加 `@Valid` + DTO 字段加校验注解 | 待处理 |
+| P1-1 | Controller 大面积缺 @Valid | ~~11 个 Controller 仅 2 个方法使用了 `@Valid`~~（2026-10-02 核实：实际仅 1 处 `MallAdminController#saveProduct`，原记载与代码不符） | 逐个 Controller 方法加 `@Valid` + DTO 字段加校验注解 | 已处理（2026-10-02：8 个 `@RequestBody` DTO 端点补齐 `@Valid`；trigger 模块补 `spring-boot-starter-validation` 依赖——此前全项目无 JSR-303 实现，注解静默失效；`GlobalExceptionHandler` 新增 `MethodArgumentNotValidException → 0002` 映射；`CategorySaveRequestDTO.status`/`UserSaveRequestDTO.status` 的 `@NotNull` 放宽为可选以匹配前端表单；全部端点经真实请求实测） |
 | P1-2 | Redis+DB 跨资源事务一致性 | `cancelOrder()` 在 `@Transactional` 内包含 `stockGateway.restoreStock()`，DB 回滚时 Redis 无法回滚 | 参照 `createOrder` 模式，将库存恢复移到事务外 | 待处理 |
 | P1-3 | OrderPaidRocketListener 含业务编排 | `sendPaymentNotification()` 在 Listener 中直接实现（查订单→查微信→发模板消息） | 提取到 Application Service | 待处理 |
 | P1-4 | MQ 消息发送缺超时参数 | `RocketMqOrderEventPublisher.convertAndSend` 无超时（`OrderEventGatewayImpl` 已于 2026-10-01 删除） | 添加 3000ms 超时参数 | 待处理 |

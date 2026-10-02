@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 
 /**
  * 用户认证Controller
@@ -52,7 +53,7 @@ public class MallAuthController extends BaseController {
      * @return 登录信息（含JWT token）
      */
     @PostMapping("/register")
-    public Response<UserLoginVO> register(@RequestBody UserRegisterRequestDTO request) {
+    public Response<UserLoginVO> register(@RequestBody @Valid UserRegisterRequestDTO request) {
         log.info("用户注册请求: username={}, openId={}", request.getUsername(), request.getOpenId());
 
         cn.fcr.domain.mall.model.valobj.UserLoginVO loginVO;
@@ -86,7 +87,7 @@ public class MallAuthController extends BaseController {
      * @return 登录信息（含JWT token）
      */
     @PostMapping("/login")
-    public Response<UserLoginVO> login(@RequestBody UserLoginRequestDTO request) {
+    public Response<UserLoginVO> login(@RequestBody @Valid UserLoginRequestDTO request) {
         log.info("用户登录请求: username={}", request.getUsername());
         cn.fcr.domain.mall.model.valobj.UserLoginVO loginVO = mallUserService.login(request.getUsername(), request.getPassword());
 

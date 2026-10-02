@@ -96,7 +96,7 @@ public class MallAdminController extends BaseController {
      * @return 影响行数
      */
     @PostMapping("/users")
-    public Response<Integer> saveUser(@RequestBody UserSaveRequestDTO request) {
+    public Response<Integer> saveUser(@RequestBody @Valid UserSaveRequestDTO request) {
         log.info("保存用户: username={}", request.getUsername());
         UserEntity user = UserEntity.builder()
                 .id(request.getId())
@@ -165,7 +165,7 @@ public class MallAdminController extends BaseController {
      * @return 影响行数
      */
     @PostMapping("/categories")
-    public Response<Integer> saveCategory(@RequestBody CategorySaveRequestDTO request) {
+    public Response<Integer> saveCategory(@RequestBody @Valid CategorySaveRequestDTO request) {
         log.info("保存分类: name={}", request.getName());
         int result = mallProductService.saveCategory(toMap(request));
         return success(result);

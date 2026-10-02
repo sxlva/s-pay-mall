@@ -96,7 +96,7 @@ public enum OrderStatus implements IEnum<Integer> {
 
 ### 2.3 参数校验全覆盖
 
-**现状**: 11 个 Controller 中仅 2 个方法使用了 `@Valid` 校验。所有状态变更 API 缺少 `requestId` 幂等键。
+**现状**: ~~11 个 Controller 中仅 2 个方法使用了 `@Valid` 校验~~（已于 2026-10-02 完成：全部 9 个 `@RequestBody` DTO 端点补齐 `@Valid`，并补 `spring-boot-starter-validation` 实现依赖与 `MethodArgumentNotValidException → 0002` 全局映射，逐端点实测通过；自定义校验注解、分组校验未做）。所有状态变更 API 缺少 `requestId` 幂等键。
 
 **改造目标**:
 

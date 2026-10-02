@@ -7,6 +7,8 @@ import cn.fcr.types.common.Constants;
 import cn.fcr.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -82,6 +84,29 @@ public class GlobalExceptionHandler {
         return Response.<String>builder()
                 .code(Constants.ResponseCode.UN_ERROR.getCode())
                 .info("操作失败，存在关联数据无法删除")
+                .build();
+    }
+
+    /**
+     * 参数校验失败处理（@Valid 触发）
+     *
+     * <p>仅处理 JSR-303 参数校验失败，返回契约约定的 0002 非法参数。
+     * 刻意不处理 IllegalArgumentException 等业务/程序异常，避免程序 bug
+     * 被伪装成用户输入问题（参见 SECURITY_ISSUES S-03）。</p>
+     *
+     * @param e 参数校验异常
+     * @return 错误码 0002，info 为首个字段校验错误提示
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Response<String> onMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        FieldError fieldError = e.getBindingResult().getFieldError();
+        String info = (fieldError != null && fieldError.getDefaultMessage() != null)
+                ? fieldError.getDefaultMessage()
+                : Constants.ResponseCode.ILLEGAL_PARAMETER.getInfo();
+        log.warn("参数校验失败: {}", e.getBindingResult().getFieldErrors());
+        return Response.<String>builder()
+                .code(Constants.ResponseCode.ILLEGAL_PARAMETER.getCode())
+                .info(info)
                 .build();
     }
 
