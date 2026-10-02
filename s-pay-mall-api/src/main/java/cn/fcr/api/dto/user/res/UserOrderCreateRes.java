@@ -1,4 +1,4 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.user.res;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +28,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderCreateRespDTO {
+public class UserOrderCreateRes {
 
     /** 订单号（由 domain 的 orderNo 映射而来） */
     private String orderId;

@@ -1,7 +1,6 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.admin.req;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
@@ -12,7 +11,7 @@ import lombok.Data;
  * @author 傅崇睿
  */
 @Data
-public class UserSaveRequestDTO {
+public class AdminUserSaveReq {
 
     /**
      * 用户ID，创建时为null，更新时必填
@@ -31,8 +30,8 @@ public class UserSaveRequestDTO {
     private String password;
 
     /**
-     * 用户状态：0-禁用，1-启用
+     * 用户状态：0-禁用，1-启用；可选，不传时由服务层决定默认值
+     * （与前端 SaveUserParams.status 可选保持一致）
      */
-    @NotNull(message = "用户状态不能为空")
     private Integer status;
 }

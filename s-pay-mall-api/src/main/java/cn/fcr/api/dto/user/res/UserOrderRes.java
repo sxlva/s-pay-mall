@@ -1,4 +1,4 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.user.res;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderListRespDTO {
+public class UserOrderRes {
 
     /** 订单主键ID */
     private Long id;

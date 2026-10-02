@@ -1,4 +1,4 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.user.req;
 
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.Data;
  * @author 傅崇睿
  */
 @Data
-public class CartAddRequestDTO {
+public class UserCartAddReq {
 
     /**
      * 商品ID

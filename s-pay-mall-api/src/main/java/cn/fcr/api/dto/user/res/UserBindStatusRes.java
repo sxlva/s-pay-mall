@@ -1,4 +1,4 @@
-package cn.fcr.api.vo;
+package cn.fcr.api.dto.user.res;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -9,7 +9,7 @@ import lombok.Data;
  * @author 傅崇睿
  */
 @Data
-public class BindStatusVO {
+public class UserBindStatusRes {
 
     /** 绑定状态 */
     private String status;

@@ -1,6 +1,6 @@
 package cn.fcr.trigger.http.assembler;
 
-import cn.fcr.api.vo.UserProfileVO;
+import cn.fcr.api.dto.user.res.UserProfileRes;
 import cn.fcr.domain.mall.model.valobj.UserProfile;
 
 /**
@@ -11,16 +11,16 @@ import cn.fcr.domain.mall.model.valobj.UserProfile;
 public class UserProfileAssembler {
 
     /**
-     * Domain 层 UserProfile → API 层 UserProfileVO
+     * Domain 层 UserProfile → API 层 UserProfileRes
      *
      * @param profile Domain层用户个人信息
      * @return API层VO，profile为null时返回null
      */
-    public static UserProfileVO toVO(UserProfile profile) {
+    public static UserProfileRes toVO(UserProfile profile) {
         if (profile == null) {
             return null;
         }
-        return UserProfileVO.builder()
+        return UserProfileRes.builder()
                 .id(profile.getId())
                 .username(profile.getUsername())
                 .status(profile.getStatus())

@@ -1,4 +1,4 @@
-package cn.fcr.api.vo;
+package cn.fcr.api.dto.admin.res;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * @author 傅崇睿
  */
 @Data
-public class OrderVO {
+public class AdminOrderRes {
 
     /** 订单主键ID */
     private Long id;

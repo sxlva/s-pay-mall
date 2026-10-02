@@ -1,7 +1,6 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.admin.req;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
@@ -12,7 +11,7 @@ import lombok.Data;
  * @author 傅崇睿
  */
 @Data
-public class CategorySaveRequestDTO {
+public class AdminCategorySaveReq {
 
     /**
      * 分类ID，创建时为null，更新时必填
@@ -26,8 +25,8 @@ public class CategorySaveRequestDTO {
     private String name;
 
     /**
-     * 分类状态：0-禁用，1-启用
+     * 分类状态：0-禁用，1-启用；可选，不传时由服务层按默认启用处理
+     * （与管理后台分类表单字段保持一致，该表单仅包含名称）
      */
-    @NotNull(message = "分类状态不能为空")
     private Integer status;
 }

@@ -1,4 +1,4 @@
-package cn.fcr.api.vo;
+package cn.fcr.api.dto.admin.res;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -11,7 +11,7 @@ import java.math.BigDecimal;
  * @author 傅崇睿
  */
 @Data
-public class SalesTrendVO {
+public class AdminSalesTrendRes {
 
     /** 日期 */
     private String date;

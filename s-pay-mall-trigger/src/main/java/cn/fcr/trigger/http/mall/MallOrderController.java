@@ -1,11 +1,11 @@
 package cn.fcr.trigger.http.mall;
 
-import cn.fcr.api.dto.CartAddRequestDTO;
-import cn.fcr.api.dto.CartItemRespDTO;
-import cn.fcr.api.dto.OrderCreateRequestDTO;
-import cn.fcr.api.dto.OrderCreateRespDTO;
-import cn.fcr.api.dto.OrderListRespDTO;
-import cn.fcr.api.dto.StockCheckRespDTO;
+import cn.fcr.api.dto.user.req.UserCartAddReq;
+import cn.fcr.api.dto.user.res.UserCartItemRes;
+import cn.fcr.api.dto.user.req.UserOrderCreateReq;
+import cn.fcr.api.dto.user.res.UserOrderCreateRes;
+import cn.fcr.api.dto.user.res.UserOrderRes;
+import cn.fcr.api.dto.user.res.UserOrderStockCheckRes;
 import cn.fcr.api.response.Response;
 import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.domain.mall.model.valobj.CartItemVO;
@@ -50,7 +50,7 @@ public class MallOrderController extends BaseController {
      * @return 影响行数
      */
     @PostMapping("/cart")
-    public Response<Integer> addCart(@RequestBody @Valid CartAddRequestDTO request, HttpServletRequest httpRequest) {
+    public Response<Integer> addCart(@RequestBody @Valid UserCartAddReq request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         Integer quantity = request.getQuantity() != null ? request.getQuantity() : 1;
         log.info("添加购物车: userId={}, productId={}, quantity={}", userId, request.getProductId(), quantity);
@@ -65,10 +65,10 @@ public class MallOrderController extends BaseController {
      * @return 购物车商品列表
      */
     @GetMapping("/cart")
-    public Response<List<CartItemRespDTO>> listCart(HttpServletRequest httpRequest) {
+    public Response<List<UserCartItemRes>> listCart(HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         List<CartItemVO> cartItems = orderApplicationService.listCart(userId);
-        List<CartItemRespDTO> result = cartItems.stream()
+        List<UserCartItemRes> result = cartItems.stream()
                 .map(CartItemConverter.INSTANCE::toRespDTO)
                 .collect(Collectors.toList());
         return success(result);
@@ -82,7 +82,7 @@ public class MallOrderController extends BaseController {
      * @return 影响行数
      */
     @PutMapping("/cart/quantity")
-    public Response<Integer> updateCartQuantity(@RequestBody @Valid CartAddRequestDTO request, HttpServletRequest httpRequest) {
+    public Response<Integer> updateCartQuantity(@RequestBody @Valid UserCartAddReq request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         Integer quantity = request.getQuantity() != null ? request.getQuantity() : 1;
         if (quantity < 1) {
@@ -120,12 +120,12 @@ public class MallOrderController extends BaseController {
      * @return 订单创建结果，含订单号和支付URL
      */
     @PostMapping("/orders")
-    public Response<OrderCreateRespDTO> createOrder(@RequestBody @Valid OrderCreateRequestDTO request, HttpServletRequest httpRequest) {
+    public Response<UserOrderCreateRes> createOrder(@RequestBody @Valid UserOrderCreateReq request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         log.info("创建订单: userId={}, address={}", userId, request.getAddress());
         OrderCreateVO orderVO = orderApplicationService.createOrder(userId, request.getAddress());
 
-        OrderCreateRespDTO result = OrderConverter.INSTANCE.toCreateResp(orderVO);
+        UserOrderCreateRes result = OrderConverter.INSTANCE.toCreateResp(orderVO);
         if (orderVO.getPayUrl() != null && !orderVO.getPayUrl().isEmpty()) {
             result.setHtml(orderVO.getPayUrl());
         }
@@ -143,13 +143,13 @@ public class MallOrderController extends BaseController {
      * @return 订单列表
      */
     @GetMapping("/orders")
-    public Response<List<OrderListRespDTO>> listOrders(HttpServletRequest httpRequest,
+    public Response<List<UserOrderRes>> listOrders(HttpServletRequest httpRequest,
                                                        @RequestParam(value = "status", required = false) String status,
                                                        @RequestParam(value = "startTime", required = false) String startTime,
                                                        @RequestParam(value = "endTime", required = false) String endTime) {
         Long userId = currentUserId(httpRequest);
         List<OrderVO> orders = orderApplicationService.listOrders(userId, status, startTime, endTime);
-        List<OrderListRespDTO> result = orders.stream()
+        List<UserOrderRes> result = orders.stream()
                 .map(OrderListConverter.INSTANCE::toRespDTO)
                 .collect(Collectors.toList());
         return success(result);
@@ -163,13 +163,13 @@ public class MallOrderController extends BaseController {
      * @return 订单支付信息，含最新支付URL
      */
     @GetMapping("/orders/{orderNo}/continue-pay")
-    public Response<OrderCreateRespDTO> continuePay(@PathVariable("orderNo") String orderNo, HttpServletRequest httpRequest) {
+    public Response<UserOrderCreateRes> continuePay(@PathVariable("orderNo") String orderNo, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         log.info("继续支付订单: userId={}, orderNo={}", userId, orderNo);
 
         OrderCreateVO orderVO = orderApplicationService.continuePay(orderNo);
 
-        OrderCreateRespDTO result = OrderConverter.INSTANCE.toCreateResp(orderVO);
+        UserOrderCreateRes result = OrderConverter.INSTANCE.toCreateResp(orderVO);
         if (orderVO.getPayUrl() != null && !orderVO.getPayUrl().isEmpty()) {
             result.setHtml(orderVO.getPayUrl());
         }
@@ -185,13 +185,13 @@ public class MallOrderController extends BaseController {
      * @return 库存检查结果
      */
     @GetMapping("/orders/{orderNo}/check-stock")
-    public Response<StockCheckRespDTO> checkStock(@PathVariable("orderNo") String orderNo, HttpServletRequest httpRequest) {
+    public Response<UserOrderStockCheckRes> checkStock(@PathVariable("orderNo") String orderNo, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         log.info("检查订单库存: userId={}, orderNo={}", userId, orderNo);
 
         boolean stockOk = orderApplicationService.checkStock(orderNo);
 
-        StockCheckRespDTO result = StockCheckRespDTO.builder()
+        UserOrderStockCheckRes result = UserOrderStockCheckRes.builder()
                 .success(stockOk)
                 .message(stockOk ? null : "库存不足，无法继续支付")
                 .build();

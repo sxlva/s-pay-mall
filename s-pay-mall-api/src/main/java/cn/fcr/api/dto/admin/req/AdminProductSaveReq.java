@@ -1,4 +1,4 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.admin.req;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
  * @author 傅崇睿
  */
 @Data
-public class ProductSaveRequestDTO {
+public class AdminProductSaveReq {
 
     /**
      * 商品ID，创建时为null，更新时必填

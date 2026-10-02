@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http.mall;
 
 import cn.fcr.api.response.Response;
-import cn.fcr.api.vo.UserProfileVO;
+import cn.fcr.api.dto.user.res.UserProfileRes;
 import cn.fcr.domain.mall.model.valobj.UserProfile;
 import cn.fcr.domain.mall.service.IMallUserService;
 import cn.fcr.trigger.http.BaseController;
@@ -36,7 +36,7 @@ public class ProfileController extends BaseController {
      * @return 用户个人信息
      */
     @GetMapping("/profile")
-    public Response<UserProfileVO> getProfile(HttpServletRequest httpRequest) {
+    public Response<UserProfileRes> getProfile(HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         log.info("获取用户个人信息: userId={}", userId);
         UserProfile profile = mallUserService.getProfile(userId);

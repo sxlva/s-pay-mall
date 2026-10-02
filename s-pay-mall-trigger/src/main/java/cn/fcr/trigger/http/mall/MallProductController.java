@@ -1,8 +1,8 @@
 package cn.fcr.trigger.http.mall;
 
 import cn.fcr.api.response.Response;
-import cn.fcr.api.vo.CategoryVO;
-import cn.fcr.api.vo.ProductVO;
+import cn.fcr.api.dto.common.res.CategoryRes;
+import cn.fcr.api.dto.common.res.ProductRes;
 import cn.fcr.domain.mall.service.IMallProductService;
 import cn.fcr.trigger.http.BaseController;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +44,7 @@ public class MallProductController extends BaseController {
      * @return 商品列表
      */
     @GetMapping("/products")
-    public Response<List<ProductVO>> listProducts(
+    public Response<List<ProductRes>> listProducts(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -52,8 +52,8 @@ public class MallProductController extends BaseController {
             @RequestParam(required = false) Integer status) {
         log.info("商品列表查询: categoryId={}, keyword={}", categoryId, keyword);
         List<cn.fcr.domain.mall.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
-        List<ProductVO> result = products.stream().map(p -> {
-            ProductVO vo = new ProductVO();
+        List<ProductRes> result = products.stream().map(p -> {
+            ProductRes vo = new ProductRes();
             vo.setId(p.getId());
             vo.setCategoryId(p.getCategoryId());
             vo.setName(p.getName());
@@ -75,11 +75,11 @@ public class MallProductController extends BaseController {
      * @return 分类列表
      */
     @GetMapping("/categories")
-    public Response<List<CategoryVO>> listCategories() {
+    public Response<List<CategoryRes>> listCategories() {
         log.info("商品分类列表查询");
         List<cn.fcr.domain.mall.model.valobj.CategoryVO> categories = mallProductService.listCategory();
-        List<CategoryVO> result = categories.stream().map(c -> {
-            CategoryVO vo = new CategoryVO();
+        List<CategoryRes> result = categories.stream().map(c -> {
+            CategoryRes vo = new CategoryRes();
             vo.setId(c.getId());
             vo.setName(c.getName());
             vo.setStatus(c.getStatus());

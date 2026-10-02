@@ -1,4 +1,4 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.user.res;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StockCheckRespDTO {
+public class UserOrderStockCheckRes {
 
     /** 库存检查是否通过 */
     private Boolean success;

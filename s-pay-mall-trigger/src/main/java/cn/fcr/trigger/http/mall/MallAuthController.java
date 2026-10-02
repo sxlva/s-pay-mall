@@ -1,11 +1,11 @@
 package cn.fcr.trigger.http.mall;
 
-import cn.fcr.api.dto.UserLoginRequestDTO;
-import cn.fcr.api.dto.UserRegisterRequestDTO;
+import cn.fcr.api.dto.common.req.LoginReq;
+import cn.fcr.api.dto.common.req.RegisterReq;
 import cn.fcr.api.response.Response;
-import cn.fcr.api.vo.BindStatusVO;
-import cn.fcr.api.vo.UserLoginVO;
-import cn.fcr.api.vo.UserProfileVO;
+import cn.fcr.api.dto.user.res.UserBindStatusRes;
+import cn.fcr.api.dto.common.res.LoginRes;
+import cn.fcr.api.dto.user.res.UserProfileRes;
 import cn.fcr.domain.auth.service.ILoginService;
 import cn.fcr.domain.auth.service.WeixinBindService;
 import cn.fcr.domain.mall.model.valobj.UserProfile;
@@ -54,7 +54,7 @@ public class MallAuthController extends BaseController {
      * @return 登录信息（含JWT token）
      */
     @PostMapping("/register")
-    public Response<UserLoginVO> register(@RequestBody @Valid UserRegisterRequestDTO request) {
+    public Response<LoginRes> register(@RequestBody @Valid RegisterReq request) {
         log.info("用户注册请求: username={}, openId={}", request.getUsername(), request.getOpenId());
 
         cn.fcr.domain.mall.model.valobj.UserLoginVO loginVO;
@@ -71,7 +71,7 @@ public class MallAuthController extends BaseController {
             );
         }
 
-        UserLoginVO result = new UserLoginVO();
+        LoginRes result = new LoginRes();
         result.setToken(loginVO.getToken());
         result.setUserId(loginVO.getUserId());
         result.setUsername(loginVO.getUsername());
@@ -88,11 +88,11 @@ public class MallAuthController extends BaseController {
      * @return 登录信息（含JWT token）
      */
     @PostMapping("/login")
-    public Response<UserLoginVO> login(@RequestBody @Valid UserLoginRequestDTO request) {
+    public Response<LoginRes> login(@RequestBody @Valid LoginReq request) {
         log.info("用户登录请求: username={}", request.getUsername());
         cn.fcr.domain.mall.model.valobj.UserLoginVO loginVO = mallUserService.login(request.getUsername(), request.getPassword());
 
-        UserLoginVO result = new UserLoginVO();
+        LoginRes result = new LoginRes();
         result.setToken(loginVO.getToken());
         result.setUserId(loginVO.getUserId());
         result.setUsername(loginVO.getUsername());
@@ -111,7 +111,7 @@ public class MallAuthController extends BaseController {
      * @return 当前登录用户个人信息
      */
     @GetMapping("/profile")
-    public Response<UserProfileVO> getProfile(HttpServletRequest httpRequest) {
+    public Response<UserProfileRes> getProfile(HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         UserProfile profile = mallUserService.getProfile(userId);
         if (profile == null) {
@@ -150,11 +150,11 @@ public class MallAuthController extends BaseController {
      * @return 绑定状态（BIND_SUCCESS / BINDING_PENDING / INVALID_CODE）
      */
     @GetMapping("/bind/status")
-    public Response<BindStatusVO> checkBindStatus(String ticket) {
+    public Response<UserBindStatusRes> checkBindStatus(String ticket) {
         String openId = weixinBindService.checkBindStatus(ticket);
         log.info("检查微信绑定状态 ticket:{} openId:{}", ticket, openId);
 
-        BindStatusVO result = new BindStatusVO();
+        UserBindStatusRes result = new UserBindStatusRes();
         if (openId != null) {
             result.setStatus("BIND_SUCCESS");
             result.setOpenId(openId);

@@ -1,4 +1,4 @@
-package cn.fcr.api.vo;
+package cn.fcr.api.dto.common.res;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -9,7 +9,7 @@ import lombok.Data;
  * @author 傅崇睿
  */
 @Data
-public class UserLoginVO {
+public class LoginRes {
 
     /** JWT Token */
     private String token;

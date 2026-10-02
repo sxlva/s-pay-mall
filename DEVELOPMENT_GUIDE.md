@@ -18,9 +18,10 @@
 
 | 类型 | 规范 | 正确示例 | 禁止示例 | 所在模块 |
 |------|------|---------|---------|---------|
-| 请求 DTO | `{Action}RequestDTO` | `UserLoginRequestDTO` | `UserLoginRequest` | `s-pay-mall-api/dto/` |
-| 响应 DTO | `{Entity}RespDTO` | `CartItemRespDTO`, `OrderListRespDTO` | `CartItemResponse` | `s-pay-mall-api/dto/` |
-| 视图对象 VO | `{Entity}VO` | `UserVO`, `ProductVO` | `UserResponseVO` | `s-pay-mall-api/vo/` |
+| 出线请求类 | `{端前缀}{业务名}Req` | `UserCartAddReq`, `AdminUserSaveReq` | `UserCartAddRequestDTO` | `s-pay-mall-api/dto/{admin,user,common}/req/` |
+| 出线响应类 | `{端前缀}{业务名}Res` | `UserOrderRes`, `AdminOrderRes` | `OrderListRespDTO`, `AdminOrderVO` | `s-pay-mall-api/dto/{admin,user,common}/res/` |
+| 共用出线类 | 无前缀（登录、注册、双端共用） | `LoginReq`, `LoginRes`, `ProductRes` | `CommonProductRes` | `s-pay-mall-api/dto/common/` |
+> 决策依据与旧→新映射见 [API_NAMING_DECISION.md](docs/API_NAMING_DECISION.md)；`Response<T>` 统一包装类保留原名。
 | 领域实体 | `{Name}Entity` | `OrderEntity`, `UserEntity` | `Order` | `s-pay-mall-domain` |
 | 值对象 | `{Name}VO` | `OrderCreateVO`, `CartItemVO` | — | `s-pay-mall-domain` |
 | 领域服务接口 | `I{Domain}Service` | `IOrderService`, `IMallOrderService` | — | `s-pay-mall-domain` |
@@ -51,15 +52,15 @@
 
 - **Java PO 字段**: Java 属性使用 `camelCase`，通过 MyBatis-Plus `@TableField` 映射到数据库 `snake_case` 列
 - **Domain Entity 字段**: 与 DB 列语义对应，命名使用 `camelCase`
-- **JSON 输出字段**: `dto/` 包直接输出的字段使用 `camelCase`（无 `@JsonProperty`）；`vo/` 包历史遗留使用 `snake_case`（有 `@JsonProperty`）
+- **JSON 输出字段**: `api/dto/` 下 user/common 出线类使用 `camelCase`（无 `@JsonProperty`）；admin/res 中 `AdminUserRes`、`AdminOrderRes` 为历史遗留 `snake_case`（有 `@JsonProperty`），禁止在其上扩展字段
 
 | 层级 | Java 字段 | @JsonProperty | JSON 实际输出 |
 |------|----------|---------------|-------------|
 | `api/dto/` (Controller 返回) | `orderId` | **无** | `"orderId"` (camelCase) |
-| `api/vo/` (Controller 返回 VO) | `order_no` | **有**（历史遗留，禁止扩展） | `"order_no"` (snake_case) |
+| `api/dto/admin/res/` (AdminUserRes/AdminOrderRes) | `order_no` | **有**（历史遗留，禁止扩展） | `"order_no"` (snake_case) |
 | PO (MyBatis 映射) | `orderNo` | 不适用 | 数据库 `order_no` |
 
-> **决议**: 全局统一为 camelCase。`api/vo/` 中的 `@JsonProperty` snake_case 视为技术债，禁止在其基础上扩展字段；新增 VO 一律 camelCase，不加 `@JsonProperty`。
+> **决议**: 全局统一为 camelCase。admin/res 两个历史类的 `@JsonProperty` snake_case 视为技术债，禁止在其基础上扩展字段；新增出线类一律 camelCase，不加 `@JsonProperty`。
 
 ### 1.4 前端命名规范（强制）
 
@@ -67,7 +68,7 @@
 |------|------|------|
 | 页面组件 | PascalCase + `Page` 后缀 | `OrderListPage.vue`, `ProductDetailPage.vue` |
 | API 函数 | camelCase, 动词开头 | `getOrder()`, `createOrder()`, `loadProducts()` |
-| TypeScript 接口 | PascalCase, 与后端 VO 名称一致 | `interface OrderVO`, `interface ProductVO` |
+| TypeScript 接口 | PascalCase, 以 API_CONTRACT §五 映射表为准 | `interface Order`, `interface ProductVO` |
 | 请求参数类型 | `{Name}Request` 或 `{Name}Params` | `OrderCreateRequest`, `OrderListParams` |
 | Pinia Store | `use{Name}Store` | `useOrderStore`, `useUserStore` |
 | 组合式 Hook | `use{Name}` | `useOrder()`, `useProduct()` |

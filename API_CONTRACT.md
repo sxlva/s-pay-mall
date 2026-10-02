@@ -49,7 +49,7 @@
 
 | # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
 |---|------|------|-----------|------------|------|
-| 1 | POST | `/alipay/create_pay_order` | `CreatePayRequestDTO` | `Response<String>` | 创建支付宝支付单，返回支付URL（userId 取自 JWT，不透传） |
+| 1 | POST | `/alipay/create_pay_order` | `CreatePayReq` | `Response<String>` | 创建支付宝支付单，返回支付URL（userId 取自 JWT，不透传） |
 | 2 | POST | `/alipay/alipay_notify_url` | HttpServletRequest (params) | `String` | 支付宝异步回调验签+更新订单状态 |
 | 3 | GET | `/login/weixin_qrcode_ticket` | — | `Response<String>` | 获取微信扫码登录二维码ticket |
 | 4 | GET | `/login/check_login` | `ticket` (query) | `Response<String>` | 轮询检查扫码登录状态，返回JWT token |
@@ -59,7 +59,7 @@
 
 ### DTO 字段清单
 
-**CreatePayRequestDTO**:
+**CreatePayReq**:
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | productId | String | ✅ | 商品ID |
@@ -74,20 +74,20 @@
 
 | # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
 |---|------|------|-----------|------------|------|
-| 8 | POST | `/auth/register` | `UserRegisterRequestDTO` | `Response<UserLoginVO>` | 用户注册（普通或微信） |
-| 9 | POST | `/auth/login` | `UserLoginRequestDTO` | `Response<UserLoginVO>` | 用户登录 |
-| 10 | GET | `/auth/profile` | JWT Header | `Response<UserProfileVO>` | 获取用户资料（2026-10-02 起 userId 取自 JWT，不再接受 query 参数，修复 IDOR 越权） |
+| 8 | POST | `/auth/register` | `RegisterReq` | `Response<LoginRes>` | 用户注册（普通或微信） |
+| 9 | POST | `/auth/login` | `LoginReq` | `Response<LoginRes>` | 用户登录 |
+| 10 | GET | `/auth/profile` | JWT Header | `Response<UserProfileRes>` | 获取用户资料（2026-10-02 起 userId 取自 JWT，不再接受 query 参数，修复 IDOR 越权） |
 | 11 | GET | `/auth/bind/qrcode` | — | `Response<String>` | 获取微信绑定二维码ticket |
-| 12 | GET | `/auth/bind/status` | `ticket` (query) | `Response<BindStatusVO>` | 轮询微信绑定状态 |
+| 12 | GET | `/auth/bind/status` | `ticket` (query) | `Response<UserBindStatusRes>` | 轮询微信绑定状态 |
 
-**UserRegisterRequestDTO**:
+**RegisterReq**:
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | username | String | ✅ | 用户名 |
 | password | String | ✅ | 密码 |
 | openId | String | ❌ | 微信openId（微信注册时传入） |
 
-**UserLoginRequestDTO**:
+**LoginReq**:
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | username | String | ✅ | 用户名 |
@@ -97,24 +97,24 @@
 
 | DTO | 字段 |
 |-----|------|
-| UserLoginVO | `token: String, userId: Long, username: String, role: String` |
-| UserProfileVO | `id: Long, username: String, status: Integer, roleCode: String, createTime: LocalDateTime, updateTime: LocalDateTime` |
-| BindStatusVO | `status: String (BIND_SUCCESS/BINDING_PENDING/INVALID_CODE), openId: String` |
+| LoginRes | `token: String, userId: Long, username: String, role: String` |
+| UserProfileRes | `id: Long, username: String, status: Integer, roleCode: String, createTime: LocalDateTime, updateTime: LocalDateTime` |
+| UserBindStatusRes | `status: String (BIND_SUCCESS/BINDING_PENDING/INVALID_CODE), openId: String` |
 
 ### 3.2 个人信息
 
 | # | 方法 | 端点 | Request | ResponseDTO | 说明 |
 |---|------|------|---------|------------|------|
-| 13 | GET | `/profile` | JWT Header | `Response<UserProfileVO>` | 获取当前用户信息（JWT识别） |
+| 13 | GET | `/profile` | JWT Header | `Response<UserProfileRes>` | 获取当前用户信息（JWT识别） |
 
 ### 3.3 商品
 
 | # | 方法 | 端点 | Request | ResponseDTO | 说明 |
 |---|------|------|---------|------------|------|
-| 14 | GET | `/products` | `categoryId?, keyword?, minPrice?, maxPrice?, status?` (query) | `Response<List<ProductVO>>` | 查询商品列表（多条件筛选） |
-| 15 | GET | `/categories` | — | `Response<List<CategoryVO>>` | 查询商品分类列表 |
+| 14 | GET | `/products` | `categoryId?, keyword?, minPrice?, maxPrice?, status?` (query) | `Response<List<ProductRes>>` | 查询商品列表（多条件筛选） |
+| 15 | GET | `/categories` | — | `Response<List<CategoryRes>>` | 查询商品分类列表 |
 
-**ProductVO 字段**:
+**ProductRes 字段**:
 | 字段 | 类型 | JSON输出 | 说明 |
 |------|------|---------|------|
 | id | Long | `id` | 商品ID |
@@ -128,24 +128,24 @@
 | status | Integer | `status` | 1-上架 0-下架 |
 | createTime | LocalDateTime | `create_time` | 创建时间 |
 
-**CategoryVO 字段**: `id: Long, name: String, status: Integer, createTime: LocalDateTime`
+**CategoryRes 字段**: `id: Long, name: String, status: Integer, createTime: LocalDateTime`
 
 ### 3.4 购物车
 
 | # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
 |---|------|------|-----------|------------|------|
-| 16 | POST | `/cart` | `CartAddRequestDTO` | `Response<Integer>` | 添加商品到购物车 |
-| 17 | GET | `/cart` | JWT Header | `Response<List<CartItemRespDTO>>` | 查询购物车列表 |
-| 18 | PUT | `/cart/quantity` | `CartAddRequestDTO` | `Response<Integer>` | 更新购物车商品数量 |
+| 16 | POST | `/cart` | `UserCartAddReq` | `Response<Integer>` | 添加商品到购物车 |
+| 17 | GET | `/cart` | JWT Header | `Response<List<UserCartItemRes>>` | 查询购物车列表 |
+| 18 | PUT | `/cart/quantity` | `UserCartAddReq` | `Response<Integer>` | 更新购物车商品数量 |
 | 19 | DELETE | `/cart/delete` | `itemId` (query) | `Response<Integer>` | 删除购物车条目 |
 
-**CartAddRequestDTO**:
+**UserCartAddReq**:
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | productId | Long | ✅ | 商品ID |
 | quantity | Integer | ❌ | 数量（默认1） |
 
-**CartItemRespDTO 字段**:
+**UserCartItemRes 字段**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Long | 购物车条目ID |
@@ -161,17 +161,17 @@
 
 | # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
 |---|------|------|-----------|------------|------|
-| 20 | POST | `/orders` | `OrderCreateRequestDTO` | `Response<OrderCreateRespDTO>` | 从购物车创建订单 |
-| 21 | GET | `/orders` | `status?, startTime?, endTime?` (query) | `Response<List<OrderListRespDTO>>` | 查询用户订单列表 |
-| 22 | GET | `/orders/{orderNo}/continue-pay` | `orderNo` (path) | `Response<OrderCreateRespDTO>` | 继续支付未完成订单 |
-| 23 | GET | `/orders/{orderNo}/check-stock` | `orderNo` (path) | `Response<StockCheckRespDTO>` | 检查订单库存 |
+| 20 | POST | `/orders` | `UserOrderCreateReq` | `Response<UserOrderCreateRes>` | 从购物车创建订单 |
+| 21 | GET | `/orders` | `status?, startTime?, endTime?` (query) | `Response<List<UserOrderRes>>` | 查询用户订单列表 |
+| 22 | GET | `/orders/{orderNo}/continue-pay` | `orderNo` (path) | `Response<UserOrderCreateRes>` | 继续支付未完成订单 |
+| 23 | GET | `/orders/{orderNo}/check-stock` | `orderNo` (path) | `Response<UserOrderStockCheckRes>` | 检查订单库存 |
 
-**OrderCreateRequestDTO**:
+**UserOrderCreateReq**:
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | address | String | ✅ | 收货地址 |
 
-**OrderCreateRespDTO**:
+**UserOrderCreateRes**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | orderId | String | 订单编号（创建后返回） |
@@ -179,7 +179,7 @@
 | totalAmount | BigDecimal | 订单总额 |
 | html | String | 支付表单HTML |
 
-**OrderListRespDTO**:
+**UserOrderRes**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | Long | 订单ID |
@@ -190,7 +190,7 @@
 | createTime | LocalDateTime | 创建时间 |
 | address | String | 收货地址 |
 
-**StockCheckRespDTO**:
+**UserOrderStockCheckRes**:
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | success | Boolean | 库存是否充足 |
@@ -204,22 +204,22 @@
 
 | # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
 |---|------|------|-----------|------------|------|
-| 24 | GET | `/admin/users` | `username?, status?, roleCode?` (query) | `Response<List<UserVO>>` | 查询用户列表 |
-| 25 | POST | `/admin/users` | `UserSaveRequestDTO` | `Response<Integer>` | 新增/更新用户 |
+| 24 | GET | `/admin/users` | `username?, status?, roleCode?` (query) | `Response<List<AdminUserRes>>` | 查询用户列表 |
+| 25 | POST | `/admin/users` | `AdminUserSaveReq` | `Response<Integer>` | 新增/更新用户 |
 | 26 | PUT | `/admin/users/{userId}/status` | `userId`(path),`status`(query) | `Response<Integer>` | 更新用户状态 |
 | 27 | DELETE | `/admin/users/{userId}` | `userId` (path) | `Response<Integer>` | 删除用户 |
-| 28 | GET | `/admin/categories` | — | `Response<List<CategoryVO>>` | 查询分类列表 |
-| 29 | POST | `/admin/categories` | `CategorySaveRequestDTO` | `Response<Integer>` | 新增/更新分类 |
+| 28 | GET | `/admin/categories` | — | `Response<List<CategoryRes>>` | 查询分类列表 |
+| 29 | POST | `/admin/categories` | `AdminCategorySaveReq` | `Response<Integer>` | 新增/更新分类 |
 | 30 | DELETE | `/admin/categories/{categoryId}` | `categoryId` (path) | `Response<Integer>` | 删除分类 |
-| 31 | GET | `/admin/products` | `categoryId?, keyword?, minPrice?, maxPrice?, status?` (query) | `Response<List<ProductVO>>` | 查询商品列表 |
-| 32 | POST | `/admin/products` | `ProductSaveRequestDTO` | `Response<Integer>` | 新增/更新商品 |
+| 31 | GET | `/admin/products` | `categoryId?, keyword?, minPrice?, maxPrice?, status?` (query) | `Response<List<ProductRes>>` | 查询商品列表 |
+| 32 | POST | `/admin/products` | `AdminProductSaveReq` | `Response<Integer>` | 新增/更新商品 |
 | 33 | DELETE | `/admin/products/{productId}` | `productId` (path) | `Response<Integer>` | 删除商品 |
-| 34 | GET | `/admin/orders` | `userId?, status?, startTime?, endTime?` (query) | `Response<List<OrderVO>>` | 查询订单列表 |
+| 34 | GET | `/admin/orders` | `userId?, status?, startTime?, endTime?` (query) | `Response<List<AdminOrderRes>>` | 查询订单列表 |
 | 35 | PUT | `/admin/orders/{orderId}/deliver` | `orderId` (path) | `Response<Integer>` | 一键发货 |
 | 36 | PUT | `/admin/orders/{orderId}/cancel` | `orderId` (path) | `Response<Integer>` | 取消订单 |
 | 37 | DELETE | `/admin/orders/{orderId}` | `orderId` (path) | `Response<Integer>` | 删除订单 |
-| 38 | GET | `/admin/statistics/sales-trend` | — | `Response<List<SalesTrendVO>>` | 销售趋势 |
-| 39 | GET | `/admin/statistics/category-ratio` | — | `Response<List<CategoryRatioVO>>` | 分类销售占比 |
+| 38 | GET | `/admin/statistics/sales-trend` | — | `Response<List<AdminSalesTrendRes>>` | 销售趋势 |
+| 39 | GET | `/admin/statistics/category-ratio` | — | `Response<List<AdminCategoryRatioRes>>` | 分类销售占比 |
 
 ### 4.2 ~~AdminApiController（/pay-api/v1/admin）~~（已删除）
 
@@ -229,18 +229,18 @@
 
 ### 4.3 Admin DTO 字段
 
-**UserSaveRequestDTO**: `id: Long, username: String, password: String, status: Integer`
-**CategorySaveRequestDTO**: `id: Long, name: String, status: Integer`
-**ProductSaveRequestDTO**: `id: Long, categoryId: Long, name: String, description: String, price: BigDecimal, stock: Integer, status: Integer`
+**AdminUserSaveReq**: `id: Long, username: String, password: String, status: Integer`
+**AdminCategorySaveReq**: `id: Long, name: String, status: Integer`
+**AdminProductSaveReq**: `id: Long, categoryId: Long, name: String, description: String, price: BigDecimal, stock: Integer, status: Integer`
 
 **Admin VO 字段**:
 
 | VO | 字段 |
 |----|------|
-| UserVO | `id: Long, username: String, status: Integer, roleCode: String, roleName: String, createTime: LocalDateTime, updateTime: LocalDateTime` |
-| OrderVO | `id: Long, orderNo: String, userId: Long, status: String, statusDesc: String, totalAmount: BigDecimal, address: String, createTime: LocalDateTime` |
-| SalesTrendVO | `date: String, salesAmount: BigDecimal, orderCount: Integer` |
-| CategoryRatioVO | `categoryName: String, productCount: Integer, salesAmount: BigDecimal` |
+| AdminUserRes | `id: Long, username: String, status: Integer, roleCode: String, roleName: String, createTime: LocalDateTime, updateTime: LocalDateTime` |
+| AdminOrderRes | `id: Long, orderNo: String, userId: Long, status: String, statusDesc: String, totalAmount: BigDecimal, address: String, createTime: LocalDateTime` |
+| AdminSalesTrendRes | `date: String, salesAmount: BigDecimal, orderCount: Integer` |
+| AdminCategoryRatioRes | `categoryName: String, productCount: Integer, salesAmount: BigDecimal` |
 
 ---
 
@@ -250,17 +250,17 @@
 
 | 后端类（Java） | 前端类型（TypeScript） | 字段一致性 | 备注 |
 |---------------|----------------------|-----------|------|
-| `ProductVO` (vo包) | `types/domain/product.ts ProductVO` | **`category_id` → `categoryId` 命名不一致** | 后端 `@JsonProperty` 输出snake_case，前端字段名需对齐 |
-| `CategoryVO` (vo包) | `types/domain/product.ts CategoryVO` | ✅ 一致 | — |
-| `UserVO` (vo包) | `types/domain/user.ts UserVO` | **前端多了 `email`, `role` 字段** | 后端无对应字段，风险 |
-| `CartItemRespDTO` (dto包) | `types/domain/cart.ts CartItem` | **`price` vs `productPrice` 命名不一致** | 运行时常一致（映射层中转） |
-| `OrderCreateRespDTO` (dto包) | `types/domain/order.ts OrderCreateResult` | **`orderId` vs `orderNo` 命名不一致** | `CheckoutPage.vue` 硬编码空串 |
-| `OrderListRespDTO` (dto包) | `types/domain/order.ts Order` | ✅ 基本一致 | — |
-| `StockCheckRespDTO` (dto包) | `api/order.ts StockCheckResult` | **前端多余 `stockStatus` 字段** | 后端无对应，需删除 |
-| `UserLoginVO` (vo包) | （前端 `useUserStore` 消费） | ✅ 基本一致 | — |
-| `UserRegisterRequestDTO` | 前端无独立类型 | — | 直接使用 Form 数据 |
-| `OrderCreateRequestDTO` | 前端无独立类型 | — | 仅传 `address` |
-| `CartAddRequestDTO` | `types/domain/cart.ts CartAddParams` | ✅ 一致 | — |
+| `ProductRes` (common/res) | `types/domain/product.ts ProductRes` | **`category_id` → `categoryId` 命名不一致** | 后端 `@JsonProperty` 输出snake_case，前端字段名需对齐 |
+| `CategoryRes` (common/res) | `types/domain/product.ts CategoryRes` | ✅ 一致 | — |
+| `AdminUserRes` (admin/res) | `types/domain/user.ts AdminUserRes` | **前端多了 `email`, `role` 字段** | 后端无对应字段，风险 |
+| `UserCartItemRes` (user/res) | `types/domain/cart.ts CartItem` | **`price` vs `productPrice` 命名不一致** | 运行时常一致（映射层中转） |
+| `UserOrderCreateRes` (user/res) | `types/domain/order.ts OrderCreateResult` | **`orderId` vs `orderNo` 命名不一致** | `CheckoutPage.vue` 硬编码空串 |
+| `UserOrderRes` (user/res) | `types/domain/order.ts Order` | ✅ 基本一致 | — |
+| `UserOrderStockCheckRes` (user/res) | `api/order.ts StockCheckResult` | **前端多余 `stockStatus` 字段** | 后端无对应，需删除 |
+| `LoginRes` (common/res) | （前端 `useUserStore` 消费） | ✅ 基本一致 | — |
+| `RegisterReq` (common/req) | 前端无独立类型 | — | 直接使用 Form 数据 |
+| `UserOrderCreateReq` (user/req) | 前端无独立类型 | — | 仅传 `address` |
+| `UserCartAddReq` (user/req) | `types/domain/cart.ts CartAddParams` | ✅ 一致 | — |
 
 ---
 

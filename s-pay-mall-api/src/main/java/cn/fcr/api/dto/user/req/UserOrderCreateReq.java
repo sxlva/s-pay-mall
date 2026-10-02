@@ -1,4 +1,4 @@
-package cn.fcr.api.dto;
+package cn.fcr.api.dto.user.req;
 
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
@@ -11,7 +11,7 @@ import lombok.Data;
  * @author 傅崇睿
  */
 @Data
-public class OrderCreateRequestDTO {
+public class UserOrderCreateReq {
 
     /**
      * 收货地址

@@ -15,7 +15,7 @@
 
 ## 零、契约核心检查（最高优先级）
 
-> 任何涉及接口路径、请求/响应字段、DTO/VO/TS interface 命名的新增或修改，必须先核对 [API_CONTRACT.md](API_CONTRACT.md)，该文件是唯一命名真相源。
+> 任何涉及接口路径、请求/响应字段、契约类（Req/Res）/TS interface 命名的新增或修改，必须先核对 [API_CONTRACT.md](API_CONTRACT.md)，该文件是唯一命名真相源。
 
 **审查要点**:
 - ✅ 新增接口：API_CONTRACT.md 中是否已存在对应条目？不存在 → 判 P0，要求先补契约再合并
@@ -96,9 +96,9 @@ import org.apache.ibatis.*;                // MyBatis
 
 - ✅ 后端命名是否符合 §1.1 规范表
 - ✅ 前端命名是否符合 §1.4 规范表
-- ❌ 禁止 `UserLoginRequest`（应为 `UserLoginRequestDTO`）
+- ❌ 禁止 `UserLoginRequest`（应为 `LoginReq`，见 API_NAMING_DECISION）
 - ❌ 禁止 `Map<String, Object>` 返回
-- ❌ 禁止 VO 使用 `@JsonProperty` snake_case（见「零」）
+- ❌ 禁止新增出线类使用 `@JsonProperty` snake_case（admin/res 历史类除外，见「零」）
 
 ### 2.2 注释完整性检查
 
@@ -262,7 +262,7 @@ import org.apache.ibatis.*;                // MyBatis
 
 - ✅ `src/views/` 和 `src/api/` 按业务模块划分目录，对齐后端业务模块
 - ✅ TypeScript 接口与 API_CONTRACT.md 逐字段对应
-- ✅ API 层负责解构 `Response<T>`，组件层直接使用 VO
+- ✅ API 层负责解构 `Response<T>`，组件层直接使用 Res 对象
 - ❌ 禁止组件直接消费 `Response<T>` 包装
 - ❌ 禁止因字段不一致在 API 层做"映射层强行对齐"——应回到 API_CONTRACT.md 修正命名并同步改双端
 - ✅ 前后端统一 camelCase（历史遗留 snake_case 视为技术债，禁止扩展）
@@ -347,7 +347,7 @@ import org.apache.ibatis.*;                // MyBatis
 - [ ] 并发控制是否到位
 
 ### 幂等性与防御性编程
-- [ ] RequestDTO 是否包含幂等键
+- [ ] 请求类（Req）是否包含幂等键
 - [ ] Application 层是否进行了幂等性校验
 - [ ] 幂等锁是否在事务外
 - [ ] 外部调用是否添加了超时时间

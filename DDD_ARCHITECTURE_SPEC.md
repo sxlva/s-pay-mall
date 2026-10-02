@@ -224,7 +224,7 @@ public class DomainServiceConfig {
 @Service
 public class OrderApplicationService {
     // 外层方法：无事务注解，负责幂等锁
-    public OrderVO createOrder(OrderCreateRequestDTO request) {
+    public OrderVO createOrder(UserOrderCreateReq request) {
         // 1. 幂等锁（事务外）
         if (!idempotentGateway.checkAndLock(request.getRequestId())) {
             throw new BusinessException("请求重复");
@@ -239,7 +239,7 @@ public class OrderApplicationService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public OrderVO createOrderWithTransaction(OrderCreateRequestDTO request) {
+    public OrderVO createOrderWithTransaction(UserOrderCreateReq request) {
         OrderEntity order = orderService.createOrder(request);
         return OrderAssembler.toVO(order);
     }

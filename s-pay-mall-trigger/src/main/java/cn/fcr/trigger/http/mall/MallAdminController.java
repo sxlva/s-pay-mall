@@ -1,15 +1,15 @@
 package cn.fcr.trigger.http.mall;
 
-import cn.fcr.api.dto.CategorySaveRequestDTO;
-import cn.fcr.api.dto.ProductSaveRequestDTO;
-import cn.fcr.api.dto.UserSaveRequestDTO;
+import cn.fcr.api.dto.admin.req.AdminCategorySaveReq;
+import cn.fcr.api.dto.admin.req.AdminProductSaveReq;
+import cn.fcr.api.dto.admin.req.AdminUserSaveReq;
 import cn.fcr.api.response.Response;
-import cn.fcr.api.vo.CategoryRatioVO;
-import cn.fcr.api.vo.CategoryVO;
-import cn.fcr.api.vo.OrderVO;
-import cn.fcr.api.vo.ProductVO;
-import cn.fcr.api.vo.SalesTrendVO;
-import cn.fcr.api.vo.UserVO;
+import cn.fcr.api.dto.admin.res.AdminCategoryRatioRes;
+import cn.fcr.api.dto.common.res.CategoryRes;
+import cn.fcr.api.dto.admin.res.AdminOrderRes;
+import cn.fcr.api.dto.common.res.ProductRes;
+import cn.fcr.api.dto.admin.res.AdminSalesTrendRes;
+import cn.fcr.api.dto.admin.res.AdminUserRes;
 import cn.fcr.domain.mall.model.command.ProductSaveCommand;
 import cn.fcr.domain.auth.model.valobj.Role;
 import cn.fcr.domain.mall.model.entity.OrderState;
@@ -70,13 +70,13 @@ public class MallAdminController extends BaseController {
      * @return 用户列表
      */
     @GetMapping("/users")
-    public Response<List<UserVO>> listUsers(
+    public Response<List<AdminUserRes>> listUsers(
             @RequestParam(required = false) String username,
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) String roleCode) {
         List<UserEntity> users = mallUserService.listUsers(username, status, roleCode);
-        List<UserVO> result = users.stream().map(u -> {
-            UserVO vo = new UserVO();
+        List<AdminUserRes> result = users.stream().map(u -> {
+            AdminUserRes vo = new AdminUserRes();
             vo.setId(u.getId());
             vo.setUsername(u.getUsername());
             vo.setStatus(u.getStatus());
@@ -96,7 +96,7 @@ public class MallAdminController extends BaseController {
      * @return 影响行数
      */
     @PostMapping("/users")
-    public Response<Integer> saveUser(@RequestBody @Valid UserSaveRequestDTO request) {
+    public Response<Integer> saveUser(@RequestBody @Valid AdminUserSaveReq request) {
         log.info("保存用户: username={}", request.getUsername());
         UserEntity user = UserEntity.builder()
                 .id(request.getId())
@@ -145,10 +145,10 @@ public class MallAdminController extends BaseController {
      * @return 分类列表
      */
     @GetMapping("/categories")
-    public Response<List<CategoryVO>> listCategories() {
+    public Response<List<CategoryRes>> listCategories() {
         List<cn.fcr.domain.mall.model.valobj.CategoryVO> categories = mallProductService.listCategory();
-        List<CategoryVO> result = categories.stream().map(c -> {
-            CategoryVO vo = new CategoryVO();
+        List<CategoryRes> result = categories.stream().map(c -> {
+            CategoryRes vo = new CategoryRes();
             vo.setId(c.getId());
             vo.setName(c.getName());
             vo.setStatus(c.getStatus());
@@ -165,7 +165,7 @@ public class MallAdminController extends BaseController {
      * @return 影响行数
      */
     @PostMapping("/categories")
-    public Response<Integer> saveCategory(@RequestBody @Valid CategorySaveRequestDTO request) {
+    public Response<Integer> saveCategory(@RequestBody @Valid AdminCategorySaveReq request) {
         log.info("保存分类: name={}", request.getName());
         int result = mallProductService.saveCategory(toMap(request));
         return success(result);
@@ -197,15 +197,15 @@ public class MallAdminController extends BaseController {
      * @return 商品列表
      */
     @GetMapping("/products")
-    public Response<List<ProductVO>> listProducts(
+    public Response<List<ProductRes>> listProducts(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Integer status) {
         List<cn.fcr.domain.mall.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
-        List<ProductVO> result = products.stream().map(p -> {
-            ProductVO vo = new ProductVO();
+        List<ProductRes> result = products.stream().map(p -> {
+            ProductRes vo = new ProductRes();
             vo.setId(p.getId());
             vo.setCategoryId(p.getCategoryId());
             vo.setName(p.getName());
@@ -228,7 +228,7 @@ public class MallAdminController extends BaseController {
      * @return 影响行数
      */
     @PostMapping("/products")
-    public Response<Integer> saveProduct(@RequestBody @Valid ProductSaveRequestDTO request) {
+    public Response<Integer> saveProduct(@RequestBody @Valid AdminProductSaveReq request) {
         log.info("保存商品: name={}", request.getName());
         ProductSaveCommand command = ProductSaveCommand.builder()
                 .id(request.getId())
@@ -268,15 +268,15 @@ public class MallAdminController extends BaseController {
      * @return 订单列表
      */
     @GetMapping("/orders")
-    public Response<List<OrderVO>> listOrders(
+    public Response<List<AdminOrderRes>> listOrders(
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
         List<cn.fcr.domain.mall.model.valobj.OrderVO> orders = orderApplicationService.listOrders(userId, status, startTime, endTime);
 
-        List<OrderVO> result = orders.stream().map(o -> {
-            OrderVO vo = new OrderVO();
+        List<AdminOrderRes> result = orders.stream().map(o -> {
+            AdminOrderRes vo = new AdminOrderRes();
             vo.setId(o.getId());
             vo.setOrderNo(o.getOrderNo());
             vo.setUserId(o.getUserId());
@@ -339,10 +339,10 @@ public class MallAdminController extends BaseController {
      * @return 销售趋势数据列表
      */
     @GetMapping("/statistics/sales-trend")
-    public Response<List<SalesTrendVO>> getSalesTrend() {
+    public Response<List<AdminSalesTrendRes>> getSalesTrend() {
         List<Map<String, Object>> trend = mallStatisticsService.getSalesTrend();
-        List<SalesTrendVO> result = trend.stream().map(map -> {
-            SalesTrendVO vo = new SalesTrendVO();
+        List<AdminSalesTrendRes> result = trend.stream().map(map -> {
+            AdminSalesTrendRes vo = new AdminSalesTrendRes();
             vo.setDate((String) map.get("date"));
             vo.setSalesAmount(toBigDecimal(map.get("salesAmount")));
             vo.setOrderCount((Integer) map.get("orderCount"));
@@ -357,10 +357,10 @@ public class MallAdminController extends BaseController {
      * @return 分类占比数据列表
      */
     @GetMapping("/statistics/category-ratio")
-    public Response<List<CategoryRatioVO>> getCategoryRatio() {
+    public Response<List<AdminCategoryRatioRes>> getCategoryRatio() {
         List<Map<String, Object>> ratio = mallStatisticsService.getCategoryRatio();
-        List<CategoryRatioVO> result = ratio.stream().map(map -> {
-            CategoryRatioVO vo = new CategoryRatioVO();
+        List<AdminCategoryRatioRes> result = ratio.stream().map(map -> {
+            AdminCategoryRatioRes vo = new AdminCategoryRatioRes();
             vo.setCategoryName((String) map.get("name"));
             vo.setProductCount(((Number) map.get("product_count")).intValue());
             vo.setSalesAmount(toBigDecimal(map.get("sales_amount")));
