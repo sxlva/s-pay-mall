@@ -1,6 +1,6 @@
 package cn.fcr.trigger.http;
 
-import cn.fcr.domain.mall.model.valobj.OrderVO;
+import cn.fcr.domain.order.model.valobj.OrderVO;
 import cn.fcr.trigger.application.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;

@@ -2,7 +2,7 @@ package cn.fcr.domain.mall.user.service.impl;
 
 import cn.fcr.domain.auth.token.gateway.IAuthTokenGateway;
 import cn.fcr.domain.mall.user.adapter.repository.IUserRepository;
-import cn.fcr.domain.mall.gateway.IOrderQueryGateway;
+import cn.fcr.domain.order.gateway.IOrderQueryGateway;
 import cn.fcr.domain.mall.user.gateway.IUserBindingGateway;
 import cn.fcr.domain.mall.user.model.entity.UserEntity;
 import cn.fcr.domain.mall.user.model.valobj.UserLoginVO;

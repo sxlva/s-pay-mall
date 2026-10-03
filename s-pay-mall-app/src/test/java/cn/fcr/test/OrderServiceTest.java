@@ -1,8 +1,8 @@
 package cn.fcr.test;
 
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
-import cn.fcr.domain.order.model.entity.ShopCartEntity;
-import cn.fcr.domain.order.service.IOrderService;
+import cn.fcr.domain.order.legacy.model.entity.ShopCartEntity;
+import cn.fcr.domain.order.legacy.service.IOrderService;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;

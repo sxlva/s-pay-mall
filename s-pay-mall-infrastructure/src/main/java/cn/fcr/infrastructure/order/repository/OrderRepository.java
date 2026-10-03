@@ -1,12 +1,12 @@
 package cn.fcr.infrastructure.order.repository;
 
-import cn.fcr.domain.order.adapter.repository.IOrderRepository;
-import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
-import cn.fcr.domain.order.model.entity.OrderEntity;
+import cn.fcr.domain.order.legacy.adapter.repository.IOrderRepository;
+import cn.fcr.domain.order.legacy.model.aggregate.CreateOrderAggregate;
+import cn.fcr.domain.order.legacy.model.entity.OrderEntity;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
-import cn.fcr.domain.order.model.entity.ProductEntity;
-import cn.fcr.domain.order.model.entity.ShopCartEntity;
-import cn.fcr.domain.order.model.valobj.OrderStatusVO;
+import cn.fcr.domain.order.legacy.model.entity.ProductEntity;
+import cn.fcr.domain.order.legacy.model.entity.ShopCartEntity;
+import cn.fcr.domain.order.legacy.model.valobj.OrderStatusVO;
 import cn.fcr.infrastructure.dao.order.IOrderDao;
 import cn.fcr.infrastructure.dao.order.IOrderMainDao;
 import cn.fcr.infrastructure.dao.order.po.PayOrder;

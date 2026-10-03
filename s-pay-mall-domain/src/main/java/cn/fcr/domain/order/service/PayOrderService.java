@@ -1,6 +1,6 @@
 package cn.fcr.domain.order.service;
 
-import cn.fcr.domain.mall.gateway.IPayGateway;
+import cn.fcr.domain.order.gateway.IPayGateway;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.vo.PayStatus;
 

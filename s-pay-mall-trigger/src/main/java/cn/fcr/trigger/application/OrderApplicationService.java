@@ -1,15 +1,15 @@
 package cn.fcr.trigger.application;
 
-import cn.fcr.domain.mall.gateway.IOrderPaymentGateway;
+import cn.fcr.domain.order.gateway.IOrderPaymentGateway;
 import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
-import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
-import cn.fcr.domain.mall.model.valobj.OrderVO;
+import cn.fcr.domain.order.model.valobj.OrderCreateVO;
+import cn.fcr.domain.order.model.valobj.OrderVO;
 import cn.fcr.domain.mall.cart.service.IMallCartService;
-import cn.fcr.domain.mall.service.IMallOrderService;
-import cn.fcr.domain.mall.service.IOrderStateMachineService;
+import cn.fcr.domain.order.service.IMallOrderService;
+import cn.fcr.domain.order.service.IOrderStateMachineService;
 import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
-import cn.fcr.domain.order.model.entity.ShopCartEntity;
-import cn.fcr.domain.order.service.IOrderService;
+import cn.fcr.domain.order.legacy.model.entity.ShopCartEntity;
+import cn.fcr.domain.order.legacy.service.IOrderService;
 import cn.fcr.domain.order.service.PayOrderService;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import lombok.extern.slf4j.Slf4j;

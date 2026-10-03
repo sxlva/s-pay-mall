@@ -1,16 +1,23 @@
 package cn.fcr.domain.order.model.entity;
 
-import cn.fcr.domain.order.model.valobj.OrderStatusVO;
+import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.vo.PayStatus;
+import cn.fcr.types.util.DateUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter; // 替换 @Data，拒绝外界盲目 Setter
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 /**
- * 订单实体，封装订单生命周期状态机与金额校验等核心业务规则。
+ * 订单实体（充血模型），封装订单状态机和金额计算等核心业务逻辑。
  *
  * @author 傅崇睿
  */
@@ -20,204 +27,190 @@ import java.util.Date;
 @NoArgsConstructor
 public class OrderEntity {
 
-    /** 商品 ID */
-    private String productId;
-
-    /** 商品名称 */
-    private String productName;
-
-    /** 订单号（唯一标识） */
-    private String orderId;
-
-    /** 订单创建时间 */
-    private Date orderTime;
-
+    /** 订单主键ID */
+    private Long id;
+    /** 订单号 */
+    private String orderNo;
+    /** 用户ID */
+    private Long userId;
     /** 订单总金额 */
     private BigDecimal totalAmount;
+    /** 收货地址 */
+    private String address;
+    /** 订单状态 */
+    private OrderState state;
+    /** 创建时间 */
+    private LocalDateTime createTime;
+    /** 更新时间 */
+    private LocalDateTime updateTime;
 
-    /** 订单状态值对象 */
-    private OrderStatusVO orderStatusVO;
-
-    /** 支付链接（支付宝/微信支付） */
-    private String payUrl;
-
-    /* ==========================================
-     * 状态机守卫变迁逻辑 (防御性状态控制)
-     * ========================================== */
-
-    /**
-     * 检查是否可以支付
-     * @return true=可以支付，false=不可以支付
-     */
-    public boolean canPay() {
-        return this.orderStatusVO == OrderStatusVO.CREATE
-            || this.orderStatusVO == OrderStatusVO.PAY_WAIT;
-    }
-
-    /**
-     * 检查是否可以取消订单
-     * @return true=可以取消，false=不可以取消
-     */
-    public boolean canCancel() {
-        return this.orderStatusVO == OrderStatusVO.CREATE
-            || this.orderStatusVO == OrderStatusVO.PAY_WAIT;
-    }
-
-    /**
-     * 检查是否可以发货
-     * @return true=可以发货，false=不可以发货
-     */
-    public boolean canDeliver() {
-        return this.orderStatusVO == OrderStatusVO.PAY_SUCCESS;
-    }
-
-    /**
-     * 检查是否可以完成交易
-     * @return true=可以完成，false=不可以完成
-     */
-    public boolean canComplete() {
-        return this.orderStatusVO == OrderStatusVO.DEAL_DONE;
-    }
+    /** 订单商品项列表 */
+    @Builder.Default
+    private List<OrderItemEntity> items = new ArrayList<>();
 
     /* ==========================================
-     * 状态变迁方法
+     * 状态机守卫变迁逻辑 (防腐状态控制)
      * ========================================== */
+    public boolean canPay() { return this.state == OrderState.INIT; }
+    public boolean canCancel() { return this.state == OrderState.INIT; }
+    public boolean canDeliver() { return this.state == OrderState.PAID; }
+    public boolean canComplete() { return this.state == OrderState.SHIPPED; }
 
-    /**
-     * 标记订单为等待支付状态
-     * @throws IllegalStateException 当前状态不允许此操作
-     */
-    public void markWaitPay() {
-        if (this.orderStatusVO != OrderStatusVO.CREATE) {
-            throw new IllegalStateException(
-                "订单状态为 [" + getSafeStateDesc() + "]，无法标记为等待支付"
-            );
+    public void pay() {
+        if (!canPay()) {
+            throw new IllegalStateException("订单状态为 [" + getSafeStateDesc() + "]，拒绝支付操作");
         }
-        this.orderStatusVO = OrderStatusVO.PAY_WAIT;
+        this.state = OrderState.PAID;
+        this.updateTime = DateUtils.now();
     }
 
-    /**
-     * 标记订单支付成功
-     * 必须校验当前状态是否为 PAY_WAIT
-     * @throws IllegalStateException 当前状态不允许此操作
-     */
-    public void paySuccess() {
-        if (this.orderStatusVO != OrderStatusVO.PAY_WAIT) {
-            throw new IllegalStateException(
-                "订单状态为 [" + getSafeStateDesc() + "]，无法标记为支付成功"
-            );
-        }
-        this.orderStatusVO = OrderStatusVO.PAY_SUCCESS;
-    }
-
-    /**
-     * 取消订单
-     * 必须校验当前状态是否为 CREATE 或 PAY_WAIT
-     * @throws IllegalStateException 当前状态不允许此操作（已支付或已完成的订单不可取消）
-     */
     public void cancel() {
         if (!canCancel()) {
-            throw new IllegalStateException(
-                "订单状态为 [" + getSafeStateDesc() + "]，只有创建中或等待支付的订单可以取消"
-            );
+            throw new IllegalStateException("订单状态为 [" + getSafeStateDesc() + "]，拒绝取消操作");
         }
-        this.orderStatusVO = OrderStatusVO.CLOSE;
+        this.state = OrderState.CANCELED;
+        this.updateTime = DateUtils.now();
     }
 
-    /**
-     * 订单发货
-     * 必须校验当前状态是否为 PAY_SUCCESS
-     * @throws IllegalStateException 当前状态不允许此操作
-     */
     public void deliver() {
         if (!canDeliver()) {
-            throw new IllegalStateException(
-                "订单状态为 [" + getSafeStateDesc() + "]，只有已支付订单才能发货"
-            );
+            throw new IllegalStateException("订单状态为 [" + getSafeStateDesc() + "]，拒绝发货操作");
         }
-        this.orderStatusVO = OrderStatusVO.DEAL_DONE;
+        this.state = OrderState.SHIPPED;
+        this.updateTime = DateUtils.now();
     }
 
-    /**
-     * 交易完成
-     * 必须校验当前状态是否为 DEAL_DONE
-     * @throws IllegalStateException 当前状态不允许此操作
-     */
     public void complete() {
         if (!canComplete()) {
-            throw new IllegalStateException(
-                "订单状态为 [" + getSafeStateDesc() + "]，无法标记为交易完成"
-            );
+            throw new IllegalStateException("订单状态为 [" + getSafeStateDesc() + "]，拒绝完成操作");
         }
-        this.orderStatusVO = OrderStatusVO.DEAL_DONE;
+        this.state = OrderState.DONE;
+        this.updateTime = DateUtils.now();
     }
 
-    /**
-     * 超时关单
-     * 必须校验当前状态是否为 CREATE 或 PAY_WAIT
-     * @throws IllegalStateException 当前状态不允许此操作
-     */
-    public void closeByTimeout() {
-        if (this.orderStatusVO != OrderStatusVO.CREATE && this.orderStatusVO != OrderStatusVO.PAY_WAIT) {
-            throw new IllegalStateException(
-                "订单状态为 [" + getSafeStateDesc() + "]，只有创建中或等待支付的订单才能超时关单"
-            );
-        }
-        this.orderStatusVO = OrderStatusVO.CLOSE;
+    private String getSafeStateDesc() {
+        return this.state != null ? this.state.getDescription() : "null";
     }
 
     /* ==========================================
-     * 业务规则方法
+     * 高内聚行为与安全集合封装
      * ========================================== */
-
-    /**
-     * 安全获取状态描述（防止 NPE）
-     * @return 状态描述，若状态为 null 返回 "未知状态"
-     */
-    public String getSafeStateDesc() {
-        return this.orderStatusVO != null
-            ? this.orderStatusVO.getDesc()
-            : "未知状态";
-    }
-
-    /**
-     * 安全获取状态码（防止 NPE）
-     * @return 状态码，若状态为 null 返回 "UNKNOWN"
-     */
-    public String getSafeStateCode() {
-        return this.orderStatusVO != null
-            ? this.orderStatusVO.getCode()
-            : "UNKNOWN";
-    }
-
-    /**
-     * 验证金额是否有效
-     * 使用 BigDecimal 确保精度，使用 compareTo 而非 equals
-     * @param expectedAmount 期望的金额
-     * @return true=金额匹配，false=金额不匹配
-     */
-    public boolean validateAmount(BigDecimal expectedAmount) {
-        if (expectedAmount == null || this.totalAmount == null) {
-            return false;
+    public BigDecimal calculateTotalAmount() {
+        if (items == null || items.isEmpty()) {
+            return BigDecimal.ZERO;
         }
-        // 使用 compareTo 而非 equals，防止精度问题
-        return this.totalAmount.compareTo(expectedAmount) == 0;
+        return items.stream()
+                .map(OrderItemEntity::calculateItemAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public void addItem(OrderItemEntity item) {
+        if (item == null) {
+            throw new IllegalArgumentException("订单项不能为空");
+        }
+        if (this.items == null) {
+            this.items = new ArrayList<>();
+        }
+        this.items.add(item);
+        // 级联刷新总金额，确保对象内存状态的一致性
+        this.totalAmount = calculateTotalAmount();
+    }
+
+    public void clearItems() {
+        this.items = new ArrayList<>();
+        this.totalAmount = BigDecimal.ZERO;
+        this.updateTime = DateUtils.now();
     }
 
     /**
-     * 检查订单是否已支付
-     * @return true=已支付，false=未支付
+     * 核心安全防御：返回只读集合视图，外部调用 .add() / .clear() 将直接抛出 UnsupportedOperationException
      */
-    public boolean isPaid() {
-        return this.orderStatusVO == OrderStatusVO.PAY_SUCCESS
-            || this.orderStatusVO == OrderStatusVO.DEAL_DONE;
+    public List<OrderItemEntity> getItems() {
+        if (this.items == null) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableList(this.items);
     }
 
     /**
-     * 检查订单是否已关闭
-     * @return true=已关闭，false=未关闭
+     * 允许外部在有限的业务场景下修改收货地址
      */
-    public boolean isClosed() {
-        return this.orderStatusVO == OrderStatusVO.CLOSE;
+    public void changeAddress(String newAddress) {
+        if (newAddress == null || newAddress.trim().isEmpty()) {
+            throw new IllegalArgumentException("收货地址不能为空");
+        }
+        if (this.state != OrderState.INIT) {
+            throw new IllegalStateException("订单已进入后续流程，无法修改地址");
+        }
+        this.address = newAddress;
+        this.updateTime = DateUtils.now();
+    }
+
+    /* ==========================================
+     * 领域静态工厂方法
+     * ========================================== */
+    public static OrderEntity createFromCart(Long userId, String address, List<CartItemVO> cartItems) {
+        if (cartItems == null || cartItems.isEmpty()) {
+            throw new IllegalArgumentException("购物车数据流为空，无法组装订单");
+        }
+
+        String orderNo = "ORD" + UUID.randomUUID().toString()
+                .replace("-", "").substring(0, 29).toUpperCase();
+
+        OrderEntity order = OrderEntity.builder()
+                .orderNo(orderNo)
+                .userId(userId)
+                .address(address)
+                .state(OrderState.INIT)
+                .createTime(DateUtils.now())
+                .updateTime(DateUtils.now())
+                .items(new ArrayList<>())
+                .build();
+
+        for (CartItemVO cartItem : cartItems) {
+            OrderItemEntity orderItem = OrderItemEntity.builder()
+                    .productId(cartItem.getProductId())
+                    .productName(cartItem.getProductName())
+                    .price(cartItem.getProductPrice())
+                    .quantity(cartItem.getQuantity())
+                    .createTime(DateUtils.now())
+                    .build();
+            order.addItem(orderItem); // 内部已自动内聚金额计算逻辑
+        }
+
+        return order;
+    }
+
+    /* ==========================================
+     * 跨上下文对象映射 (Context Mapper)
+     * ========================================== */
+    public PayOrderEntity toPayOrder() {
+        if (this.items == null || this.items.isEmpty()) {
+            throw new IllegalStateException("当前商城订单无子项，拒绝生成支付上下文");
+        }
+
+        StringBuilder productNameBuilder = new StringBuilder();
+        StringBuilder productIds = new StringBuilder();
+
+        for (int i = 0; i < this.items.size(); i++) {
+            OrderItemEntity item = this.items.get(i);
+            if (i > 0) {
+                productNameBuilder.append("、");
+                productIds.append(",");
+            }
+            productNameBuilder.append(item.getProductName());
+            productIds.append(item.getProductId());
+        }
+
+        return PayOrderEntity.builder()
+                .orderNo(this.orderNo)
+                .userId(String.valueOf(this.userId))
+                .productId(productIds.toString())
+                .productName(productNameBuilder.toString())
+                .totalAmount(this.totalAmount)
+                .status(PayStatus.WAIT_PAY)
+                .createTime(DateUtils.now())
+                .updateTime(DateUtils.now())
+                .build();
     }
 }

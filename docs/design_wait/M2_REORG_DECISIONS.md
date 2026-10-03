@@ -89,6 +89,24 @@ infra 镜像同步：`auth/login/gateway(+dto)`、`auth/login/repository`、`aut
 
 **验证**：全仓 grep 旧路径零残留（命中项全部为有意保留的订单簇）；`mvn clean install` 通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致。
 
+## 五之四、M2-5 实施记录（2026-10-03）
+
+**改动**：order 收编，"auth 管身份、mall 管商城、order 管订单"边界落地（git mv 保历史）：
+- `order/model`：OrderEntity/OrderItemEntity/OrderState（自 mall）、OrderVO/OrderCreateVO/OrderSummaryVO（读模型，决策点 2）；PayOrderEntity/PayStatus 为 M2-2 已并入
+- `order/service`：IMallOrderService、IOrderStateMachineService 及两个实现；PayOrderService 原址保留（职责见 M2-2）
+- `order/gateway`：IMallOrderQueryGateway、IOrderPaymentGateway、IOrderQueryGateway、IPayGateway、IPayOrderGateway、IAlipayQueryGateway
+- `order/legacy`（过渡态，数据清零后整体删除）：IOrderService/AbstractOrderService/OrderService、旧 OrderEntity/ShopCartEntity/ProductEntity、OrderStatusVO、CreateOrderAggregate、IPaymentGateway/IProductGateway、IOrderRepository；infra 侧 PaymentGatewayImpl/ProductGatewayImpl/ProductRPC/ProductDTO 同步归 `infrastructure/order/legacy/`；OrderServiceTest（app）/CreateOrderAggregateTest（domain）随 legacy 保留
+- infra 收编：OrderRepositoryImpl/OrderQueryGatewayImpl/OrderPaymentGatewayImpl/PayOrderGatewayImpl/AlipayGatewayImpl 自 mall 迁入 `infrastructure/order/gateway/`
+
+**边界现状（规则：跨域只准通过 gateway 接口，不准互相 import 实体）**：
+- mall → order：仅 `MallUserServiceImpl` import `order.gateway.IOrderQueryGateway`（1 个 gateway 接口），零实体引用 ✓
+- order → mall：仅 `IStockGateway`（product 库存网关接口）与 `CartItemVO`（购物车值对象读模型，下单入参的共享内核），零实体引用 ✓
+- 顺带消除 **P0-5**：PayOrderService 与 IPayGateway 收编后同域，跨域反向依赖不复存在
+
+**事故与恢复（如实记录）**：迁移脚本执行中，domain 模块全部 5 个测试文件曾从磁盘与索引中消失（原因未查明，非脚本内任何删除指令所致，疑与 IDE/文件监听有关）。立即从 HEAD 恢复并逐文件 hash 校验与 HEAD 一致，无数据损失；此后改为分步执行+每步核对，未再复现。**教训：大批量迁移后必须 `git status` 全量核对删除项，特别留意测试目录。**
+
+**验证**：`mvn clean install` 通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致，TimeoutCloseOrderE2ETest 3/3 + AlipayNotifyE2ETest 5 全绿，收编后订单行为完好；pom skipTests 已恢复。
+
 ## 六、风险备案
 
 1. 40+ 文件移动引用漏改 → 分 6 步，编译器兜底，脚本只做机械 import 替换

@@ -1,0 +1,27 @@
+package cn.fcr.domain.order.legacy.gateway;
+
+import cn.fcr.domain.order.legacy.model.entity.ProductEntity;
+
+/**
+ * 商品网关接口，定义商品查询和库存恢复的抽象
+ *
+ * @author 傅崇睿
+ */
+public interface IProductGateway {
+
+    /**
+     * 根据产品ID查询产品信息
+     *
+     * @param productId 产品ID
+     * @return 产品实体
+     */
+    ProductEntity queryProductByProductId(String productId);
+
+    /**
+     * 恢复商品库存
+     *
+     * @param productId 产品ID
+     * @param quantity  数量
+     */
+    void restoreStock(String productId, Integer quantity);
+}

@@ -1,6 +1,6 @@
 package cn.fcr.infrastructure.config.order;
 
-import cn.fcr.domain.mall.gateway.IPayGateway;
+import cn.fcr.domain.order.gateway.IPayGateway;
 import cn.fcr.domain.order.service.PayOrderService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

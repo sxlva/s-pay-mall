@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http.converter;
 
 import cn.fcr.api.dto.user.res.UserOrderRes;
-import cn.fcr.domain.mall.model.valobj.OrderVO;
+import cn.fcr.domain.order.model.valobj.OrderVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 

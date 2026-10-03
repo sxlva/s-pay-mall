@@ -12,7 +12,7 @@ import cn.fcr.api.dto.admin.res.AdminSalesTrendRes;
 import cn.fcr.api.dto.admin.res.AdminUserRes;
 import cn.fcr.domain.mall.product.model.command.ProductSaveCommand;
 import cn.fcr.domain.auth.permission.model.valobj.Role;
-import cn.fcr.domain.mall.model.entity.OrderState;
+import cn.fcr.domain.order.model.entity.OrderState;
 import cn.fcr.domain.mall.user.model.entity.UserEntity;
 import cn.fcr.domain.mall.product.service.IMallProductService;
 import cn.fcr.domain.mall.statistics.service.IMallStatisticsService;
@@ -273,7 +273,7 @@ public class MallAdminController extends BaseController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
-        List<cn.fcr.domain.mall.model.valobj.OrderVO> orders = orderApplicationService.listOrders(userId, status, startTime, endTime);
+        List<cn.fcr.domain.order.model.valobj.OrderVO> orders = orderApplicationService.listOrders(userId, status, startTime, endTime);
 
         List<AdminOrderRes> result = orders.stream().map(o -> {
             AdminOrderRes vo = new AdminOrderRes();
