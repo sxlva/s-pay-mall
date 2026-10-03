@@ -31,7 +31,6 @@
 | 场景 | 方式 | Header |
 |------|------|--------|
 | 微信扫码/微信网关/支付回调（pay-api） | 无认证/公开 | — |
-| 支付下单（pay-api `/alipay/create_pay_order`） | JWT Bearer Token | `Authorization: Bearer {token}` |
 | 商城用户端（mall-api） | JWT Bearer Token | `Authorization: Bearer {token}` |
 | 管理后台（admin） | JWT Bearer Token | `Authorization: Bearer {token}` |
 
@@ -49,22 +48,14 @@
 
 | # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
-| 1 | POST | `/alipay/create_pay_order` | `CreatePayReq` | `Response<String>` | 创建支付宝支付单，返回支付URL（userId 取自 JWT，不透传） |
-| 2 | POST | `/alipay/alipay_notify_url` | HttpServletRequest (params) | `String` | 支付宝异步回调验签+更新订单状态 |
-| 3 | GET | `/login/weixin_qrcode_ticket` | — | `Response<String>` | 获取微信扫码登录二维码ticket |
-| 4 | GET | `/login/check_login` | `ticket` (query) | `Response<String>` | 轮询检查扫码登录状态，返回JWT token |
-| 5 | GET | `/weixin/portal/receive` | signature/timestamp/nonce/echostr (query) | `String` | 微信URL验证（服务器配置校验） |
-| 6 | POST | `/weixin/portal/receive` | XML body + query params | `String` (XML) | 接收微信事件（关注/扫码/消息） |
-| 7 | GET | `/orders` | out_trade_no/trade_no/total_amount (query) | ModelAndView (302) | 支付宝同步回调跳转 |
+| 1 | POST | `/alipay/alipay_notify_url` | HttpServletRequest (params) | `String` | 支付宝异步回调验签+更新订单状态 |
+| 2 | GET | `/login/weixin_qrcode_ticket` | — | `Response<String>` | 获取微信扫码登录二维码ticket |
+| 3 | GET | `/login/check_login` | `ticket` (query) | `Response<String>` | 轮询检查扫码登录状态，返回JWT token |
+| 4 | GET | `/weixin/portal/receive` | signature/timestamp/nonce/echostr (query) | `String` | 微信URL验证（服务器配置校验） |
+| 5 | POST | `/weixin/portal/receive` | XML body + query params | `String` (XML) | 接收微信事件（关注/扫码/消息） |
+| 6 | GET | `/orders` | out_trade_no/trade_no/total_amount (query) | ModelAndView (302) | 支付宝同步回调跳转 |
 
-### DTO 字段清单
-
-**CreatePayReq**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| productId | String | ✅ | 商品ID |
-
-> **2026-10-02 变更**：`userId` 字段已移除，不再由请求体透传，统一从 JWT 解析（修复支付单可归属任意用户的越权问题，见 SECURITY_ISSUES S-01）。
+> **2026-10-03 变更**：`POST /alipay/create_pay_order` 端点及 `CreatePayReq` DTO 已随旧链（legacy）下线删除。支付单由商城下单接口（`POST /orders`）统一创建。
 
 ---
 
@@ -74,11 +65,11 @@
 
 | # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
-| 8 | POST | `/auth/register` | `RegisterReq` | `Response<LoginRes>` | 用户注册（普通或微信） |
-| 9 | POST | `/auth/login` | `LoginReq` | `Response<LoginRes>` | 用户登录 |
-| 10 | GET | `/auth/profile` | JWT Header | `Response<UserProfileRes>` | 获取用户资料（2026-10-02 起 userId 取自 JWT，不再接受 query 参数，修复 IDOR 越权） |
-| 11 | GET | `/auth/bind/qrcode` | — | `Response<String>` | 获取微信绑定二维码ticket |
-| 12 | GET | `/auth/bind/status` | `ticket` (query) | `Response<UserBindStatusRes>` | 轮询微信绑定状态 |
+| 7 | POST | `/auth/register` | `RegisterReq` | `Response<LoginRes>` | 用户注册（普通或微信） |
+| 8 | POST | `/auth/login` | `LoginReq` | `Response<LoginRes>` | 用户登录 |
+| 9 | GET | `/auth/profile` | JWT Header | `Response<UserProfileRes>` | 获取用户资料（2026-10-02 起 userId 取自 JWT，不再接受 query 参数，修复 IDOR 越权） |
+| 10 | GET | `/auth/bind/qrcode` | — | `Response<String>` | 获取微信绑定二维码ticket |
+| 11 | GET | `/auth/bind/status` | `ticket` (query) | `Response<UserBindStatusRes>` | 轮询微信绑定状态 |
 
 **RegisterReq**:
 | 字段 | 类型 | 必填 | 说明 |
@@ -105,14 +96,14 @@
 
 | # | 方法 | 端点 | Request | ResponseDTO | 说明 |
 |---|------|------|---------|------------|------|
-| 13 | GET | `/profile` | JWT Header | `Response<UserProfileRes>` | 获取当前用户信息（JWT识别） |
+| 12 | GET | `/profile` | JWT Header | `Response<UserProfileRes>` | 获取当前用户信息（JWT识别） |
 
 ### 3.3 商品
 
 | # | 方法 | 端点 | Request | ResponseDTO | 说明 |
 |---|------|------|---------|------------|------|
-| 14 | GET | `/products` | `categoryId?, keyword?, minPrice?, maxPrice?, status?` (query) | `Response<List<ProductRes>>` | 查询商品列表（多条件筛选） |
-| 15 | GET | `/categories` | — | `Response<List<CategoryRes>>` | 查询商品分类列表 |
+| 13 | GET | `/products` | `categoryId?, keyword?, minPrice?, maxPrice?, status?` (query) | `Response<List<ProductRes>>` | 查询商品列表（多条件筛选） |
+| 14 | GET | `/categories` | — | `Response<List<CategoryRes>>` | 查询商品分类列表 |
 
 **ProductRes 字段**:
 | 字段 | 类型 | JSON输出 | 说明 |
@@ -134,10 +125,10 @@
 
 | # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
-| 16 | POST | `/cart` | `UserCartAddReq` | `Response<Integer>` | 添加商品到购物车 |
-| 17 | GET | `/cart` | JWT Header | `Response<List<UserCartItemRes>>` | 查询购物车列表 |
-| 18 | PUT | `/cart/quantity` | `UserCartAddReq` | `Response<Integer>` | 更新购物车商品数量 |
-| 19 | DELETE | `/cart/delete` | `itemId` (query) | `Response<Integer>` | 删除购物车条目 |
+| 15 | POST | `/cart` | `UserCartAddReq` | `Response<Integer>` | 添加商品到购物车 |
+| 16 | GET | `/cart` | JWT Header | `Response<List<UserCartItemRes>>` | 查询购物车列表 |
+| 17 | PUT | `/cart/quantity` | `UserCartAddReq` | `Response<Integer>` | 更新购物车商品数量 |
+| 18 | DELETE | `/cart/delete` | `itemId` (query) | `Response<Integer>` | 删除购物车条目 |
 
 **UserCartAddReq**:
 | 字段 | 类型 | 必填 | 说明 |
@@ -161,10 +152,10 @@
 
 | # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
-| 20 | POST | `/orders` | `UserOrderCreateReq` | `Response<UserOrderCreateRes>` | 从购物车创建订单 |
-| 21 | GET | `/orders` | `status?, startTime?, endTime?` (query) | `Response<List<UserOrderRes>>` | 查询用户订单列表 |
-| 22 | GET | `/orders/{orderNo}/continue-pay` | `orderNo` (path) | `Response<UserOrderCreateRes>` | 继续支付未完成订单 |
-| 23 | GET | `/orders/{orderNo}/check-stock` | `orderNo` (path) | `Response<UserOrderStockCheckRes>` | 检查订单库存 |
+| 19 | POST | `/orders` | `UserOrderCreateReq` | `Response<UserOrderCreateRes>` | 从购物车创建订单 |
+| 20 | GET | `/orders` | `status?, startTime?, endTime?` (query) | `Response<List<UserOrderRes>>` | 查询用户订单列表 |
+| 21 | GET | `/orders/{orderNo}/continue-pay` | `orderNo` (path) | `Response<UserOrderCreateRes>` | 继续支付未完成订单 |
+| 22 | GET | `/orders/{orderNo}/check-stock` | `orderNo` (path) | `Response<UserOrderStockCheckRes>` | 检查订单库存 |
 
 **UserOrderCreateReq**:
 | 字段 | 类型 | 必填 | 说明 |
@@ -204,22 +195,22 @@
 
 | # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
-| 24 | GET | `/admin/users` | `username?, status?, roleCode?` (query) | `Response<List<AdminUserRes>>` | 查询用户列表 |
-| 25 | POST | `/admin/users` | `AdminUserSaveReq` | `Response<Integer>` | 新增/更新用户 |
-| 26 | PUT | `/admin/users/{userId}/status` | `userId`(path),`status`(query) | `Response<Integer>` | 更新用户状态 |
-| 27 | DELETE | `/admin/users/{userId}` | `userId` (path) | `Response<Integer>` | 删除用户 |
-| 28 | GET | `/admin/categories` | — | `Response<List<CategoryRes>>` | 查询分类列表 |
-| 29 | POST | `/admin/categories` | `AdminCategorySaveReq` | `Response<Integer>` | 新增/更新分类 |
-| 30 | DELETE | `/admin/categories/{categoryId}` | `categoryId` (path) | `Response<Integer>` | 删除分类 |
-| 31 | GET | `/admin/products` | `categoryId?, keyword?, minPrice?, maxPrice?, status?` (query) | `Response<List<ProductRes>>` | 查询商品列表 |
-| 32 | POST | `/admin/products` | `AdminProductSaveReq` | `Response<Integer>` | 新增/更新商品 |
-| 33 | DELETE | `/admin/products/{productId}` | `productId` (path) | `Response<Integer>` | 删除商品 |
-| 34 | GET | `/admin/orders` | `userId?, status?, startTime?, endTime?` (query) | `Response<List<AdminOrderRes>>` | 查询订单列表 |
-| 35 | PUT | `/admin/orders/{orderId}/deliver` | `orderId` (path) | `Response<Integer>` | 一键发货 |
-| 36 | PUT | `/admin/orders/{orderId}/cancel` | `orderId` (path) | `Response<Integer>` | 取消订单 |
-| 37 | DELETE | `/admin/orders/{orderId}` | `orderId` (path) | `Response<Integer>` | 删除订单 |
-| 38 | GET | `/admin/statistics/sales-trend` | — | `Response<List<AdminSalesTrendRes>>` | 销售趋势 |
-| 39 | GET | `/admin/statistics/category-ratio` | — | `Response<List<AdminCategoryRatioRes>>` | 分类销售占比 |
+| 23 | GET | `/admin/users` | `username?, status?, roleCode?` (query) | `Response<List<AdminUserRes>>` | 查询用户列表 |
+| 24 | POST | `/admin/users` | `AdminUserSaveReq` | `Response<Integer>` | 新增/更新用户 |
+| 25 | PUT | `/admin/users/{userId}/status` | `userId`(path),`status`(query) | `Response<Integer>` | 更新用户状态 |
+| 26 | DELETE | `/admin/users/{userId}` | `userId` (path) | `Response<Integer>` | 删除用户 |
+| 27 | GET | `/admin/categories` | — | `Response<List<CategoryRes>>` | 查询分类列表 |
+| 28 | POST | `/admin/categories` | `AdminCategorySaveReq` | `Response<Integer>` | 新增/更新分类 |
+| 29 | DELETE | `/admin/categories/{categoryId}` | `categoryId` (path) | `Response<Integer>` | 删除分类 |
+| 30 | GET | `/admin/products` | `categoryId?, keyword?, minPrice?, maxPrice?, status?` (query) | `Response<List<ProductRes>>` | 查询商品列表 |
+| 31 | POST | `/admin/products` | `AdminProductSaveReq` | `Response<Integer>` | 新增/更新商品 |
+| 32 | DELETE | `/admin/products/{productId}` | `productId` (path) | `Response<Integer>` | 删除商品 |
+| 33 | GET | `/admin/orders` | `userId?, status?, startTime?, endTime?` (query) | `Response<List<AdminOrderRes>>` | 查询订单列表 |
+| 34 | PUT | `/admin/orders/{orderId}/deliver` | `orderId` (path) | `Response<Integer>` | 一键发货 |
+| 35 | PUT | `/admin/orders/{orderId}/cancel` | `orderId` (path) | `Response<Integer>` | 取消订单 |
+| 36 | DELETE | `/admin/orders/{orderId}` | `orderId` (path) | `Response<Integer>` | 删除订单 |
+| 37 | GET | `/admin/statistics/sales-trend` | — | `Response<List<AdminSalesTrendRes>>` | 销售趋势 |
+| 38 | GET | `/admin/statistics/category-ratio` | — | `Response<List<AdminCategoryRatioRes>>` | 分类销售占比 |
 
 ### 4.2 ~~AdminApiController（/pay-api/v1/admin）~~（已删除）
 

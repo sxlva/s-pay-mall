@@ -12,7 +12,7 @@
 
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
-| P0-1 | 新旧订单系统并存 | `order` 包(旧,单商品)与 `mall` 包(新,多商品)两套 `OrderEntity`/`OrderStatusVO`/`OrderState` 并存，`AbstractOrderService` 仍被生产环境调用 | ①将 `handleTimeoutCloseOrder` 迁至 `OrderStateMachineServiceImpl` ②统一支付成功处理到 `MallOrderServiceImpl.paySuccess()` ③删除旧 `OrderEntity`/`OrderStatusVO`/`ShopCartEntity` | ①已处理（2026-10-03，M2-1：超时关单按 order_main 分流，新订单走状态机 cancel、旧订单走旧逻辑；新增 TimeoutCloseOrderE2ETest 3 场景锁定行为）；②③待 M2-5/数据清零；2026-10-03 M2-5：旧链整体归入 `order/legacy`（含 OrderServiceTest/CreateOrderAggregateTest），数据清零后随 legacy 一并删除 |
+| P0-1 | 新旧订单系统并存 | `order` 包(旧,单商品)与 `mall` 包(新,多商品)两套 `OrderEntity`/`OrderStatusVO`/`OrderState` 并存，`AbstractOrderService` 仍被生产环境调用 | ①将 `handleTimeoutCloseOrder` 迁至 `OrderStateMachineServiceImpl` ②统一支付成功处理到 `MallOrderServiceImpl.paySuccess()` ③删除旧 `OrderEntity`/`OrderStatusVO`/`ShopCartEntity` | **已关闭（2026-10-03 legacy sunset 全部完成）**：①M2-1 超时关单分流；②回调统一走状态机；③`domain/order/legacy` + `infrastructure/order/legacy` + 绑定测试已整体删除，legacy 数据清零（pay_order 无主订单行=0），守卫规则 5 防回潮 |
 | P0-2 | Application 层模块归属 | `OrderApplicationService` 位于 trigger 模块的 `trigger.application` 包，应与 trigger 独立 | 新建 `s-pay-mall-application` 模块，迁移 `OrderApplicationService` + `OrderTransactionService` | 待处理 |
 | P0-3 | Infrastructure 层 @Transactional 违规 | `WeixinLoginGatewayImpl.createWechatUserAndBind()` 标注了 `@Transactional` | 创建 `AuthApplicationService`，将事务上移至 Application 层 | 待处理 |
 | P0-4 | 幂等性设计缺失 | 所有状态变更 API 入口均无 `requestId` 幂等保护；MQ Listener 未进行 SETNX 消费幂等检查 | 状态变更 DTO 添加 `requestId` 字段；Application 层实现事务外锁操作；MQ Listener 加 `tryAcquire()` | 待处理 |

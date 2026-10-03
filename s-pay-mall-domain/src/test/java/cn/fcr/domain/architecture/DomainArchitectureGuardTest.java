@@ -84,6 +84,16 @@ public class DomainArchitectureGuardTest {
         rule.check(domainClasses);
     }
 
+    @Test
+    @DisplayName("守卫规则 5: 旧链 legacy 包已整体下线，严禁重新引入")
+    public void legacy_package_should_not_come_back() {
+        ArchRule rule = noClasses()
+                .should().resideInAPackage("..domain.order.legacy..")
+                .because("旧链已于 2026-10-03 下线（legacy sunset 步骤C），订单唯一出口是 order/model + service + 状态机");
+
+        rule.check(domainClasses);
+    }
+
     private static com.tngtech.archunit.base.DescribedPredicate<com.tngtech.archunit.core.domain.JavaClass> resideInAPackage(String packageIdentifier) {
         return com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage(packageIdentifier);
     }

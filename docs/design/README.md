@@ -26,13 +26,13 @@ flowchart TB
     subgraph Domain["Domain Layer (s-pay-mall-domain) — 核心"]
         D1["cn.fcr.domain.auth<br/>login: WeixinLoginService/WeixinBindService<br/>token: IAuthTokenGateway · permission: Role"]
         D2["cn.fcr.domain.mall（无订单类）<br/>product: 商品/库存/MQ handler<br/>cart · user · statistics"]
-        D3["cn.fcr.domain.order（唯一订单出口）<br/>model: Order/OrderItem/OrderState/PayOrderEntity<br/>service: MallOrderService/状态机/PayOrderService<br/>gateway ×6 · legacy: 旧链残余(待删除)"]
+        D3["cn.fcr.domain.order（唯一订单出口）<br/>model: Order/OrderItem/OrderState/PayOrderEntity<br/>service: MallOrderService/状态机/PayOrderService<br/>gateway ×6"]
     end
 
     subgraph Infra["Infrastructure Layer (s-pay-mall-infrastructure)"]
         I1["auth/ login+token/<br/>WeixinGatewayImpl, AuthTokenGatewayImpl<br/>JwtTokenProvider"]
         I2["mall/ product|cart|user|statistics/<br/>StockGatewayImpl, CartRepository…"]
-        I3["order/ gateway+legacy/<br/>OrderRepositoryImpl, PayOrderGatewayImpl<br/>event/ RocketMqOrderEventPublisher"]
+        I3["order/ gateway/<br/>OrderRepositoryImpl, PayOrderGatewayImpl<br/>event/ RocketMqOrderEventPublisher"]
         I4["dao/ (auth|mall|order)/<br/>MyBatis Mapper + PO"]
         I5["config/shared/<br/>DomainServiceConfig"]
     end
@@ -95,4 +95,4 @@ flowchart LR
 
 ---
 
-> 最新更新：2026-10-03（M2 领域重构：auth 拆 login/token/permission，mall 拆 product/cart/user/statistics，订单簇收编 order 并设 legacy，边界规则由 DomainArchitectureGuardTest 守卫规则 3/4 自动化守护）
+> 最新更新：2026-10-03（M2 领域重构：auth 拆 login/token/permission，mall 拆 product/cart/user/statistics，订单簇收编 order；同日 legacy sunset 完成：旧链包整体删除、守卫规则 5 防回潮，边界规则由 DomainArchitectureGuardTest 守卫规则 3/4/5 自动化守护）

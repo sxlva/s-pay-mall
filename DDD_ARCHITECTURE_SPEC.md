@@ -128,10 +128,9 @@ domain
     ├── service     IMallOrderService、IOrderStateMachineService、PayOrderService
     ├── gateway     IMallOrderQuery/IOrderPayment/IOrderQuery/IPay/IPayOrder/IAlipayQuery 网关
     ├── adapter     IOrderEventPublisher（支付成功事件）
-    └── legacy      旧链残余（单商品旧订单系统，过渡态，数据清零后整体删除）
 ```
 
-### 2.5.2 边界规则（由 DomainArchitectureGuardTest 守卫规则 3/4 自动化守护）
+### 2.5.2 边界规则（由 DomainArchitectureGuardTest 守卫规则 3/4/5 自动化守护）
 
 | 规则 | 内容 |
 |------|------|
@@ -199,10 +198,10 @@ Infrastructure 层必须按 Domain 层模块结构对称拆分，确保单一职
 |---------------|---------------------|----------|
 | `domain/auth/` | `infrastructure/auth/` | 认证仓储实现、网关实现（`login/`、`token/` 镜像） |
 | `domain/mall/` | `infrastructure/mall/` | 商城仓储实现、网关实现（`product/`、`cart/`、`user/`、`statistics/` 镜像） |
-| `domain/order/` | `infrastructure/order/` | 订单仓储实现、网关实现（含 `legacy/` 旧链镜像，数据清零后删除） |
+| `domain/order/` | `infrastructure/order/` | 订单仓储实现、网关实现 |
 | （跨领域） | `infrastructure/shared/` | Redis/MQ 基础封装、DomainServiceConfig |
 
-> **镜像规则（2026-10-03 M2）**: Infrastructure 包结构镜像跟随 Domain 子包拆分；`JwtTokenProvider` 归 `infrastructure/auth/token/`，订单五实现归 `infrastructure/order/gateway/`，旧链四件（Payment/Product GatewayImpl、ProductRPC、ProductDTO）归 `infrastructure/order/legacy/`。
+> **镜像规则（2026-10-03 M2）**: Infrastructure 包结构镜像跟随 Domain 子包拆分；`JwtTokenProvider` 归 `infrastructure/auth/token/`，订单网关实现归 `infrastructure/order/gateway/`。旧链（`legacy/` 镜像）已于 2026-10-03 legacy sunset 整体删除。
 
 ### 4.2 审查要点
 

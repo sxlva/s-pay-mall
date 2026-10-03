@@ -127,7 +127,7 @@ infra 镜像同步：`auth/login/gateway(+dto)`、`auth/login/repository`、`aut
 
 **最终验证**：domain 8/8（守卫 4 + 实体 4）；app 12（11 过 + 1 存量 error OrderServiceTest + 1 @Ignore 并发幂等——P0-9 待修）；订单/登录/支付 E2E 全绿。边界规则由 ArchUnit 自动化守护，答辩可演示"架构守护测试"。
 
-**遗留（不在 M2 范围，已登记）**：P0-9 并发回调幂等（@Ignore 测试待修复后启用）；legacy 包数据清零后删除；死端点清理（create_pay_order、bind/*）待单独一批。
+**遗留（不在 M2 范围，已登记）**：P0-9 并发回调幂等（@Ignore 测试待修复后启用）；~~legacy 包数据清零后删除~~（已提前完成：legacy sunset A/B/C 三步于 2026-10-03 收尾，包已删、P0-1 已关闭）；~~死端点清理（create_pay_order）~~（已随 legacy sunset 删除；bind/* 仍待单独一批）。
 
 ## 六、风险备案
 

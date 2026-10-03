@@ -1,7 +1,8 @@
 # 旧链（legacy）下线设计（Legacy Sunset）
 
-> 状态：待开工（设计已评审后执行）
-> 关联：TECH_DEBT_ROADMAP P0-1（关闭目标）、M2_REORG_DECISIONS 决策点 4/5
+> 状态：**已完工（2026-10-03）**——步骤 A/B/C 全部执行完毕，3 个提交（ece2a9c / 3b59b38 / 收尾提交），P0-1 已关闭，legacy 数据清零，守卫规则 5 上线
+> 执行偏差记录：① `OrderServiceTest` 原计划步骤 C 删除，因步骤 B 摘 Bean 后报 NoSuchBeanDefinitionException，提前至 B 删除；② 设计文档中 `queryNoPayNotifyOrder` 原拟放 `IOrderQueryGateway`，实施时改放 `IPayOrderGateway`（该接口契约即 pay_order 读写，内聚更高），`IOrderQueryGateway` 保持"mall 跨域读模型"单一职责
+> 关联：TECH_DEBT_ROADMAP P0-1（已关闭）、M2_REORG_DECISIONS 决策点 4/5
 > 核心原则：**先补新链能力、再断旧链调用点、最后删包**；每步独立编译 + 全量测试 + 提交
 
 ---
