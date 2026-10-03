@@ -1,4 +1,4 @@
-package cn.fcr.domain.auth.gateway;
+package cn.fcr.domain.auth.login.gateway;
 
 /**
  * 微信网关接口，定义微信相关的业务能力抽象

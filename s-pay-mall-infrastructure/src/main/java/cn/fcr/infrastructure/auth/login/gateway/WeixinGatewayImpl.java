@@ -1,10 +1,10 @@
-package cn.fcr.infrastructure.auth.gateway;
+package cn.fcr.infrastructure.auth.login.gateway;
 
-import cn.fcr.domain.auth.gateway.IWeChatGateway;
-import cn.fcr.infrastructure.auth.gateway.dto.WeixinQrCodeRequestDTO;
-import cn.fcr.infrastructure.auth.gateway.dto.WeixinQrCodeResponseDTO;
-import cn.fcr.infrastructure.auth.gateway.dto.WeixinTemplateMessageDTO;
-import cn.fcr.infrastructure.auth.gateway.dto.WeixinTokenResponseDTO;
+import cn.fcr.domain.auth.login.gateway.IWeChatGateway;
+import cn.fcr.infrastructure.auth.login.gateway.dto.WeixinQrCodeRequestDTO;
+import cn.fcr.infrastructure.auth.login.gateway.dto.WeixinQrCodeResponseDTO;
+import cn.fcr.infrastructure.auth.login.gateway.dto.WeixinTemplateMessageDTO;
+import cn.fcr.infrastructure.auth.login.gateway.dto.WeixinTokenResponseDTO;
 import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.auth.gateway.dto;
+package cn.fcr.infrastructure.auth.login.gateway.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 微信创建二维码响应DTO
+ * 微信Access Token响应DTO
  *
  * @author 傅崇睿
  */
@@ -14,22 +14,17 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WeixinQrCodeResponseDTO {
+public class WeixinTokenResponseDTO {
 
     /**
-     * 二维码ticket，用于换取二维码图片
+     * 访问令牌
      */
-    private String ticket;
+    private String access_token;
 
     /**
-     * 二维码过期时间（秒）
+     * 过期时间（秒）
      */
-    private Integer expire_seconds;
-
-    /**
-     * 二维码图片解析后的URL
-     */
-    private String url;
+    private Integer expires_in;
 
     /**
      * 错误码

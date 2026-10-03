@@ -1,11 +1,11 @@
 package cn.fcr.infrastructure.config.shared;
 
-import cn.fcr.domain.auth.gateway.IAuthTokenGateway;
-import cn.fcr.domain.auth.gateway.IWeChatGateway;
-import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
-import cn.fcr.domain.auth.repository.IWeChatTokenRepository;
-import cn.fcr.domain.auth.service.WeixinBindService;
-import cn.fcr.domain.auth.service.WeixinLoginService;
+import cn.fcr.domain.auth.token.gateway.IAuthTokenGateway;
+import cn.fcr.domain.auth.login.gateway.IWeChatGateway;
+import cn.fcr.domain.auth.login.gateway.IWechatLoginGateway;
+import cn.fcr.domain.auth.login.repository.IWeChatTokenRepository;
+import cn.fcr.domain.auth.login.service.WeixinBindService;
+import cn.fcr.domain.auth.login.service.WeixinLoginService;
 import cn.fcr.domain.mall.adapter.gateway.IDistributedLockService;
 import cn.fcr.domain.mall.adapter.repository.ICartRepository;
 import cn.fcr.domain.mall.adapter.repository.IProductRepository;

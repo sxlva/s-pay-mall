@@ -11,7 +11,7 @@ import cn.fcr.api.dto.common.res.ProductRes;
 import cn.fcr.api.dto.admin.res.AdminSalesTrendRes;
 import cn.fcr.api.dto.admin.res.AdminUserRes;
 import cn.fcr.domain.mall.model.command.ProductSaveCommand;
-import cn.fcr.domain.auth.model.valobj.Role;
+import cn.fcr.domain.auth.permission.model.valobj.Role;
 import cn.fcr.domain.mall.model.entity.OrderState;
 import cn.fcr.domain.mall.model.entity.UserEntity;
 import cn.fcr.domain.mall.service.IMallProductService;

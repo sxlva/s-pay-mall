@@ -4,7 +4,7 @@ import cn.fcr.domain.order.adapter.event.PaySuccessMessageEvent;
 import cn.fcr.domain.mall.gateway.IUserBindingGateway;
 import cn.fcr.domain.mall.gateway.IMallOrderQueryGateway;
 import cn.fcr.domain.mall.model.entity.OrderEntity;
-import cn.fcr.domain.auth.gateway.IWeChatGateway;
+import cn.fcr.domain.auth.login.gateway.IWeChatGateway;
 import cn.fcr.trigger.application.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;

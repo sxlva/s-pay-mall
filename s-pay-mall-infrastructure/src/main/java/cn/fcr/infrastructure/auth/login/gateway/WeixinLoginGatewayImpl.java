@@ -1,6 +1,6 @@
-package cn.fcr.infrastructure.auth.gateway;
+package cn.fcr.infrastructure.auth.login.gateway;
 
-import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
+import cn.fcr.domain.auth.login.gateway.IWechatLoginGateway;
 import cn.fcr.infrastructure.dao.auth.IMallUserDao;
 import cn.fcr.infrastructure.dao.auth.IUserBindingDao;
 import cn.fcr.infrastructure.dao.auth.IUserRoleDao;

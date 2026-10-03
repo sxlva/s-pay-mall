@@ -1,9 +1,9 @@
-package cn.fcr.infrastructure.auth.gateway;
+package cn.fcr.infrastructure.auth.login.gateway;
 
-import cn.fcr.infrastructure.auth.gateway.dto.WeixinQrCodeRequestDTO;
-import cn.fcr.infrastructure.auth.gateway.dto.WeixinQrCodeResponseDTO;
-import cn.fcr.infrastructure.auth.gateway.dto.WeixinTemplateMessageDTO;
-import cn.fcr.infrastructure.auth.gateway.dto.WeixinTokenResponseDTO;
+import cn.fcr.infrastructure.auth.login.gateway.dto.WeixinQrCodeRequestDTO;
+import cn.fcr.infrastructure.auth.login.gateway.dto.WeixinQrCodeResponseDTO;
+import cn.fcr.infrastructure.auth.login.gateway.dto.WeixinTemplateMessageDTO;
+import cn.fcr.infrastructure.auth.login.gateway.dto.WeixinTokenResponseDTO;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;

@@ -1,6 +1,6 @@
-package cn.fcr.infrastructure.auth.repository;
+package cn.fcr.infrastructure.auth.login.repository;
 
-import cn.fcr.domain.auth.repository.IWeChatTokenRepository;
+import cn.fcr.domain.auth.login.repository.IWeChatTokenRepository;
 import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;

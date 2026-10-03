@@ -1,4 +1,4 @@
-package cn.fcr.domain.auth.repository;
+package cn.fcr.domain.auth.login.repository;
 
 /**
  * 微信凭证仓储接口，定义微信绑定状态管理的抽象，由基础设施层实现。

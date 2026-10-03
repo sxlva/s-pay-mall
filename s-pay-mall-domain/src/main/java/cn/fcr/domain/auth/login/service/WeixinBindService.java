@@ -1,6 +1,6 @@
-package cn.fcr.domain.auth.service;
+package cn.fcr.domain.auth.login.service;
 
-import cn.fcr.domain.auth.repository.IWeChatTokenRepository;
+import cn.fcr.domain.auth.login.repository.IWeChatTokenRepository;
 
 import lombok.extern.slf4j.Slf4j;
 

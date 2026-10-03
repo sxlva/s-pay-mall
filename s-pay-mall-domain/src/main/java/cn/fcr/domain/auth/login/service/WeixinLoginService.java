@@ -1,8 +1,8 @@
-package cn.fcr.domain.auth.service;
+package cn.fcr.domain.auth.login.service;
 
-import cn.fcr.domain.auth.gateway.IAuthTokenGateway;
-import cn.fcr.domain.auth.gateway.IWeChatGateway;
-import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
+import cn.fcr.domain.auth.token.gateway.IAuthTokenGateway;
+import cn.fcr.domain.auth.login.gateway.IWeChatGateway;
+import cn.fcr.domain.auth.login.gateway.IWechatLoginGateway;
 import cn.fcr.types.common.Constants;
 
 import lombok.extern.slf4j.Slf4j;

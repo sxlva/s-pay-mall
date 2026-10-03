@@ -1,8 +1,8 @@
 package cn.fcr.test;
 
-import cn.fcr.domain.auth.service.ILoginService;
-import cn.fcr.infrastructure.auth.gateway.WeixinGatewayImpl;
-import cn.fcr.infrastructure.config.auth.JwtTokenProvider;
+import cn.fcr.domain.auth.login.service.ILoginService;
+import cn.fcr.infrastructure.auth.login.gateway.WeixinGatewayImpl;
+import cn.fcr.infrastructure.auth.token.JwtTokenProvider;
 import cn.fcr.infrastructure.dao.auth.IMallUserDao;
 import cn.fcr.infrastructure.dao.auth.IUserBindingDao;
 import cn.fcr.infrastructure.dao.auth.IUserRoleDao;

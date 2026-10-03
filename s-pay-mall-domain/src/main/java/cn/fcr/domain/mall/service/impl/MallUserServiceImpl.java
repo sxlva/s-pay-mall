@@ -1,6 +1,6 @@
 package cn.fcr.domain.mall.service.impl;
 
-import cn.fcr.domain.auth.gateway.IAuthTokenGateway;
+import cn.fcr.domain.auth.token.gateway.IAuthTokenGateway;
 import cn.fcr.domain.mall.adapter.repository.IUserRepository;
 import cn.fcr.domain.mall.gateway.IOrderQueryGateway;
 import cn.fcr.domain.mall.gateway.IUserBindingGateway;

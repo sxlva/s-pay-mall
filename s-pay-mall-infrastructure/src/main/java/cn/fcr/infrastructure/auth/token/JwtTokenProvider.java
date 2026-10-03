@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.config.auth;
+package cn.fcr.infrastructure.auth.token;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

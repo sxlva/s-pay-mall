@@ -65,6 +65,17 @@
 
 **验证**：全仓 grep 无 `domain.shared` 残留（infra `config/shared` 为另一包，保留）；`mvn clean install` 全量构建通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致。
 
+## 五之二、M2-3 实施记录（2026-10-03）
+
+**改动**：auth 拆三包（纯移动，git mv 保历史）：
+- `auth/login`：ILoginService、WeixinLoginService、WeixinBindService、IWeChatGateway、IWechatLoginGateway、IWeChatTokenRepository
+- `auth/token`：IAuthTokenGateway（infra 侧 AuthTokenGatewayImpl、JwtTokenProvider 自 config/auth 一并镜像）
+- `auth/permission`：Role（唯一权限模型）
+
+infra 镜像同步：`auth/login/gateway(+dto)`、`auth/login/repository`、`auth/token`。app 模块 cn.fcr.config 下 Retrofit2Config、JwtAuthenticationFilter 及微信登录 E2E 测试的 import 同步修正。
+
+**验证**：全仓 grep 零残留；`mvn clean install` 通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致，WeixinScanLoginMockE2ETest 2/2 证明登录链路完好。
+
 ## 六、风险备案
 
 1. 40+ 文件移动引用漏改 → 分 6 步，编译器兜底，脚本只做机械 import 替换

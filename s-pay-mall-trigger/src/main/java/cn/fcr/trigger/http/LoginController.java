@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http;
 
 import cn.fcr.api.response.Response;
-import cn.fcr.domain.auth.service.ILoginService;
+import cn.fcr.domain.auth.login.service.ILoginService;
 import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

@@ -1,7 +1,7 @@
-package cn.fcr.infrastructure.auth.gateway;
+package cn.fcr.infrastructure.auth.token;
 
-import cn.fcr.domain.auth.gateway.IAuthTokenGateway;
-import cn.fcr.infrastructure.config.auth.JwtTokenProvider;
+import cn.fcr.domain.auth.token.gateway.IAuthTokenGateway;
+import cn.fcr.infrastructure.auth.token.JwtTokenProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 

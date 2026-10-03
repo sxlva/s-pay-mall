@@ -1,4 +1,4 @@
-package cn.fcr.domain.auth.service;
+package cn.fcr.domain.auth.login.service;
 
 /**
  * 登录服务接口

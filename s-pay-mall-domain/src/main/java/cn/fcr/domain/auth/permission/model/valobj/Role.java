@@ -1,4 +1,4 @@
-package cn.fcr.domain.auth.model.valobj;
+package cn.fcr.domain.auth.permission.model.valobj;
 
 /**
  * 用户角色枚举，封装角色编码与中文描述的映射，避免展示层硬编码。

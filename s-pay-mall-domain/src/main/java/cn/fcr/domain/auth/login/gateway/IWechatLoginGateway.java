@@ -1,4 +1,4 @@
-package cn.fcr.domain.auth.gateway;
+package cn.fcr.domain.auth.login.gateway;
 
 /**
  * 微信登录网关接口，定义微信用户查询、创建绑定和登录Token保存的抽象。

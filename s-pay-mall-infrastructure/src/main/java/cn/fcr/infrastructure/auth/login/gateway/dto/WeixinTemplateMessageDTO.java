@@ -1,4 +1,4 @@
-package cn.fcr.infrastructure.auth.gateway.dto;
+package cn.fcr.infrastructure.auth.login.gateway.dto;
 
 import lombok.Data;
 import lombok.Getter;

@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http;
 
-import cn.fcr.domain.auth.service.ILoginService;
-import cn.fcr.domain.auth.service.WeixinBindService;
+import cn.fcr.domain.auth.login.service.ILoginService;
+import cn.fcr.domain.auth.login.service.WeixinBindService;
 import cn.fcr.types.sdk.weixin.MessageTextEntity;
 import cn.fcr.types.sdk.weixin.SignatureUtil;
 import cn.fcr.types.sdk.weixin.XmlUtil;
