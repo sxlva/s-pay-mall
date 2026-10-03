@@ -33,7 +33,7 @@
 | DAO 接口 | `I{Table}Dao` | `IProductDao`, `IOrderMainDao` | — | `s-pay-mall-infrastructure/dao/` |
 | PO 持久对象 | `{Table}` (无后缀) | `Product`, `OrderMain`, `CartItem` | `ProductPO` | `s-pay-mall-infrastructure/dao/{module}/po/` |
 | Controller | `{Purpose}Controller` | `MallOrderController` | — | `s-pay-mall-trigger/http/` |
-| Application Service | `{Purpose}ApplicationService` | `OrderApplicationService` | — | `s-pay-mall-trigger/application/`（待独立模块） |
+| Application Service | `{Purpose}ApplicationService` | `OrderApplicationService` | — | `s-pay-mall-application`（`cn.fcr.application`） |
 | MQ Listener | `{Purpose}RocketListener` | `OrderPaidRocketListener` | — | `s-pay-mall-trigger/listener/` |
 | Job 定时任务 | `{Purpose}Job` | `NoPayNotifyOrderJob` | — | `s-pay-mall-trigger/job/` |
 | 状态机服务 | `{Domain}StateMachineServiceImpl` | `OrderStateMachineServiceImpl` | — | `s-pay-mall-domain` |

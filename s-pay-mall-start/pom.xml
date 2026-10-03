@@ -7,10 +7,10 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>s-pay-mall-app</artifactId>
+    <artifactId>s-pay-mall-start</artifactId>
 
     <packaging>jar</packaging>
-    <!-- 模块说明：应用启动模块，聚合Web、安全、数据库与MQ依赖 -->
+    <!-- 模块说明：装配/启动模块，聚合Web、安全、数据库与MQ依赖，不含业务代码 -->
 
     <dependencies>
         <dependency>
@@ -99,7 +99,11 @@
             <version>2.9.0</version>
         </dependency>
 
-        <!-- 工程模块；启动依赖 trigger、domain、infrastructure-->
+        <!-- 工程模块；装配依赖 application、trigger、domain、infrastructure-->
+        <dependency>
+            <groupId>cn.fcr</groupId>
+            <artifactId>s-pay-mall-application</artifactId>
+        </dependency>
         <dependency>
             <groupId>cn.fcr</groupId>
             <artifactId>s-pay-mall-trigger</artifactId>
@@ -125,7 +129,7 @@
     </dependencies>
 
     <build>
-        <finalName>s-pay-mall-app</finalName>
+        <finalName>s-pay-mall-start</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

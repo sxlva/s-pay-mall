@@ -45,7 +45,7 @@
 - ❌ 禁止: Infrastructure 依赖 Application 或 Trigger
 - ❌ 禁止: Application 依赖 Infrastructure
 
-> **现状说明**（见 [DDD_SPEC §1.1](DDD_ARCHITECTURE_SPEC.md)）: `s-pay-mall-application` 模块不存在于磁盘，`OrderApplicationService` 暂存于 `trigger/application` 包。审查该包按 Application 层规则，不得放宽标准。
+> **现状说明**（见 [DDD_SPEC §1.1](DDD_ARCHITECTURE_SPEC.md)）: `s-pay-mall-application` 模块已于 2026-10-03 创建（TECH_DEBT P0-2），`OrderApplicationService`/`OrderTransactionService` 位于 `cn.fcr.application` 包，按 Application 层规则审查，不得放宽标准。
 
 **Domain 层严禁出现的导入**（审查工具清单）:
 

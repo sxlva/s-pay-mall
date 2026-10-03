@@ -8,7 +8,7 @@ import cn.fcr.infrastructure.dao.order.IOrderMainDao;
 import cn.fcr.infrastructure.dao.order.po.OrderItem;
 import cn.fcr.infrastructure.dao.order.po.OrderMain;
 import cn.fcr.infrastructure.dao.order.po.PayOrder;
-import cn.fcr.trigger.application.OrderApplicationService;
+import cn.fcr.application.OrderApplicationService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;

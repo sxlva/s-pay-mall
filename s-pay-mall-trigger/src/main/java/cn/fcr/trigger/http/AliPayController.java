@@ -1,6 +1,6 @@
 package cn.fcr.trigger.http;
 
-import cn.fcr.trigger.application.OrderApplicationService;
+import cn.fcr.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

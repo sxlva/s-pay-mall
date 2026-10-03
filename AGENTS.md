@@ -21,7 +21,8 @@ s-pay-mall 是一个基于 **领域驱动设计(DDD)** 架构的电商商城系�
 ```
 s-pay-mall/
 ├── s-pay-mall-api/              # API层 - DTO、VO、Response 契约
-├── s-pay-mall-app/              # 应用启动 - Spring Boot 入口 + 配置
+├── s-pay-mall-start/            # 装配/启动层 - Spring Boot 入口 + 配置（不含业务代码）
+├── s-pay-mall-application/      # 应用层 - Application Service 编排与事务边界
 ├── s-pay-mall-domain/           # 领域层 - 核心业务逻辑（auth/mall/order）
 ├── s-pay-mall-infrastructure/   # 基础设施层 - 技术实现（auth/mall/order/shared）
 ├── s-pay-mall-trigger/          # 触发层 - Controller/Listener/Job
@@ -55,7 +56,7 @@ ALIPAY_APP_ID=xxx       ALIPAY_PRIVATE_KEY=xxx
 
 ```bash
 # 后端
-cd s-pay-mall-app && mvn spring-boot:run
+cd s-pay-mall-start && mvn spring-boot:run
 
 # 前端
 cd s-pay-mall-front && npm install && npm run dev

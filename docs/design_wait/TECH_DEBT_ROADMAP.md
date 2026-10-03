@@ -13,12 +13,12 @@
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
 | P0-1 | 新旧订单系统并存 | `order` 包(旧,单商品)与 `mall` 包(新,多商品)两套 `OrderEntity`/`OrderStatusVO`/`OrderState` 并存，`AbstractOrderService` 仍被生产环境调用 | ①将 `handleTimeoutCloseOrder` 迁至 `OrderStateMachineServiceImpl` ②统一支付成功处理到 `MallOrderServiceImpl.paySuccess()` ③删除旧 `OrderEntity`/`OrderStatusVO`/`ShopCartEntity` | **已关闭（2026-10-03 legacy sunset 全部完成）**：①M2-1 超时关单分流；②回调统一走状态机；③`domain/order/legacy` + `infrastructure/order/legacy` + 绑定测试已整体删除，legacy 数据清零（pay_order 无主订单行=0），守卫规则 5 防回潮 |
-| P0-2 | Application 层模块归属 | `OrderApplicationService` 位于 trigger 模块的 `trigger.application` 包，应与 trigger 独立 | 新建 `s-pay-mall-application` 模块，迁移 `OrderApplicationService` + `OrderTransactionService` | 待处理 |
-| P0-3 | Infrastructure 层 @Transactional 违规 | `WeixinLoginGatewayImpl.createWechatUserAndBind()` 标注了 `@Transactional` | 创建 `AuthApplicationService`，将事务上移至 Application 层 | 待处理 |
+| P0-2 | Application 层模块归属 | ~~`OrderApplicationService` 位于 trigger 模块的 `trigger.application` 包~~（2026-10-03 已迁移，详见附录 A.12） | 新建 `s-pay-mall-application` 模块，迁移 `OrderApplicationService` + `OrderTransactionService` | 已处理（2026-10-03） |
+| P0-3 | Infrastructure 层 @Transactional 违规 | ~~`WeixinLoginGatewayImpl.createWechatUserAndBind()` 标注了 `@Transactional`~~（2026-10-04 已上移，详见附录 A.13） | 创建 `AuthApplicationService`，将事务上移至 Application 层 | 已处理（2026-10-04） |
 | P0-4 | 幂等性设计缺失 | 所有状态变更 API 入口均无 `requestId` 幂等保护；MQ Listener 未进行 SETNX 消费幂等检查 | 状态变更 DTO 添加 `requestId` 字段；Application 层实现事务外锁操作；MQ Listener 加 `tryAcquire()` | 待处理 |
 | P0-5 | Domain 层跨领域反向依赖 | `domain/order/service/PayOrderService.java` import 了 `domain.mall.gateway.IPayGateway` | 方案A: IPayGateway → `domain/shared/`；方案B: 领域事件解耦；方案C: PayOrderService → `domain/mall/` | 已处理（2026-10-03，M2-5：IPayGateway 随 mall 订单簇收编进 `domain/order/gateway`，PayOrderService 与 IPayGateway 同域，反向依赖自然消除，无需三选一） |
 | P0-6 | Controller 中业务路由逻辑 | `MallAuthController` 含 `if (openId != null)` 注册策略判断；`AliPayController` 含 `"TRADE_SUCCESS".equals()` 支付状态判断 | 业务判断下沉到 Domain Service | 待处理 |
-| P0-9 | 并发回调重复扣库存 | `OrderStateMachineServiceImpl.paySuccess()` 先无锁读状态（`canPay()`），且 `OrderRepositoryImpl.updateOrderStatusByOrderNo` 的 UPDATE 无 status 条件（139-145 行）：并发 notify 均读到 INIT 时全部穿过守卫，各自执行 `syncDBStockForPaySuccess` 重复扣 MySQL 库存。**2026-10-03 实测复现**（10 线程同一瞬间重放同一合法 notify，证据：`s-pay-mall-app/src/test/java/cn/fcr/test/AlipayNotifyE2ETest.java#testPayNotify_concurrentDuplicateNotify`）：10 个事务全部通过 `canPay()`，库存 100→80（扣 10×2 件）；order_main/pay_order 双写同值无业务损害，但**库存扣减不在幂等保护内**。串行重放幂等正常（同测试类场景 2），仅并发触发 | ①`updateOrderStatusByOrderNo` UPDATE 加源状态条件，以影响行数作守卫（0 行即重复回调，直接返回不再扣库存）②`syncDBStockForPaySuccess` 仅在守卫通过时执行 ③修复后移除该测试的 `@Ignore` 作为回归测试。建议纳入 JV-003 M2（与超时关单分流同批触碰状态机） | **已关闭（2026-10-03）**：①UPDATE 增加 `expectStatus` 源状态条件（INIT 存储形式 CREATED，经 `OrderState.toDbStatus()` 映射），签名变为 `(orderNo, expectStatus, targetStatus)`；②paySuccess 影响行数 0 即返回 false，跳过 pay_order 更新与库存扣减；③deliver/complete/cancel 三变迁同步加守卫；④@Ignore 已移除，10 线程并发回归测试通过，全量测试 Skipped=0 |
+| P0-9 | 并发回调重复扣库存 | `OrderStateMachineServiceImpl.paySuccess()` 先无锁读状态（`canPay()`），且 `OrderRepositoryImpl.updateOrderStatusByOrderNo` 的 UPDATE 无 status 条件（139-145 行）：并发 notify 均读到 INIT 时全部穿过守卫，各自执行 `syncDBStockForPaySuccess` 重复扣 MySQL 库存。**2026-10-03 实测复现**（10 线程同一瞬间重放同一合法 notify，证据：`s-pay-mall-start/src/test/java/cn/fcr/test/AlipayNotifyE2ETest.java#testPayNotify_concurrentDuplicateNotify`）：10 个事务全部通过 `canPay()`，库存 100→80（扣 10×2 件）；order_main/pay_order 双写同值无业务损害，但**库存扣减不在幂等保护内**。串行重放幂等正常（同测试类场景 2），仅并发触发 | ①`updateOrderStatusByOrderNo` UPDATE 加源状态条件，以影响行数作守卫（0 行即重复回调，直接返回不再扣库存）②`syncDBStockForPaySuccess` 仅在守卫通过时执行 ③修复后移除该测试的 `@Ignore` 作为回归测试。建议纳入 JV-003 M2（与超时关单分流同批触碰状态机） | **已关闭（2026-10-03）**：①UPDATE 增加 `expectStatus` 源状态条件（INIT 存储形式 CREATED，经 `OrderState.toDbStatus()` 映射），签名变为 `(orderNo, expectStatus, targetStatus)`；②paySuccess 影响行数 0 即返回 false，跳过 pay_order 更新与库存扣减；③deliver/complete/cancel 三变迁同步加守卫；④@Ignore 已移除，10 线程并发回归测试通过，全量测试 Skipped=0 |
 
 ### 🟡 P1 (重要级)
 
@@ -34,7 +34,7 @@
 
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
-| P2-1 | createPayOrder 缺事务保护 | `OrderApplicationService.createPayOrder()` 无 `@Transactional` | 加注事务或委托给 `OrderTransactionService` | 待处理 |
+| P2-1 | createPayOrder 缺事务保护 | ~~`OrderApplicationService.createPayOrder()` 无 `@Transactional`~~（方法已删除） | 加注事务或委托给 `OrderTransactionService` | 已关闭（2026-10-03）：`createPayOrder` 为无调用方死端点，随 legacy 下线步骤 B 一并删除，条目失效 |
 | P2-2 | 缺死信队列配置 | 3 个 RocketMQ Listener 均未配置 DLQ | 为 `order_paid`, `order-timeout-topic`, `product-stock-change-topic` 配置 DLQ | 待处理 |
 | P2-3 | WeixinGatewayImpl 缺超时配置 | `Retrofit2Config.java` 未显式配置 OkHttpClient 超时 | 设置 `connectTimeout=5s`, `readTimeout=10s` | 待处理 |
 | P2-4 | ~~`pay-success-topic` 无消费者~~ | ~~`OrderEventGatewayImpl.sendPaySuccessMessage()` 发送消息但无消费者订阅~~ | ~~接入消费者或删除未使用的发送逻辑~~ | 已处理（2026-10-01，JV-003：删除 `IOrderEventGateway`/`OrderEventGatewayImpl`，topic 随之废弃） |
@@ -225,6 +225,44 @@
 
 **经验**：领域自定义函数式接口（`PasswordMatcher`）作参数类型是干净的解耦点——`UserEntity.validatePassword` 以方法引用绑定，接口合并不影响实体及其测试。
 
+### A.12 P0-2：Application 层独立模块 + 启动模块更名 start
+
+**问题**：`s-pay-mall-application` 模块不存在，`OrderApplicationService`/`OrderTransactionService` 寄居于 trigger 模块的 `cn.fcr.trigger.application` 包，违反 DDD 规范 §1.1 模块物理归属规则；同时 `s-pay-mall-app` 命名与 Application 层概念易混淆。
+
+**修复**：
+- 新建 `s-pay-mall-application` 模块（pom 仅依赖 `s-pay-mall-domain` + `spring-context` + `spring-tx` + `slf4j-api` + `lombok`，未复制其他子模块的 `maven-archetype-plugin`）
+- 两个服务**一起**迁移至 `cn.fcr.application` 包（代码零改动，仅 package/import 变化），避免附录 C.2 所述 `trigger ↔ application` 循环依赖
+- `s-pay-mall-app` 更名 `s-pay-mall-start`（git mv 保留历史；artifactId/finalName/`spring.application.name` 同步），定位明确为装配/启动模块
+- 父 pom `<modules>` + `dependencyManagement`、`trigger`/`start` pom 依赖按附录 C.2 第 2/3 条更新
+- 7 个 trigger 调用方 + 1 个 E2E 测试的 import 由 `cn.fcr.trigger.application` 改为 `cn.fcr.application`
+- trigger pom 移除显式 `spring-tx` 依赖（trigger 内已无 `@Transactional` 使用，且 `spring-boot-starter-jdbc` 传递引入）
+- 附带修复（legacy 下线步骤 B 的 trigger 侧遗漏）：`7218299` 删除 legacy 包时 `trigger/application` 仍引用已删除的 `IOrderService`/`ShopCartEntity`，且 import 停留在 M2 重组前的旧包路径，**全量编译实际已处于失败状态**（IDEA 增量编译掩盖了该问题）。按 LEGACY_SUNSET_DESIGN 步骤 B/M2-1/A1 补齐：`createPayOrder` 死方法删除（B3，无调用方）、超时关单改走状态机 `cancel` 分流 + order_main 不存在记 warn 返回 false（M2-1+B1）、回调旧分支改 warn 日志直接返回（B2）、补偿查询改委托 `IPayOrderGateway.queryNoPayNotifyOrder()`（A1）、两服务构造函数摘除 legacy 注入（B4）
+
+**验证证据**：
+- 全仓 grep 无 `cn.fcr.trigger.application` / `s-pay-mall-app` 残留（除历史记录外）
+- `mvn compile` 全模块通过；`mvn package -DskipTests` 打包通过
+- 模块依赖方向与 DDD 规范 §1.2 一致，无循环依赖
+
+**经验**：先全仓 grep 调用方再动手——本次 7 个调用方全部在 trigger 内部、两服务 import 面只有 domain + spring-tx + lombok，是纯搬运；`git mv` 目录更名让启动模块的未提交改动（P0-9 进行中）无损跟随。
+
+### A.13 P0-3：Infrastructure 层 @Transactional 上移至 AuthApplicationService
+
+**问题**：`WeixinLoginGatewayImpl.createWechatUserAndBind`（infrastructure）标注 `@Transactional`，承担"首次扫码自动注册"（插 mall_user → 更新用户名 → 插 user_binding → 插 user_role）的事务边界，违反 DDD 规范 §2.4 / §6.1。
+
+**修复**：
+- `s-pay-mall-application` 新建 `AuthApplicationService`，`handleWechatScanLogin(ticket, openid)` 标注 `@Transactional` 并整体委托 `ILoginService`——WeixinLoginService **零改动**，"是否新用户"的业务规则仍留在 Domain 层
+- `WeixinLoginGatewayImpl` 摘除 `@Transactional` 及 import，方法体 4 步写库语义不变
+- `WeixinPortalController` SCAN 登录分支注入改为 `AuthApplicationService`（生产入口与事务边界对齐）；`LoginController` 取 ticket/轮询为无事务读，保持注入 `ILoginService` 不动
+- `WeixinScanLoginMockE2ETest` 入口同步切换，并新增场景 3：模板通知异常 → 断言 `user_binding` 不存在（4 个写操作整体回滚）
+- 未出现 `AuthApplicationService → WeixinLoginService → AuthApplicationService` 回环；Domain 无任何 `cn.fcr.application` 引用
+
+**验证证据**：
+- 全仓 `@Transactional` 仅存于 `s-pay-mall-application` 三个类（`OrderApplicationService`/`OrderTransactionService`/`AuthApplicationService`），Infrastructure / Domain 层零事务注解
+- `WeixinScanLoginMockE2ETest` 3/3 通过（含新增回滚场景）；domain 全量测试 9/9 通过（含 `DomainArchitectureGuardTest` 架构守护）；全量编译打包通过
+- 依赖方向保持 `Trigger → Application → Domain → Gateway` 单向
+
+**经验**：事务边界必须挂在调用链最外层的 Spring 代理入口；Domain 纯 POJO 无法持有事务，"判断规则留 Domain、用例编排+事务留 Application"是两边都不重写的最小方案。
+
 ---
 
 ## 七、附录 B：新旧订单系统依赖关系与迁移参考
@@ -264,24 +302,26 @@
 
 ## 八、附录 C：模块依赖与打包分析（P0-2 详细参考）
 
-### C.1 实际依赖方向（pom.xml 证实）
+### C.1 实际依赖方向（pom.xml 证实，2026-10-03 P0-2 修复后）
 
 ```
-app → trigger → domain → types
-              → api
-              → infrastructure → domain
+s-pay-mall-start        → trigger / application / domain / infrastructure
+s-pay-mall-trigger      → application / domain / infrastructure（+ api / types）
+s-pay-mall-application  → domain
+s-pay-mall-infrastructure → domain
+s-pay-mall-domain       → types / api
 ```
 
-- `s-pay-mall-application` 模块**不存在**于磁盘上
-- `OrderApplicationService` 位于 `trigger` 模块的 `cn.fcr.trigger.application` 包内
+- `s-pay-mall-application` 模块已创建，`OrderApplicationService`/`OrderTransactionService` 位于 `cn.fcr.application` 包内
+- `s-pay-mall-app` 已更名 `s-pay-mall-start`（装配/启动模块，不含业务代码）
 - 当前**无循环依赖**
 
-### C.2 提取独立模块注意事项
+### C.2 提取独立模块注意事项（已于 2026-10-03 按此执行，详见附录 A.12）
 
-1. 需 `OrderApplicationService` + `OrderTransactionService` **一起移出**，否则产生 `trigger ↔ application` 循环
-2. `s-pay-mall-trigger/pom.xml` → 添加依赖 `s-pay-mall-application`
-3. `s-pay-mall-app/pom.xml` → 添加依赖 `s-pay-mall-application`
-4. 4 个子模块（trigger/domain/infrastructure/types）均配置了 `maven-archetype-plugin`，可能干扰正常打包
+1. 需 `OrderApplicationService` + `OrderTransactionService` **一起移出**，否则产生 `trigger ↔ application` 循环 —— 已照做（两服务同迁 `cn.fcr.application`）
+2. `s-pay-mall-trigger/pom.xml` → 添加依赖 `s-pay-mall-application` —— 已添加
+3. `s-pay-mall-start/pom.xml`（原 `s-pay-mall-app`）→ 添加依赖 `s-pay-mall-application` —— 已添加
+4. 4 个子模块（trigger/domain/infrastructure/types）均配置了 `maven-archetype-plugin`，可能干扰正常打包 —— 新模块未复制该插件
 
 ---
 
@@ -309,8 +349,6 @@ app → trigger → domain → types
 
 | 项目 | 跳过原因 | 重新启动条件 |
 |------|---------|-------------|
-| P0-2 (独立 Application 模块) | 功能可用，仅架构不干净；当前无循环依赖 | 有时间做结构性重构时 |
-| P0-3 (WeixinLoginGatewayImpl @Transactional) | 跟随 P0-2 一并解决，减少迁移次数 | P0-2 完成后立即跟进 |
 | P0-4 (幂等性设计) | 需前端配合改造请求参数；当前状态机提供了部分防护 | 前端排期支持 |
 | P0-5 (Domain 跨模块依赖) | 需仔细分析影响范围，选方案三选一 | 有时间分析时 |
 

@@ -1,11 +1,11 @@
-package cn.fcr.trigger.application;
+package cn.fcr.application;
 
+import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
+import cn.fcr.domain.mall.cart.service.IMallCartService;
 import cn.fcr.domain.order.gateway.IOrderPaymentGateway;
 import cn.fcr.domain.order.gateway.IMallOrderQueryGateway;
 import cn.fcr.domain.order.model.entity.OrderEntity;
-import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.order.model.valobj.OrderCreateVO;
-import cn.fcr.domain.mall.cart.service.IMallCartService;
 import cn.fcr.domain.order.service.IMallOrderService;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import lombok.extern.slf4j.Slf4j;
@@ -86,20 +86,21 @@ class OrderTransactionService {
     /**
      * 在事务内完成订单支付成功的 DB 状态更新
      *
-     * <p>旧链已下线（legacy sunset）：订单一律走状态机，
-     * 一步完成 order_main + pay_order + MySQL 库存扣减，天然幂等。
-     * order_main 不存在的订单视为异常数据（不应再产生），记 warn 后返回。</p>
+     * <p>【JV-003 M1】按 order_main 是否存在分流：
+     * 新订单（mall 链）直接走状态机，一步完成 order_main + pay_order + MySQL 库存扣减；
+     * order_main 不存在的订单记 warn 日志并忽略（legacy 旧链已整体下线，步骤 B）。</p>
      *
      * @param orderId 订单ID
      */
     @Transactional(rollbackFor = Exception.class)
     public void changeOrderPaySuccessInTransaction(String orderId) {
         OrderEntity mallOrder = mallOrderQueryGateway.findByOrderNo(orderId);
-        if (mallOrder == null) {
-            log.warn("支付回调：order_main 中不存在该订单，可能为旧链残留数据，orderId={}", orderId);
-            return;
+        if (mallOrder != null) {
+            // 新链订单：状态机统一处理 order_main + pay_order + DB库存，天然幂等（重复回调返回 false）
+            mallOrderService.paySuccess(orderId);
+        } else {
+            // order_main 不存在：legacy 旧链已下线，记日志由人工巡检兜底，不回抛异常（支付宝回调仍返回 success）
+            log.warn("支付成功回调：order_main 不存在，忽略状态更新: orderNo={}", orderId);
         }
-        // 状态机统一处理 order_main + pay_order + DB库存，重复回调返回 false（幂等）
-        mallOrderService.paySuccess(orderId);
     }
 }

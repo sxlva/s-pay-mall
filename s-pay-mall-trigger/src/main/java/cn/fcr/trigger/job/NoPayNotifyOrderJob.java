@@ -1,7 +1,7 @@
 package cn.fcr.trigger.job;
 
 import cn.fcr.domain.order.gateway.IAlipayQueryGateway;
-import cn.fcr.trigger.application.OrderApplicationService;
+import cn.fcr.application.OrderApplicationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

@@ -1,14 +1,14 @@
-package cn.fcr.trigger.application;
+package cn.fcr.application;
 
+import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
+import cn.fcr.domain.mall.cart.service.IMallCartService;
+import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.gateway.IOrderPaymentGateway;
 import cn.fcr.domain.order.gateway.IPayOrderGateway;
-import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.order.model.valobj.OrderCreateVO;
 import cn.fcr.domain.order.model.valobj.OrderVO;
-import cn.fcr.domain.mall.cart.service.IMallCartService;
 import cn.fcr.domain.order.service.IMallOrderService;
 import cn.fcr.domain.order.service.IOrderStateMachineService;
-import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.service.PayOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,32 +32,32 @@ public class OrderApplicationService {
     private final IMallOrderService mallOrderService;
     /** 订单支付网关 */
     private final IOrderPaymentGateway orderPaymentGateway;
-    /** 支付订单网关（pay_order 读写） */
-    private final IPayOrderGateway payOrderGateway;
-    /** 订单状态机服务（order_main + pay_order 状态流转唯一出口） */
-    private final IOrderStateMachineService orderStateMachineService;
     /** 支付单领域服务 */
     private final PayOrderService payOrderService;
     /** 订单事件发布器 */
     private final IOrderEventPublisher orderEventPublisher;
+    /** 订单状态机服务（超时关单分流） */
+    private final IOrderStateMachineService orderStateMachineService;
+    /** 支付单网关（补偿查询等待支付的订单） */
+    private final IPayOrderGateway payOrderGateway;
     /** 订单事务服务（内部使用） */
     private final OrderTransactionService orderTransactionService;
 
     public OrderApplicationService(IMallCartService mallCartService,
                                    IMallOrderService mallOrderService,
                                    IOrderPaymentGateway orderPaymentGateway,
-                                   IPayOrderGateway payOrderGateway,
-                                   IOrderStateMachineService orderStateMachineService,
                                    PayOrderService payOrderService,
                                    IOrderEventPublisher orderEventPublisher,
+                                   IOrderStateMachineService orderStateMachineService,
+                                   IPayOrderGateway payOrderGateway,
                                    OrderTransactionService orderTransactionService) {
         this.mallCartService = mallCartService;
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
-        this.payOrderGateway = payOrderGateway;
-        this.orderStateMachineService = orderStateMachineService;
         this.payOrderService = payOrderService;
         this.orderEventPublisher = orderEventPublisher;
+        this.orderStateMachineService = orderStateMachineService;
+        this.payOrderGateway = payOrderGateway;
         this.orderTransactionService = orderTransactionService;
     }
 
@@ -249,6 +249,9 @@ public class OrderApplicationService {
     /**
      * 查询未收到回调通知的订单
      *
+     * <p>委托支付单网关查询 pay_order 中等待支付超过5分钟的订单号，
+     * 供 NoPayNotifyOrderJob 主动补偿。</p>
+     *
      * @return 订单ID列表
      */
     public List<String> queryNoPayNotifyOrder() {
@@ -258,21 +261,21 @@ public class OrderApplicationService {
     /**
      * 处理超时关单
      *
-     * <p>order_main 中存在的订单走状态机 cancel 统一流转（关 pay_order +
-     * 恢复 Redis 预扣库存）；order_main 不存在的订单视为异常数据
-     * （旧链已下线，不应再产生），记 warn 日志并返回 false。</p>
+     * <p>【M2-1 超时关单分流】order_main 存在的订单走状态机 cancel
+     * （关 pay_order + 恢复 Redis 预扣库存，状态机守卫保证幂等）；
+     * order_main 不存在的订单记 warn 日志并返回 false（legacy 已下线，
+     * 不影响 MQ 消费重试语义）。</p>
      *
      * @param orderNo 订单号
      * @return true表示关闭成功
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean handleTimeoutCloseOrder(String orderNo) {
-        boolean isMallOrder = mallOrderService.getOrderByNo(orderNo) != null;
-        if (!isMallOrder) {
-            log.warn("超时关单：order_main 中不存在该订单，可能为旧链残留数据，orderNo={}", orderNo);
+        OrderVO order = mallOrderService.getOrderByNo(orderNo);
+        if (order == null) {
+            log.warn("超时关单：order_main 不存在，忽略处理: orderNo={}", orderNo);
             return false;
         }
-        log.info("超时关单：走状态机取消，orderNo={}", orderNo);
         return orderStateMachineService.cancel(orderNo);
     }
 

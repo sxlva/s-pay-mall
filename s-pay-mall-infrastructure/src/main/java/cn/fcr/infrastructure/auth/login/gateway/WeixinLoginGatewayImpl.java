@@ -10,7 +10,6 @@ import cn.fcr.types.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
@@ -51,7 +50,6 @@ public class WeixinLoginGatewayImpl implements IWechatLoginGateway {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public Long createWechatUserAndBind(String openid) {
         log.info("创建微信用户并绑定: openid={}", openid);
 

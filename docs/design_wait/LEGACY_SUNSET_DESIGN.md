@@ -1,7 +1,7 @@
 # 旧链（legacy）下线设计（Legacy Sunset）
 
 > 状态：**已完工（2026-10-03）**——步骤 A/B/C 全部执行完毕，3 个提交（ece2a9c / 3b59b38 / 收尾提交），P0-1 已关闭，legacy 数据清零，守卫规则 5 上线
-> 执行偏差记录：① `OrderServiceTest` 原计划步骤 C 删除，因步骤 B 摘 Bean 后报 NoSuchBeanDefinitionException，提前至 B 删除；② 设计文档中 `queryNoPayNotifyOrder` 原拟放 `IOrderQueryGateway`，实施时改放 `IPayOrderGateway`（该接口契约即 pay_order 读写，内聚更高），`IOrderQueryGateway` 保持"mall 跨域读模型"单一职责
+> 执行偏差记录：① `OrderServiceTest` 原计划步骤 C 删除，因步骤 B 摘 Bean 后报 NoSuchBeanDefinitionException，提前至 B 删除；② 设计文档中 `queryNoPayNotifyOrder` 原拟放 `IOrderQueryGateway`，实施时改放 `IPayOrderGateway`（该接口契约即 pay_order 读写，内聚更高），`IOrderQueryGateway` 保持"mall 跨域读模型"单一职责；③ 步骤 B 的 trigger 侧摘除（B1-B3）未随 `7218299` 执行，`trigger/application` 遗留对已删 `IOrderService`/`ShopCartEntity` 的引用导致全量编译失败（IDEA 增量编译掩盖），2026-10-03 随 P0-2 迁移一并补齐（详见 TECH_DEBT 附录 A.12）
 > 关联：TECH_DEBT_ROADMAP P0-1（已关闭）、M2_REORG_DECISIONS 决策点 4/5
 > 核心原则：**先补新链能力、再断旧链调用点、最后删包**；每步独立编译 + 全量测试 + 提交
 
@@ -91,7 +91,7 @@ domain/order
    - `s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/order/legacy/`
    - `s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/order/repository/OrderRepository.java`
    - `s-pay-mall-domain/src/test/java/cn/fcr/domain/order/legacy/`（CreateOrderAggregateTest）
-   - `s-pay-mall-app/src/test/java/cn/fcr/test/OrderServiceTest.java`
+   - `s-pay-mall-start/src/test/java/cn/fcr/test/OrderServiceTest.java`
 2. **守卫测试（可选展示点）**：`DomainArchitectureGuardTest` 可加规则 5——`..domain.order..` 不得出现 `legacy` 子包，防止旧链借尸还魂。
 3. 文档同步：
    - `TECH_DEBT_ROADMAP.md`：P0-1 标记**已关闭**（附关闭日期与数据清零记录）

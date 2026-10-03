@@ -32,10 +32,7 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-        </dependency>
+        <!-- spring-tx 已随 Application 服务迁移至 s-pay-mall-application 模块，trigger 不再直接使用 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
@@ -58,6 +55,10 @@
         </dependency>
 
         <!-- 系统模块 -->
+        <dependency>
+            <groupId>cn.fcr</groupId>
+            <artifactId>s-pay-mall-application</artifactId>
+        </dependency>
         <dependency>
             <groupId>cn.fcr</groupId>
             <artifactId>s-pay-mall-api</artifactId>

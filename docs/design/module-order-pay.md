@@ -254,4 +254,4 @@ OrderRepository → IOrderDao`
 > - 事件发布：[`RocketMqOrderEventPublisher`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/order/event/RocketMqOrderEventPublisher.java)
 > - 支付成功消费：[`OrderPaidRocketListener`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/listener/OrderPaidRocketListener.java)
 > - 超时关单消费：[`OrderTimeoutCloseRocketListener`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/listener/OrderTimeoutCloseRocketListener.java)
-> - Application Service：[`OrderApplicationService`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/application/OrderApplicationService.java)
+> - Application Service：[`OrderApplicationService`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-application/src/main/java/cn/fcr/application/OrderApplicationService.java)

@@ -9,7 +9,8 @@
 
     <modules>
         <module>s-pay-mall-api</module>
-        <module>s-pay-mall-app</module>
+        <module>s-pay-mall-application</module>
+        <module>s-pay-mall-start</module>
         <module>s-pay-mall-domain</module>
         <module>s-pay-mall-trigger</module>
         <module>s-pay-mall-infrastructure</module>
@@ -165,6 +166,11 @@
             <dependency>
                 <groupId>cn.fcr</groupId>
                 <artifactId>s-pay-mall-api</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.fcr</groupId>
+                <artifactId>s-pay-mall-application</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <dependency>

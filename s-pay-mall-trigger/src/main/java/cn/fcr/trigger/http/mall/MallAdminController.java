@@ -17,7 +17,7 @@ import cn.fcr.domain.mall.user.model.entity.UserEntity;
 import cn.fcr.domain.mall.product.service.IMallProductService;
 import cn.fcr.domain.mall.statistics.service.IMallStatisticsService;
 import cn.fcr.domain.mall.user.service.IMallUserService;
-import cn.fcr.trigger.application.OrderApplicationService;
+import cn.fcr.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
 import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;

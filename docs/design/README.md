@@ -15,10 +15,13 @@ flowchart TB
         T1["http/<br/>AliPayController, LoginController,<br/>WeixinPortalController, MallOrderController…"]
         T2["listener/<br/>OrderPaidRocketListener<br/>OrderTimeoutCloseRocketListener<br/>ProductStockChangeRocketListener"]
         T3["job/<br/>StockPreheatRunner<br/>NoPayNotifyOrderJob<br/>TimeoutCloseOrderJob"]
-        T4["application/<br/>OrderApplicationService<br/>OrderTransactionService"]
     end
 
-    subgraph App["App Layer (s-pay-mall-app)"]
+    subgraph App["Application Layer (s-pay-mall-application)"]
+        T4["cn.fcr.application<br/>OrderApplicationService<br/>OrderTransactionService"]
+    end
+
+    subgraph Start["Start Layer (s-pay-mall-start)"]
         A1["Application.java 启动类"]
         A2["config/<br/>RedisConfig, SecurityConfig,<br/>Retrofit2Config, ThreadPoolConfig"]
     end

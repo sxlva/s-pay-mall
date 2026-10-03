@@ -1,5 +1,6 @@
 package cn.fcr.test;
 
+import cn.fcr.application.AuthApplicationService;
 import cn.fcr.domain.auth.login.service.ILoginService;
 import cn.fcr.infrastructure.auth.login.gateway.WeixinGatewayImpl;
 import cn.fcr.infrastructure.auth.token.JwtTokenProvider;
@@ -26,6 +27,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 /**
@@ -45,6 +49,10 @@ import static org.mockito.Mockito.when;
  * 这条刚完成接口合并的链路，以及 WeixinLoginGatewayImpl 的
  * MySQL 自动注册与 Redis 登录态。生产代码零改动。</p>
  *
+ * <p>【P0-3】扫码登录入口已切换为 {@code AuthApplicationService.handleWechatScanLogin}
+ * （事务边界在 Application 层，与 WeixinPortalController SCAN 分支一致）；
+ * 场景 3 验证"中途异常 → 自动注册 4 个写操作整体回滚"。</p>
+ *
  * <p>依赖真实环境：MySQL(127.0.0.1:23306, db=s-pay-mall)、
  * Redis(127.0.0.1:26379, db=1)、RocketMQ(127.0.0.1:9876)。
  * 测试数据通过唯一 openid / 独立 ticket 隔离，@After 物理清理；
@@ -57,9 +65,13 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 public class WeixinScanLoginMockE2ETest {
 
-    /** 登录领域服务（WeixinLoginService，DomainServiceConfig 手动装配） */
+    /** 登录领域服务（WeixinLoginService，DomainServiceConfig 手动装配），用于取 ticket/轮询 */
     @Resource
     private ILoginService loginService;
+
+    /** 认证应用层服务（P0-3：扫码登录事务边界，生产入口与 WeixinPortalController SCAN 分支一致） */
+    @Resource
+    private AuthApplicationService authApplicationService;
 
     /** JWT 提供方：用于验证签发出的 token 是合法 JWT（生产解析代码原样执行） */
     @Resource
@@ -109,7 +121,7 @@ public class WeixinScanLoginMockE2ETest {
 
         // ========== 模拟微信扫码回调后服务端处理（WeixinPortalController SCAN 分支同一入口） ==========
         String openid = "mock_openid_" + UUID.randomUUID().toString().substring(0, 8);
-        String token = loginService.handleWechatScanLogin(ticket, openid);
+        String token = authApplicationService.handleWechatScanLogin(ticket, openid);
         assertNotNull("handleWechatScanLogin 应返回 JWT token", token);
         usedTickets.add(ticket);
 
@@ -149,14 +161,14 @@ public class WeixinScanLoginMockE2ETest {
         // ========== 首次扫码：建立绑定 ==========
         String openid = "mock_openid_" + UUID.randomUUID().toString().substring(0, 8);
         String ticket1 = "MOCK_TICKET_" + UUID.randomUUID().toString().substring(0, 8);
-        String token1 = loginService.handleWechatScanLogin(ticket1, openid);
+        String token1 = authApplicationService.handleWechatScanLogin(ticket1, openid);
         usedTickets.add(ticket1);
         Long userId1 = jwtTokenProvider.parse(token1).get("uid", Long.class);
         createdUserIds.add(userId1);
 
         // ========== 同一 openid 再次扫码：ticket 不同，账号应复用 ==========
         String ticket2 = "MOCK_TICKET_" + UUID.randomUUID().toString().substring(0, 8);
-        String token2 = loginService.handleWechatScanLogin(ticket2, openid);
+        String token2 = authApplicationService.handleWechatScanLogin(ticket2, openid);
         usedTickets.add(ticket2);
         Long userId2 = jwtTokenProvider.parse(token2).get("uid", Long.class);
 
@@ -165,6 +177,39 @@ public class WeixinScanLoginMockE2ETest {
                 jwtTokenProvider.parse(token1).get("username"),
                 jwtTokenProvider.parse(token2).get("username"));
         assertTrue("两次扫码只应注册一个用户", createdUserIds.size() == 1);
+    }
+
+    /**
+     * 场景 3：自动注册后中途异常（微信模板通知失败）→ 4 个写操作整体回滚
+     *
+     * <p>【P0-3 验收】事务边界上移至 AuthApplicationService 后，
+     * createWechatUserAndBind 的 4 个写操作（插 mall_user → 更新用户名 →
+     * 插 user_binding → 插 user_role）在同一事务内；扫码登录流程末端的
+     * 模板消息通知抛异常时，自动注册必须整体回滚，不得留下"无绑定的用户"。</p>
+     *
+     * @throws Exception 断言失败
+     */
+    @Test
+    public void testWechatScanLogin_midwayException_rollbackAllWrites() throws Exception {
+        String ticket = "MOCK_TICKET_" + UUID.randomUUID().toString().substring(0, 8);
+        usedTickets.add(ticket); // 先登记，兜底清理可能残留的 Redis 登录态
+        String openid = "mock_openid_" + UUID.randomUUID().toString().substring(0, 8);
+
+        // 模拟微信模板消息通知失败（流程中最后一个外部动作）
+        doThrow(new RuntimeException("模拟微信通知失败")).when(weixinGatewayImpl).sendLoginNotification(anyString());
+
+        try {
+            authApplicationService.handleWechatScanLogin(ticket, openid);
+            fail("模板通知异常应向上抛出");
+        } catch (RuntimeException expected) {
+            log.info("【测试】捕获预期异常: {}", expected.getMessage());
+        }
+        // 无需手动恢复 Mock：Spring 默认在每个测试方法后重置 @MockBean
+
+        // 硬标准：4 个写操作整体回滚——openid 绑定必须不存在（绑定是第 3 步，
+        // 若事务未回滚，此处必能查到）
+        assertNull("异常后 user_binding 不应存在（自动注册应整体回滚）",
+                userBindingDao.findByIdentityTypeAndIdentifier(Constants.IDENTITY_TYPE_WECHAT_MP, openid));
     }
 
     /**

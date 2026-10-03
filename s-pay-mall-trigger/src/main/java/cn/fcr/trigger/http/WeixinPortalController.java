@@ -1,6 +1,6 @@
 package cn.fcr.trigger.http;
 
-import cn.fcr.domain.auth.login.service.ILoginService;
+import cn.fcr.application.AuthApplicationService;
 import cn.fcr.domain.auth.login.service.WeixinBindService;
 import cn.fcr.types.sdk.weixin.MessageTextEntity;
 import cn.fcr.types.sdk.weixin.SignatureUtil;
@@ -33,9 +33,9 @@ public class WeixinPortalController {
     @Value("${weixin.config.token}")
     private String token;
 
-    /** 登录领域服务 */
+    /** 认证应用层服务（微信扫码登录事务边界，P0-3） */
     @Resource
-    private ILoginService loginService;
+    private AuthApplicationService authApplicationService;
 
     /** 微信绑定服务 */
     @Resource
@@ -117,8 +117,8 @@ public class WeixinPortalController {
                         log.info("微信扫码绑定成功: ticket={}, openid={}", ticket, openid);
                         return "";
                     }
-                    // 绑定状态不存在，尝试处理登录
-                    loginService.handleWechatScanLogin(ticket, openid);
+                    // 绑定状态不存在，尝试处理登录（事务边界在 Application 层）
+                    authApplicationService.handleWechatScanLogin(ticket, openid);
                     return "";
                 } catch (Exception e) {
                     log.error("微信扫码处理失败: ticket={}, openid={}", message.getTicket(), openid, e);
