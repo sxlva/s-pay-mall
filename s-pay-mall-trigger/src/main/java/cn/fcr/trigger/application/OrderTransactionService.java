@@ -7,7 +7,6 @@ import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.order.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.cart.service.IMallCartService;
 import cn.fcr.domain.order.service.IMallOrderService;
-import cn.fcr.domain.order.legacy.service.IOrderService;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,20 +30,16 @@ class OrderTransactionService {
     private final IMallOrderService mallOrderService;
     /** 订单支付网关 */
     private final IOrderPaymentGateway orderPaymentGateway;
-    /** 旧订单领域服务 */
-    private final IOrderService orderService;
     /** 商城订单查询网关（用于区分新旧链订单） */
     private final IMallOrderQueryGateway mallOrderQueryGateway;
 
     public OrderTransactionService(IMallCartService mallCartService,
                                    IMallOrderService mallOrderService,
                                    IOrderPaymentGateway orderPaymentGateway,
-                                   IOrderService orderService,
                                    IMallOrderQueryGateway mallOrderQueryGateway) {
         this.mallCartService = mallCartService;
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
-        this.orderService = orderService;
         this.mallOrderQueryGateway = mallOrderQueryGateway;
     }
 
@@ -91,21 +86,20 @@ class OrderTransactionService {
     /**
      * 在事务内完成订单支付成功的 DB 状态更新
      *
-     * <p>【JV-003 M1】按 order_main 是否存在分流：
-     * 新订单（mall 链）直接走状态机，一步完成 order_main + pay_order + MySQL 库存扣减；
-     * 遗留旧订单（仅 pay_order 行）保留旧链逻辑，仅更新 pay_order 状态。</p>
+     * <p>旧链已下线（legacy sunset）：订单一律走状态机，
+     * 一步完成 order_main + pay_order + MySQL 库存扣减，天然幂等。
+     * order_main 不存在的订单视为异常数据（不应再产生），记 warn 后返回。</p>
      *
      * @param orderId 订单ID
      */
     @Transactional(rollbackFor = Exception.class)
     public void changeOrderPaySuccessInTransaction(String orderId) {
         OrderEntity mallOrder = mallOrderQueryGateway.findByOrderNo(orderId);
-        if (mallOrder != null) {
-            // 新链订单：状态机统一处理 order_main + pay_order + DB库存，天然幂等（重复回调返回 false）
-            mallOrderService.paySuccess(orderId);
-        } else {
-            // 遗留旧链订单（仅 pay_order 行）：旧链仅更新 pay_order 状态
-            orderService.changeOrderPaySuccess(orderId);
+        if (mallOrder == null) {
+            log.warn("支付回调：order_main 中不存在该订单，可能为旧链残留数据，orderId={}", orderId);
+            return;
         }
+        // 状态机统一处理 order_main + pay_order + DB库存，重复回调返回 false（幂等）
+        mallOrderService.paySuccess(orderId);
     }
 }

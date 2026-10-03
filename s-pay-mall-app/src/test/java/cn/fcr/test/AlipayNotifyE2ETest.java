@@ -418,54 +418,6 @@ public class AlipayNotifyE2ETest {
     }
 
     /**
-     * 场景 3：遗留旧订单回调（仅 pay_order，无 order_main）
-     *
-     * <p>走旧链 orderService.changeOrderPaySuccess，仅更新 pay_order 状态为
-     * PAY_SUCCESS（OrderStatusVO.PAY_SUCCESS，项目旧链实际状态值），
-     * 不进入新订单状态机、不执行新订单库存扣减。</p>
-     *
-     * @throws Exception 请求或断言失败
-     */
-    @Test
-    public void testPayNotify_legacyOrderWithoutOrderMain() throws Exception {
-        // ========== 准备遗留旧订单：只有 pay_order，没有 order_main ==========
-        int stockS0 = 100;
-        Long productId = createTestProduct(stockS0);
-        String orderNo = uniqueOrderNo("S3");
-        createLegacyPayOrderOnly(orderNo, productId, "M1E2E测试商品", new BigDecimal("19.90"));
-
-        assertNull("准备阶段 order_main 必须不存在", queryOrderMain(orderNo));
-        PayOrder before = orderDao.queryByOrderNo(orderNo);
-        assertNotNull(before);
-        assertEquals("WAIT_PAY", before.getStatus());
-
-        // ========== 发送合法 notify ==========
-        Map<String, String> notifyParams = buildSignedNotifyParams(orderNo, "19.90");
-        sendNotify(notifyParams).andExpect(status().isOk()).andExpect(content().string("success"));
-
-        // ========== 断言 1：pay_order 更新为旧链的 PAY_SUCCESS ==========
-        PayOrder payOrder = orderDao.queryByOrderNo(orderNo);
-        assertNotNull(payOrder);
-        assertEquals("旧链 pay_order 状态应为 PAY_SUCCESS", "PAY_SUCCESS", payOrder.getStatus());
-        assertNotNull("pay_order.pay_time 应已写入", payOrder.getPayTime());
-
-        // ========== 断言 2：order_main 仍不存在（旧链不写 order_main） ==========
-        assertNull("order_main 必须仍不存在", queryOrderMain(orderNo));
-
-        // ========== 断言 3：不执行新订单库存扣减 ==========
-        assertEquals("旧链回调不得扣减 MySQL 库存", Integer.valueOf(stockS0),
-                productDao.selectById(productId).getStock());
-        assertFalse("旧链回调不得写入 Redis 库存 Key",
-                redissonClient.getAtomicLong(STOCK_KEY_PREFIX + productId).isExists());
-
-        // 旧链同样会发布 order_paid（已知行为），监听器查询订单不存在仅 warn，不写库
-        assertTrue("应收到 order_paid 事件, orderNo=" + orderNo, awaitEvent(orderNo, 15000));
-        assertNull("监听器消费后 order_main 仍必须不存在", queryOrderMain(orderNo));
-        assertEquals("监听器消费后 MySQL 库存仍不变", Integer.valueOf(stockS0),
-                productDao.selectById(productId).getStock());
-    }
-
-    /**
      * 验签真实性负向验证：篡改签名参数后必须验签失败
      *
      * <p>用错误的私钥签名（模拟伪造回调），生产验签代码必须返回 false，
@@ -564,31 +516,6 @@ public class AlipayNotifyE2ETest {
                 .orderTime(new Date())
                 .totalAmount(totalAmount)
                 .status(payStatus)
-                .createTime(new Date())
-                .updateTime(new Date())
-                .build();
-        orderDao.insert(payOrder);
-        testOrderNos.add(orderNo);
-    }
-
-    /**
-     * 创建遗留旧订单：仅 pay_order 行（真实写入 MySQL）
-     *
-     * @param orderNo     订单号
-     * @param productId   商品ID
-     * @param productName 商品名称
-     * @param totalAmount 订单金额
-     */
-    private void createLegacyPayOrderOnly(String orderNo, Long productId, String productName,
-                                          BigDecimal totalAmount) {
-        PayOrder payOrder = PayOrder.builder()
-                .userId(String.valueOf(TEST_USER_ID))
-                .productId(String.valueOf(productId))
-                .productName(productName)
-                .orderId(orderNo)
-                .orderTime(new Date())
-                .totalAmount(totalAmount)
-                .status("WAIT_PAY")
                 .createTime(new Date())
                 .updateTime(new Date())
                 .build();

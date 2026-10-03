@@ -32,10 +32,6 @@ import cn.fcr.domain.mall.product.service.impl.MallProductServiceImpl;
 import cn.fcr.domain.mall.statistics.service.impl.MallStatisticsServiceImpl;
 import cn.fcr.domain.mall.user.service.impl.MallUserServiceImpl;
 import cn.fcr.domain.order.service.impl.OrderStateMachineServiceImpl;
-import cn.fcr.domain.order.legacy.adapter.repository.IOrderRepository;
-import cn.fcr.domain.order.legacy.gateway.IPaymentGateway;
-import cn.fcr.domain.order.legacy.gateway.IProductGateway;
-import cn.fcr.domain.order.legacy.service.OrderService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -95,15 +91,6 @@ public class DomainServiceConfig {
     @Bean
     public IMallStatisticsService mallStatisticsService(IStatisticsRepository statisticsRepository) {
         return new MallStatisticsServiceImpl(statisticsRepository);
-    }
-
-    // ==================== 订单领域服务 ====================
-
-    @Bean
-    public OrderService orderService(IOrderRepository orderRepository,
-                                     IProductGateway productGateway,
-                                     IPaymentGateway paymentGateway) {
-        return new OrderService(orderRepository, productGateway, paymentGateway);
     }
 
     // ==================== 订单状态机服务 ====================

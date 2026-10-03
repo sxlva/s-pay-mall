@@ -9,10 +9,7 @@ import cn.fcr.domain.mall.cart.service.IMallCartService;
 import cn.fcr.domain.order.service.IMallOrderService;
 import cn.fcr.domain.order.service.IOrderStateMachineService;
 import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
-import cn.fcr.domain.order.legacy.model.entity.ShopCartEntity;
-import cn.fcr.domain.order.legacy.service.IOrderService;
 import cn.fcr.domain.order.service.PayOrderService;
-import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,8 +34,6 @@ public class OrderApplicationService {
     private final IOrderPaymentGateway orderPaymentGateway;
     /** 支付订单网关（pay_order 读写） */
     private final IPayOrderGateway payOrderGateway;
-    /** 旧订单领域服务 */
-    private final IOrderService orderService;
     /** 订单状态机服务（order_main + pay_order 状态流转唯一出口） */
     private final IOrderStateMachineService orderStateMachineService;
     /** 支付单领域服务 */
@@ -52,7 +47,6 @@ public class OrderApplicationService {
                                    IMallOrderService mallOrderService,
                                    IOrderPaymentGateway orderPaymentGateway,
                                    IPayOrderGateway payOrderGateway,
-                                   IOrderService orderService,
                                    IOrderStateMachineService orderStateMachineService,
                                    PayOrderService payOrderService,
                                    IOrderEventPublisher orderEventPublisher,
@@ -61,7 +55,6 @@ public class OrderApplicationService {
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
         this.payOrderGateway = payOrderGateway;
-        this.orderService = orderService;
         this.orderStateMachineService = orderStateMachineService;
         this.payOrderService = payOrderService;
         this.orderEventPublisher = orderEventPublisher;
@@ -221,23 +214,7 @@ public class OrderApplicationService {
         return mallOrderService.deleteOrder(orderId);
     }
 
-    // ==================== 旧 Order Domain ====================
-
-    /**
-     * 创建支付订单（旧域）
-     *
-     * @param userId    用户ID
-     * @param productId 商品ID
-     * @return 支付订单实体
-     * @throws Exception 创建失败
-     */
-    public PayOrderEntity createPayOrder(String userId, String productId) throws Exception {
-        ShopCartEntity shopCartEntity = ShopCartEntity.builder()
-                .userId(userId)
-                .productId(productId)
-                .build();
-        return orderService.createOrder(shopCartEntity);
-    }
+    // ==================== 支付回调与补偿 ====================
 
     /**
      * 验证支付回调签名
@@ -251,7 +228,7 @@ public class OrderApplicationService {
     }
 
     /**
-     * 订单支付成功处理（旧域）
+     * 订单支付成功处理
      *
      * <p>事务边界在 OrderTransactionService 中控制，事件发布在事务外执行。</p>
      *
@@ -281,9 +258,9 @@ public class OrderApplicationService {
     /**
      * 处理超时关单
      *
-     * <p>新旧订单分流（P0-1 过渡）：order_main 中存在的订单为新订单，
-     * 走状态机 cancel 统一流转（关 pay_order + 恢复 Redis 预扣库存）；
-     * 否则走旧域逻辑。旧链下线后删除旧分支。</p>
+     * <p>order_main 中存在的订单走状态机 cancel 统一流转（关 pay_order +
+     * 恢复 Redis 预扣库存）；order_main 不存在的订单视为异常数据
+     * （旧链已下线，不应再产生），记 warn 日志并返回 false。</p>
      *
      * @param orderNo 订单号
      * @return true表示关闭成功
@@ -291,12 +268,12 @@ public class OrderApplicationService {
     @Transactional(rollbackFor = Exception.class)
     public boolean handleTimeoutCloseOrder(String orderNo) {
         boolean isMallOrder = mallOrderService.getOrderByNo(orderNo) != null;
-        if (isMallOrder) {
-            log.info("超时关单分流：新订单（order_main），走状态机取消，orderNo={}", orderNo);
-            return orderStateMachineService.cancel(orderNo);
+        if (!isMallOrder) {
+            log.warn("超时关单：order_main 中不存在该订单，可能为旧链残留数据，orderNo={}", orderNo);
+            return false;
         }
-        log.info("超时关单分流：旧订单，走旧域逻辑，orderNo={}", orderNo);
-        return orderService.handleTimeoutCloseOrder(orderNo);
+        log.info("超时关单：走状态机取消，orderNo={}", orderNo);
+        return orderStateMachineService.cancel(orderNo);
     }
 
     // ==================== 跨域共享（Mall Domain 查询） ====================

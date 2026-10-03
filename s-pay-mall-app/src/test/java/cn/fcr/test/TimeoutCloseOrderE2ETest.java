@@ -206,63 +206,6 @@ public class TimeoutCloseOrderE2ETest {
                 productDao.selectById(productId).getStock());
     }
 
-    /**
-     * 场景 3：旧订单（无 order_main，仅 pay_order）走旧域逻辑（行为保持验收）
-     *
-     * <p>旧链 OrderRepository.findByOrderNo 以 pay_order 为订单来源：
-     * WAIT_PAY → 可关单，旧链将 pay_order 置为 CLOSED，并按旧逻辑
-     * 恢复库存（queryOrderItems 按 pay_order 行数、quantity 固定 1，
-     * 无条件恢复 MySQL + Redis）。M2-1 只分流、不改旧链行为，
-     * 本场景锁定旧链行为不变。</p>
-     *
-     * @throws Exception 断言失败
-     */
-    @Test
-    public void testTimeoutClose_legacyOrderFallback() throws Exception {
-        int stockS0 = 100;
-        Long productId = createTestProduct(stockS0);
-        String orderNo = uniqueOrderNo("TC3");
-        // 仅 pay_order（模拟旧链残留支付单）
-        PayOrder payOrder = PayOrder.builder()
-                .userId(String.valueOf(TEST_USER_ID))
-                .productId(String.valueOf(productId))
-                .productName("M2E2E测试商品")
-                .orderId(orderNo)
-                .orderTime(new Date())
-                .totalAmount(new BigDecimal("19.90"))
-                .status("WAIT_PAY")
-                .createTime(new Date())
-                .updateTime(new Date())
-                .build();
-        orderDao.insert(payOrder);
-        testOrderNos.add(orderNo);
-
-        assertNull("准备阶段 order_main 必须不存在", queryOrderMain(orderNo));
-
-        boolean closed = orderApplicationService.handleTimeoutCloseOrder(orderNo);
-        assertTrue("旧订单应走旧链关单成功", closed);
-
-        // 旧链行为保持：关 pay_order，不写 order_main
-        assertNull("旧分支不得写 order_main", queryOrderMain(orderNo));
-        assertEquals("旧链应将 pay_order 置为 CLOSED", "CLOSED",
-                orderDao.queryByOrderNo(orderNo).getStatus());
-
-        // 旧链行为保持：queryOrderItems 按 pay_order 行（quantity=1）恢复库存，
-        // 无条件恢复 MySQL + Redis（旧链语义，M2-1 不改）
-        assertEquals("旧链恢复 MySQL 库存 +1", Integer.valueOf(stockS0 + 1),
-                productDao.selectById(productId).getStock());
-        assertTrue("旧链应写入 Redis 库存 Key",
-                redissonClient.getAtomicLong(STOCK_KEY_PREFIX + productId).isExists());
-
-        // 第二次调用：状态已是 CLOSED，canCancel 拒绝 → false（幂等）
-        boolean secondClose = orderApplicationService.handleTimeoutCloseOrder(orderNo);
-        assertFalse("已关闭旧订单再次关单应返回 false", secondClose);
-        assertEquals("重复关单后 pay_order 仍应为 CLOSED", "CLOSED",
-                orderDao.queryByOrderNo(orderNo).getStatus());
-        assertEquals("重复关单后 MySQL 库存不得重复恢复", Integer.valueOf(stockS0 + 1),
-                productDao.selectById(productId).getStock());
-    }
-
     /* ==================== 测试数据构造工具 ==================== */
 
     /**
