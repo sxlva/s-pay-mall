@@ -106,6 +106,43 @@ import org.apache.ibatis.*;                // MyBatis
 
 ---
 
+## 2.5 领域边界规则（2026-10-03 M2 重构落地）
+
+**核心原则：auth 管身份、mall 管商城、order 管订单。**
+
+### 2.5.1 目标包结构
+
+```
+domain
+├── auth            身份：登录编排、令牌、第三方登录、权限
+│   ├── login       ILoginService、WeixinLoginService、WeixinBindService、微信网关/仓储
+│   ├── token       IAuthTokenGateway（JWT 令牌）
+│   └── permission  Role 等角色/权限模型
+├── mall            商城：商品、购物车、会员、统计（不再出现任何订单类）
+│   ├── product     Product/Category 聚合、库存网关、MQ 库存变更 handler、商品异常
+│   ├── cart        Cart/CartItem 聚合、购物车分布式锁
+│   ├── user        User 聚合、UserLoginVO/UserProfile、用户绑定网关
+│   └── statistics  统计读模型
+└── order           订单：下单、支付单、状态机（唯一订单出口，不再出现商品/购物车类）
+    ├── model       Order/OrderItem/OrderState、PayOrderEntity/PayStatus、OrderVO 等读模型
+    ├── service     IMallOrderService、IOrderStateMachineService、PayOrderService
+    ├── gateway     IMallOrderQuery/IOrderPayment/IOrderQuery/IPay/IPayOrder/IAlipayQuery 网关
+    ├── adapter     IOrderEventPublisher（支付成功事件）
+    └── legacy      旧链残余（单商品旧订单系统，过渡态，数据清零后整体删除）
+```
+
+### 2.5.2 边界规则（由 DomainArchitectureGuardTest 守卫规则 3/4 自动化守护）
+
+| 规则 | 内容 |
+|------|------|
+| B1 | mall 不再出现任何订单类：mall → order 只允许 import `domain.order.gateway` 包下的接口，禁止 import 订单实体/服务/读模型 |
+| B2 | order 不再出现商品/购物车/会员类：order → mall 只允许 import `mall..gateway..` 库存网关接口与 `mall.cart.model.valobj.CartItemVO`（下单入参的共享读模型），禁止 import 实体/服务 |
+| B3 | 跨域只允许通过 gateway 接口交互，禁止互相 import 实体（B1/B2 的白名单即全部合法出口） |
+
+> **例外说明**: `CartItemVO` 是购物车值对象读模型（下单入参），按共享内核对待；若未来引入 OrderCreateCommand 可消除该例外。
+
+---
+
 ## 3. Domain 层依赖例外清单
 
 ### 3.1 允许的标准 Java 类库
@@ -160,10 +197,12 @@ Infrastructure 层必须按 Domain 层模块结构对称拆分，确保单一职
 
 | Domain 层模块 | Infrastructure 层模块 | 包含内容 |
 |---------------|---------------------|----------|
-| `domain/auth/` | `infrastructure/auth/` | 认证仓储实现、网关实现 |
-| `domain/mall/` | `infrastructure/mall/` | 商城仓储实现、网关实现 |
-| `domain/order/` | `infrastructure/order/` | 订单仓储实现、网关实现 |
+| `domain/auth/` | `infrastructure/auth/` | 认证仓储实现、网关实现（`login/`、`token/` 镜像） |
+| `domain/mall/` | `infrastructure/mall/` | 商城仓储实现、网关实现（`product/`、`cart/`、`user/`、`statistics/` 镜像） |
+| `domain/order/` | `infrastructure/order/` | 订单仓储实现、网关实现（含 `legacy/` 旧链镜像，数据清零后删除） |
 | （跨领域） | `infrastructure/shared/` | Redis/MQ 基础封装、DomainServiceConfig |
+
+> **镜像规则（2026-10-03 M2）**: Infrastructure 包结构镜像跟随 Domain 子包拆分；`JwtTokenProvider` 归 `infrastructure/auth/token/`，订单五实现归 `infrastructure/order/gateway/`，旧链四件（Payment/Product GatewayImpl、ProductRPC、ProductDTO）归 `infrastructure/order/legacy/`。
 
 ### 4.2 审查要点
 
@@ -256,7 +295,7 @@ public class OrderApplicationService {
 |-------------|------|----------|------|
 | P0-2 | `s-pay-mall-application` 模块不存在，Application Service 在 trigger 包（违反 §1.1 模块物理归属规则） | §1.1 模块物理归属规则 | 待处理 |
 | P0-3 | `WeixinLoginGatewayImpl` 有 `@Transactional` | §2.4 / §6.1 | 待处理 |
-| P0-5 | Domain 层跨领域反向依赖（PayOrderService import mall.gateway） | §2.3 / §4.2 | 待处理 |
+| P0-5 | Domain 层跨领域反向依赖（PayOrderService import mall.gateway） | §2.3 / §4.2 | 已处理（2026-10-03 M2-5：IPayGateway 收编进 order，PayOrderService 同域，依赖自然消除） |
 | P1-5 | Domain pom.xml 含技术依赖 | §3.4 | 待处理 |
 
 > 修改相关代码时，必须先阅读 TECH_DEBT_ROADMAP.md 对应条目，不得擅自修改业务代码绕过问题。

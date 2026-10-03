@@ -107,6 +107,28 @@ infra 镜像同步：`auth/login/gateway(+dto)`、`auth/login/repository`、`aut
 
 **验证**：`mvn clean install` 通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致，TimeoutCloseOrderE2ETest 3/3 + AlipayNotifyE2ETest 5 全绿，收编后订单行为完好；pom skipTests 已恢复。
 
+## 五之五、M2-6 实施记录与 M2 总结（2026-10-03）
+
+**M2-6 改动**：
+1. `DomainArchitectureGuardTest` 新增守卫规则 3/4（ArchUnit 自动化守护）：规则 3 = mall 对 order 的依赖仅限 `order.gateway` 包；规则 4 = order 对 mall 的依赖仅限库存网关接口 + `CartItemVO` 读模型。守卫测试 2→4，4/4 通过
+2. 文档同步：`DDD_ARCHITECTURE_SPEC.md` 新增 §2.5 领域边界规则（目标包结构 + B1/B2/B3 边界规则 + CartItemVO 例外说明）、§4.1 镜像规则更新、P0-5 标记已处理；`docs/design/README.md` 架构图按新包结构重绘
+
+**M2 全程总结（6 步全部完成，8 个提交）**：
+
+| 阶段 | 提交 | 内容 |
+|------|------|------|
+| M2-0 | 52f84fc | 决策记录 + 备份分支 backup/m2-baseline-20261003 + 基线确认 |
+| M2-1 | d8c6c4e | 超时关单分流（唯一行为变更，补功能洞）+ TimeoutCloseOrderE2ETest |
+| M2-2 | 7e81921 | shared 并入 order/model + 删重复 initPayUrl + PayOrderService 职责定死 |
+| M2-3 | 91d78b9 | auth 拆 login/token/permission |
+| M2-4 | 0e778ec | mall 拆 product/cart/user/statistics + infra 镜像 |
+| M2-5 | 2d28f71 | order 收编 + 旧链归 legacy + 边界落地 + P0-5 消除 |
+| M2-6 | 本次 | 守卫规则 3/4 + 三份文档同步 + 全量回归 |
+
+**最终验证**：domain 8/8（守卫 4 + 实体 4）；app 12（11 过 + 1 存量 error OrderServiceTest + 1 @Ignore 并发幂等——P0-9 待修）；订单/登录/支付 E2E 全绿。边界规则由 ArchUnit 自动化守护，答辩可演示"架构守护测试"。
+
+**遗留（不在 M2 范围，已登记）**：P0-9 并发回调幂等（@Ignore 测试待修复后启用）；legacy 包数据清零后删除；死端点清理（create_pay_order、bind/*）待单独一批。
+
 ## 六、风险备案
 
 1. 40+ 文件移动引用漏改 → 分 6 步，编译器兜底，脚本只做机械 import 替换
