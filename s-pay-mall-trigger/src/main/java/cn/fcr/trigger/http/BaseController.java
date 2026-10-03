@@ -18,7 +18,7 @@ import java.util.Map;
 public class BaseController {
 
     /** JWT签名密钥 */
-    @Value("${security.jwt.secret:REPLACED_DEFAULT_JWT_SECRET}")
+    @Value("${security.jwt.secret}")
     private String jwtSecret;
 
     /**

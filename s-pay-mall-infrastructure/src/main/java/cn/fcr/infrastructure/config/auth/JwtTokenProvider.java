@@ -19,10 +19,10 @@ import java.util.Map;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${security.jwt.secret:REPLACED_DEFAULT_JWT_SECRET}")
+    @Value("${security.jwt.secret}")
     private String secret;
 
-    @Value("${security.jwt.expire-ms:86400000}")
+    @Value("${security.jwt.expire-ms}")
     private Long expireMs;
 
     /**

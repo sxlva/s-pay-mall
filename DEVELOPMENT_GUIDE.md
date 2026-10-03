@@ -52,11 +52,11 @@
 
 - **Java PO 字段**: Java 属性使用 `camelCase`，通过 MyBatis-Plus `@TableField` 映射到数据库 `snake_case` 列
 - **Domain Entity 字段**: 与 DB 列语义对应，命名使用 `camelCase`
-- **JSON 输出字段**: `api/dto/` 下 user/common 出线类使用 `camelCase`（无 `@JsonProperty`）；admin/res 中 `AdminUserRes`、`AdminOrderRes` 为历史遗留 `snake_case`（有 `@JsonProperty`），禁止在其上扩展字段
+- **JSON 输出字段**: `api/dto/{user,common}/` 下出线类使用 `camelCase`（无 `@JsonProperty`）；`api/dto/admin/res/` 中 `AdminUserRes`、`AdminOrderRes` 为历史遗留 `snake_case`（有 `@JsonProperty`），禁止在其上扩展字段
 
 | 层级 | Java 字段 | @JsonProperty | JSON 实际输出 |
 |------|----------|---------------|-------------|
-| `api/dto/` (Controller 返回) | `orderId` | **无** | `"orderId"` (camelCase) |
+| `api/dto/{user,common}/res/`（如 UserOrderRes） | `orderId` | **无** | `"orderId"` (camelCase) |
 | `api/dto/admin/res/` (AdminUserRes/AdminOrderRes) | `order_no` | **有**（历史遗留，禁止扩展） | `"order_no"` (snake_case) |
 | PO (MyBatis 映射) | `orderNo` | 不适用 | 数据库 `order_no` |
 
@@ -68,7 +68,7 @@
 |------|------|------|
 | 页面组件 | PascalCase + `Page` 后缀 | `OrderListPage.vue`, `ProductDetailPage.vue` |
 | API 函数 | camelCase, 动词开头 | `getOrder()`, `createOrder()`, `loadProducts()` |
-| TypeScript 接口 | PascalCase, 以 API_CONTRACT §五 映射表为准 | `interface Order`, `interface ProductVO` |
+| TypeScript 接口 | PascalCase, 以 API_CONTRACT §五 映射表为准 | `interface Order`, `interface ProductRes` |
 | 请求参数类型 | `{Name}Request` 或 `{Name}Params` | `OrderCreateRequest`, `OrderListParams` |
 | Pinia Store | `use{Name}Store` | `useOrderStore`, `useUserStore` |
 | 组合式 Hook | `use{Name}` | `useOrder()`, `useProduct()` |

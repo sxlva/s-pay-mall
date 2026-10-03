@@ -1,4 +1,4 @@
-package cn.fcr.domain.mall.gateway;
+package cn.fcr.domain.auth.gateway;
 
 /**
  * 认证令牌网关接口，定义 JWT Token 生成和密码编码的抽象。

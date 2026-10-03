@@ -94,7 +94,9 @@ s-pay-mall-api/src/main/java/cn/fcr/api/
 
 ## 五、同步清单（必须同一提交完成）
 
-- [ ] 代码：21 个类按映射表迁移重命名，trigger 层引用全部更新
-- [ ] DEVELOPMENT_GUIDE §1.1（命名表三行旧规替换）与 §1.3（dto/vo 包描述更新）
-- [ ] REVIEW.md 命名检查条目（如"禁止 UserLoginRequest（应为 UserLoginRequestDTO）"）
-- [ ] API_CONTRACT §二/§三/§四端点表与 §五映射表中的全部类名引用
+- [x] 代码：21 个类按映射表迁移重命名，trigger 层引用全部更新
+- [x] DEVELOPMENT_GUIDE §1.1（命名表三行旧规替换）与 §1.3（dto/vo 包描述更新）
+- [x] REVIEW.md 命名检查条目（如"禁止 UserLoginRequest（应为 UserLoginRequestDTO）"）
+- [x] API_CONTRACT §二/§三/§四端点表与 §五映射表中的全部类名引用
+
+> **完成记录**：以上五项均随提交 `1cb3d6e` 与代码同一提交完成。2026-10-03 逐项核对时发现清单外残留 3 处，已同批补正：DEVELOPMENT_GUIDE §1.4 前端示例旧名（`ProductVO` → `ProductRes`）、§1.3 包路径含糊表述、API_CONTRACT 五个端点表表头术语（RequestDTO/ResponseDTO → 请求类/响应类）。

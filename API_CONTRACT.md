@@ -47,7 +47,7 @@
 
 ## 二、支付与认证 API（/pay-api/v1/）
 
-| # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
+| # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
 | 1 | POST | `/alipay/create_pay_order` | `CreatePayReq` | `Response<String>` | 创建支付宝支付单，返回支付URL（userId 取自 JWT，不透传） |
 | 2 | POST | `/alipay/alipay_notify_url` | HttpServletRequest (params) | `String` | 支付宝异步回调验签+更新订单状态 |
@@ -72,7 +72,7 @@
 
 ### 3.1 用户认证（/auth）
 
-| # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
+| # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
 | 8 | POST | `/auth/register` | `RegisterReq` | `Response<LoginRes>` | 用户注册（普通或微信） |
 | 9 | POST | `/auth/login` | `LoginReq` | `Response<LoginRes>` | 用户登录 |
@@ -132,7 +132,7 @@
 
 ### 3.4 购物车
 
-| # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
+| # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
 | 16 | POST | `/cart` | `UserCartAddReq` | `Response<Integer>` | 添加商品到购物车 |
 | 17 | GET | `/cart` | JWT Header | `Response<List<UserCartItemRes>>` | 查询购物车列表 |
@@ -159,7 +159,7 @@
 
 ### 3.5 订单
 
-| # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
+| # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
 | 20 | POST | `/orders` | `UserOrderCreateReq` | `Response<UserOrderCreateRes>` | 从购物车创建订单 |
 | 21 | GET | `/orders` | `status?, startTime?, endTime?` (query) | `Response<List<UserOrderRes>>` | 查询用户订单列表 |
@@ -202,7 +202,7 @@
 
 ### 4.1 MallAdminController（/mall-api/v1/admin）
 
-| # | 方法 | 端点 | RequestDTO | ResponseDTO | 说明 |
+| # | 方法 | 端点 | 请求类 | 响应类 | 说明 |
 |---|------|------|-----------|------------|------|
 | 24 | GET | `/admin/users` | `username?, status?, roleCode?` (query) | `Response<List<AdminUserRes>>` | 查询用户列表 |
 | 25 | POST | `/admin/users` | `AdminUserSaveReq` | `Response<Integer>` | 新增/更新用户 |

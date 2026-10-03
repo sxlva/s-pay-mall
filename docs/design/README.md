@@ -24,13 +24,13 @@ flowchart TB
     end
 
     subgraph Domain["Domain Layer (s-pay-mall-domain) — 核心"]
-        D1["cn.fcr.domain.auth<br/>WeixinLoginService, WeixinBindService<br/>IWeChatGateway, ITokenProvider"]
+        D1["cn.fcr.domain.auth<br/>WeixinLoginService, WeixinBindService<br/>IWeChatGateway, IAuthTokenGateway"]
         D2["cn.fcr.domain.mall<br/>MallOrderServiceImpl, OrderStateMachineServiceImpl<br/>IStockGateway, IPayGateway, IMallOrderQueryGateway"]
         D3["cn.fcr.domain.order<br/>OrderService, PayOrderService<br/>IPaymentGateway, IOrderRepository"]
     end
 
     subgraph Infra["Infrastructure Layer (s-pay-mall-infrastructure)"]
-        I1["auth/ gateway/<br/>WeixinGatewayImpl, WeixinLoginGatewayImpl"]
+        I1["auth/ gateway/<br/>WeixinGatewayImpl, WeixinLoginGatewayImpl<br/>AuthTokenGatewayImpl"]
         I2["mall/ gateway/<br/>StockGatewayImpl, AlipayGatewayImpl<br/>OrderPaymentGatewayImpl"]
         I3["order/ gateway/<br/>PaymentGatewayImpl<br/>event/ RocketMqOrderEventPublisher"]
         I4["dao/ (auth|mall|order)/<br/>MyBatis Mapper + PO"]

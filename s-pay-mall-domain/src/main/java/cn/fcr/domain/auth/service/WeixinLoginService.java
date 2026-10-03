@@ -1,8 +1,8 @@
 package cn.fcr.domain.auth.service;
 
+import cn.fcr.domain.auth.gateway.IAuthTokenGateway;
 import cn.fcr.domain.auth.gateway.IWeChatGateway;
 import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
-import cn.fcr.domain.auth.gateway.ITokenProvider;
 import cn.fcr.types.common.Constants;
 
 import lombok.extern.slf4j.Slf4j;
@@ -18,14 +18,14 @@ public class WeixinLoginService implements ILoginService {
 
     private final IWeChatGateway weChatGateway;
     private final IWechatLoginGateway wechatLoginGateway;
-    private final ITokenProvider tokenProvider;
+    private final IAuthTokenGateway authTokenGateway;
 
     public WeixinLoginService(IWeChatGateway weChatGateway,
                               IWechatLoginGateway wechatLoginGateway,
-                              ITokenProvider tokenProvider) {
+                              IAuthTokenGateway authTokenGateway) {
         this.weChatGateway = weChatGateway;
         this.wechatLoginGateway = wechatLoginGateway;
-        this.tokenProvider = tokenProvider;
+        this.authTokenGateway = authTokenGateway;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class WeixinLoginService implements ILoginService {
             }
 
             String username = "wx_user_" + userId;
-            String token = tokenProvider.createToken(userId, username, Constants.DEFAULT_ROLE_MEMBER);
+            String token = authTokenGateway.createToken(userId, username, Constants.DEFAULT_ROLE_MEMBER);
             log.info("生成JWT Token成功: userId=" + userId);
 
             wechatLoginGateway.saveLoginToken(ticket, token);

@@ -18,6 +18,7 @@
 | P0-4 | 幂等性设计缺失 | 所有状态变更 API 入口均无 `requestId` 幂等保护；MQ Listener 未进行 SETNX 消费幂等检查 | 状态变更 DTO 添加 `requestId` 字段；Application 层实现事务外锁操作；MQ Listener 加 `tryAcquire()` | 待处理 |
 | P0-5 | Domain 层跨领域反向依赖 | `domain/order/service/PayOrderService.java` import 了 `domain.mall.gateway.IPayGateway` | 方案A: IPayGateway → `domain/shared/`；方案B: 领域事件解耦；方案C: PayOrderService → `domain/mall/` | 待处理 |
 | P0-6 | Controller 中业务路由逻辑 | `MallAuthController` 含 `if (openId != null)` 注册策略判断；`AliPayController` 含 `"TRADE_SUCCESS".equals()` 支付状态判断 | 业务判断下沉到 Domain Service | 待处理 |
+| P0-9 | 并发回调重复扣库存 | `OrderStateMachineServiceImpl.paySuccess()` 先无锁读状态（`canPay()`），且 `OrderRepositoryImpl.updateOrderStatusByOrderNo` 的 UPDATE 无 status 条件（139-145 行）：并发 notify 均读到 INIT 时全部穿过守卫，各自执行 `syncDBStockForPaySuccess` 重复扣 MySQL 库存。**2026-10-03 实测复现**（10 线程同一瞬间重放同一合法 notify，证据：`s-pay-mall-app/src/test/java/cn/fcr/test/AlipayNotifyE2ETest.java#testPayNotify_concurrentDuplicateNotify`）：10 个事务全部通过 `canPay()`，库存 100→80（扣 10×2 件）；order_main/pay_order 双写同值无业务损害，但**库存扣减不在幂等保护内**。串行重放幂等正常（同测试类场景 2），仅并发触发 | ①`updateOrderStatusByOrderNo` UPDATE 加 `AND status = 'CREATED'` 条件，以影响行数作守卫（0 行即重复回调，直接返回不再扣库存）②`syncDBStockForPaySuccess` 仅在守卫通过时执行 ③修复后移除该测试的 `@Ignore` 作为回归测试。建议纳入 JV-003 M2（与超时关单分流同批触碰状态机） | 待处理 |
 
 ### 🟡 P1 (重要级)
 
@@ -39,6 +40,7 @@
 | P2-4 | ~~`pay-success-topic` 无消费者~~ | ~~`OrderEventGatewayImpl.sendPaySuccessMessage()` 发送消息但无消费者订阅~~ | ~~接入消费者或删除未使用的发送逻辑~~ | 已处理（2026-10-01，JV-003：删除 `IOrderEventGateway`/`OrderEventGatewayImpl`，topic 随之废弃） |
 | P2-5 | ~~支付成功消息通道重复~~ | ~~`order_paid` 和 `pay-success-topic` 两个 Topic 职责不清~~ | ~~明确职责或合并~~ | 已处理（2026-10-01，JV-003：保留 `order_paid`，删除 `pay-success-topic` 通道） |
 | P2-6 | `WeixinBindService` 方法未使用 | `tryAcquireRegisterLock()` / `releaseRegisterLock()` 定义但未调用 | 接入注册流程或移除 | 待处理 |
+| P2-7 | 认证令牌双抽象命名冲突 | 账号密码链路用 `IAuthTokenGateway`/`AuthTokenGatewayImpl`（mall.gateway），微信链路用 `ITokenProvider`/`TokenProviderAdapter`（auth.gateway），两者均纯委托 `JwtTokenProvider.createToken`，同一概念两套接口、包位置与职责交叉 | 收敛为单一 `IAuthTokenGateway`（含 `createToken`/`encodePassword`/`matchesPassword`），移至 `domain.auth.gateway`；删除 `ITokenProvider`/`TokenProviderAdapter` | 已处理（2026-10-03：接口迁移 auth 域、`WeixinLoginService`/`DomainServiceConfig`/`MallUserServiceImpl` 改注入；编译通过、单测 6/6 通过、新增 `WeixinScanLoginMockE2ETest` 2/2 通过、真实应用注册→登录→profile E2E 验证通过；详见附录 A.11） |
 
 ---
 
@@ -96,6 +98,7 @@
 第一阶段（核心问题）：
 ├── P0-1: 新旧订单系统统一
 ├── P0-6: Controller 业务逻辑下沉
+├── P0-9: 并发回调幂等（条件更新守卫，修库存重复扣减）
 ├── FP0-4: 前后端字段不一致修复
 └── P1-4: MQ 超时参数
 
@@ -201,6 +204,26 @@
 
 **问题**：`LoginController.checkLogin()` 将 `openidToken`（JWT 认证令牌）以 INFO 级别写入日志。
 **修复**：日志行移除 `openidToken` 参数，仅保留 `ticket` 输出。
+
+### A.11 P2-7：认证令牌双抽象收敛为单一 IAuthTokenGateway
+
+**问题**：两条登录链路各建一套 Token 抽象——账号密码链路 `mall.gateway.IAuthTokenGateway`/`AuthTokenGatewayImpl`，微信扫码链路 `auth.gateway.ITokenProvider`/`TokenProviderAdapter`。两个实现的 `createToken` 均纯委托 `JwtTokenProvider`，`ITokenProvider` 全项目仅 1 个实现、1 个注入点、1 个调用点，属重复抽象；且认证职责放在 `mall` 域包名与职责错位。
+
+**修复**：
+- `IAuthTokenGateway` 从 `cn.fcr.domain.mall.gateway` 移至 `cn.fcr.domain.auth.gateway`，三个方法（`createToken`/`encodePassword`/`matchesPassword`）原样保留
+- `AuthTokenGatewayImpl` 同步移至 `cn.fcr.infrastructure.auth.gateway`（git mv 保留历史）
+- 删除 `ITokenProvider.java`、`TokenProviderAdapter.java`
+- `WeixinLoginService`、`DomainServiceConfig`（两个 Bean）、`MallUserServiceImpl` 改为依赖新位置的 `IAuthTokenGateway`，仅 import/字段类型变化，业务逻辑零改动
+- `JwtTokenProvider`（JWT 算法/secret/有效期）、登录业务逻辑、Controller、数据库均未触碰
+- 设计文档同步：`docs/design/module-auth.md`（时序图）、`docs/design/README.md`（架构图）
+
+**验证证据**：
+- 全仓 grep 无 `ITokenProvider`/`TokenProviderAdapter`/`mall.gateway.IAuthTokenGateway` 残留
+- `mvn compile` / `mvn test`（含 `DomainArchitectureGuardTest` 架构守护）通过，6/6
+- 新增 `WeixinScanLoginMockE2ETest`（`@MockBean` 替换唯一调用微信服务器的 `WeixinGatewayImpl`，其余真实装配）：首次扫码自动注册签发合法 JWT、同 openid 复用账号两场景 2/2 通过
+- 真实应用 E2E：注册 → 登录 → 携带 JWT 访问 profile（200）→ 无 token 访问 profile（403），签名解析正常
+
+**经验**：领域自定义函数式接口（`PasswordMatcher`）作参数类型是干净的解耦点——`UserEntity.validatePassword` 以方法引用绑定，接口合并不影响实体及其测试。
 
 ---
 

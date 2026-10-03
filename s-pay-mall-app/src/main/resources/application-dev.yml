@@ -1,4 +1,4 @@
-# 开发环境配置：包含数据源、鉴权、支付与消息队列等参数
+# 开发环境配置
 server:
   port: 8092
   tomcat:
@@ -99,11 +99,13 @@ logging:
     root: info
   config: classpath:logback-spring.xml
 
+# JWT
 security:
   jwt:
-    secret: REPLACED_COURSE_JWT_SECRET
+    secret: ${JWT_SECRET}
     expire-ms: 86400000
 
+# MQ
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}
   producer:

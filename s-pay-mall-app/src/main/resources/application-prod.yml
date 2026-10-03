@@ -1,3 +1,4 @@
+# 正式环境配置
 server:
   port: 8092
   tomcat:
@@ -97,3 +98,15 @@ logging:
   level:
     root: info
   config: classpath:logback-spring.xml
+
+# JWT
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expire-ms: 86400000
+
+# MQ
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:s-pay-mall-group}

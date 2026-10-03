@@ -135,7 +135,7 @@ flowchart LR
     C -->|是| D[获取 userId]
     C -->|否| E["创建 mall_user<br/>+ user_binding 记录<br/>+ 初始化角色 MEMBER"]
     E --> D
-    D --> F["JWT Token 签发<br/>TokenProviderAdapter.createToken()"]
+    D --> F["JWT Token 签发<br/>AuthTokenGatewayImpl.createToken()"]
     F --> G["前端 localStorage 存储"]
 ```
 

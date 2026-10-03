@@ -1,8 +1,8 @@
 package cn.fcr.infrastructure.config.shared;
 
+import cn.fcr.domain.auth.gateway.IAuthTokenGateway;
 import cn.fcr.domain.auth.gateway.IWeChatGateway;
 import cn.fcr.domain.auth.gateway.IWechatLoginGateway;
-import cn.fcr.domain.auth.gateway.ITokenProvider;
 import cn.fcr.domain.auth.repository.IWeChatTokenRepository;
 import cn.fcr.domain.auth.service.WeixinBindService;
 import cn.fcr.domain.auth.service.WeixinLoginService;
@@ -11,7 +11,6 @@ import cn.fcr.domain.mall.adapter.repository.ICartRepository;
 import cn.fcr.domain.mall.adapter.repository.IProductRepository;
 import cn.fcr.domain.mall.adapter.repository.IStatisticsRepository;
 import cn.fcr.domain.mall.adapter.repository.IUserRepository;
-import cn.fcr.domain.mall.gateway.IAuthTokenGateway;
 import cn.fcr.domain.mall.gateway.IIdempotentGateway;
 import cn.fcr.domain.mall.gateway.IMallOrderQueryGateway;
 import cn.fcr.domain.mall.gateway.IOrderPaymentGateway;
@@ -53,8 +52,8 @@ public class DomainServiceConfig {
     @Bean
     public WeixinLoginService weixinLoginService(IWeChatGateway weChatGateway,
                                                  IWechatLoginGateway wechatLoginGateway,
-                                                 ITokenProvider tokenProvider) {
-        return new WeixinLoginService(weChatGateway, wechatLoginGateway, tokenProvider);
+                                                 IAuthTokenGateway authTokenGateway) {
+        return new WeixinLoginService(weChatGateway, wechatLoginGateway, authTokenGateway);
     }
 
     // ==================== 微信绑定服务 ====================
