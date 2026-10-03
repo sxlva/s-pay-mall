@@ -1,6 +1,7 @@
 package cn.fcr.trigger.listener;
 
 import cn.fcr.domain.order.adapter.event.PaySuccessMessageEvent;
+import cn.fcr.domain.mall.product.gateway.IIdempotentGateway;
 import cn.fcr.domain.mall.user.gateway.IUserBindingGateway;
 import cn.fcr.domain.order.gateway.IMallOrderQueryGateway;
 import cn.fcr.domain.order.model.entity.OrderEntity;
@@ -41,11 +42,19 @@ public class OrderPaidRocketListener implements RocketMQListener<PaySuccessMessa
     @Resource
     private IWeChatGateway weChatGateway;
 
+    /** 幂等网关（P0-4：消费幂等守门） */
+    @Resource
+    private IIdempotentGateway idempotentGateway;
+
     /** 支付时间格式化器 */
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 消费支付成功消息：更新订单状态并发送微信模板消息通知。
+     *
+     * <p>【P0-4 消费幂等】以 orderNo 为幂等键（24h）：RocketMQ at-least-once 重投时
+     * 直接跳过，不重复执行 paySuccess 与通知发送；处理异常时释放幂等键，
+     * 交由 MQ 重试。成功则不释放——键 24h 自动过期，期间重投一律跳过。</p>
      *
      * @param message 支付成功消息体
      */
@@ -53,6 +62,14 @@ public class OrderPaidRocketListener implements RocketMQListener<PaySuccessMessa
     public void onMessage(PaySuccessMessageEvent.PaySuccessMessage message) {
         log.info("【RocketMQ 核心链路】收到支付成功消息，开始执行后续核心业务逻辑。订单号: {}, 交易号: {}",
                 message.getOrderNo(), message.getTradeNo());
+
+        // P0-4：消费幂等守门，重复消息直接 ACK 跳过（不抛异常，避免无意义重投）
+        boolean acquired = idempotentGateway.tryAcquire(
+                IIdempotentGateway.BUSINESS_TYPE_ORDER_PAID_NOTIFY, message.getOrderNo());
+        if (!acquired) {
+            log.info("【消费幂等】支付成功消息已消费过，跳过处理。订单号: {}", message.getOrderNo());
+            return;
+        }
 
         try {
             orderApplicationService.paySuccess(message.getOrderNo());
@@ -62,6 +79,8 @@ public class OrderPaidRocketListener implements RocketMQListener<PaySuccessMessa
 
         } catch (Exception e) {
             log.error("处理支付成功消息异常，订单号: {}, 交易号: {}", message.getOrderNo(), message.getTradeNo(), e);
+            // 异常时释放幂等键，允许 MQ 重试消费
+            idempotentGateway.release(IIdempotentGateway.BUSINESS_TYPE_ORDER_PAID_NOTIFY, message.getOrderNo());
             throw new RuntimeException("处理支付成功消息失败", e);
         }
     }

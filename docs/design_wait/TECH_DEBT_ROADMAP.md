@@ -15,7 +15,7 @@
 | P0-1 | 新旧订单系统并存 | `order` 包(旧,单商品)与 `mall` 包(新,多商品)两套 `OrderEntity`/`OrderStatusVO`/`OrderState` 并存，`AbstractOrderService` 仍被生产环境调用 | ①将 `handleTimeoutCloseOrder` 迁至 `OrderStateMachineServiceImpl` ②统一支付成功处理到 `MallOrderServiceImpl.paySuccess()` ③删除旧 `OrderEntity`/`OrderStatusVO`/`ShopCartEntity` | **已关闭（2026-10-03 legacy sunset 全部完成）**：①M2-1 超时关单分流；②回调统一走状态机；③`domain/order/legacy` + `infrastructure/order/legacy` + 绑定测试已整体删除，legacy 数据清零（pay_order 无主订单行=0），守卫规则 5 防回潮 |
 | P0-2 | Application 层模块归属 | ~~`OrderApplicationService` 位于 trigger 模块的 `trigger.application` 包~~（2026-10-03 已迁移，详见附录 A.12） | 新建 `s-pay-mall-application` 模块，迁移 `OrderApplicationService` + `OrderTransactionService` | 已处理（2026-10-03） |
 | P0-3 | Infrastructure 层 @Transactional 违规 | ~~`WeixinLoginGatewayImpl.createWechatUserAndBind()` 标注了 `@Transactional`~~（2026-10-04 已上移，详见附录 A.13） | 创建 `AuthApplicationService`，将事务上移至 Application 层 | 已处理（2026-10-04） |
-| P0-4 | 幂等性设计缺失 | 所有状态变更 API 入口均无 `requestId` 幂等保护；MQ Listener 未进行 SETNX 消费幂等检查 | 状态变更 DTO 添加 `requestId` 字段；Application 层实现事务外锁操作；MQ Listener 加 `tryAcquire()` | 待处理 |
+| P0-4 | 幂等性设计缺失 | 所有状态变更 API 入口均无 `requestId` 幂等保护；MQ Listener 未进行 SETNX 消费幂等检查 | 状态变更 DTO 添加 `requestId` 字段；Application 层实现事务外锁操作；MQ Listener 加 `tryAcquire()` | **已关闭（2026-10-04）**：下单 requestId 幂等 + order_paid 消费幂等，三场景 E2E 锁定，详见附录 A.15 |
 | P0-5 | Domain 层跨领域反向依赖 | `domain/order/service/PayOrderService.java` import 了 `domain.mall.gateway.IPayGateway` | 方案A: IPayGateway → `domain/shared/`；方案B: 领域事件解耦；方案C: PayOrderService → `domain/mall/` | 已处理（2026-10-03，M2-5：IPayGateway 随 mall 订单簇收编进 `domain/order/gateway`，PayOrderService 与 IPayGateway 同域，反向依赖自然消除，无需三选一） |
 | P0-6 | Controller 中业务路由逻辑 | ~~`MallAuthController` 含 `if (openId != null)` 注册策略判断；`AliPayController` 含 `"TRADE_SUCCESS".equals()` 支付状态判断~~（2026-10-04 已下沉，详见附录 A.14） | 业务判断下沉到 Domain Service | 已处理（2026-10-04） |
 | P0-9 | 并发回调重复扣库存 | `OrderStateMachineServiceImpl.paySuccess()` 先无锁读状态（`canPay()`），且 `OrderRepositoryImpl.updateOrderStatusByOrderNo` 的 UPDATE 无 status 条件（139-145 行）：并发 notify 均读到 INIT 时全部穿过守卫，各自执行 `syncDBStockForPaySuccess` 重复扣 MySQL 库存。**2026-10-03 实测复现**（10 线程同一瞬间重放同一合法 notify，证据：`s-pay-mall-start/src/test/java/cn/fcr/test/AlipayNotifyE2ETest.java#testPayNotify_concurrentDuplicateNotify`）：10 个事务全部通过 `canPay()`，库存 100→80（扣 10×2 件）；order_main/pay_order 双写同值无业务损害，但**库存扣减不在幂等保护内**。串行重放幂等正常（同测试类场景 2），仅并发触发 | ①`updateOrderStatusByOrderNo` UPDATE 加源状态条件，以影响行数作守卫（0 行即重复回调，直接返回不再扣库存）②`syncDBStockForPaySuccess` 仅在守卫通过时执行 ③修复后移除该测试的 `@Ignore` 作为回归测试。建议纳入 JV-003 M2（与超时关单分流同批触碰状态机） | **已关闭（2026-10-03）**：①UPDATE 增加 `expectStatus` 源状态条件（INIT 存储形式 CREATED，经 `OrderState.toDbStatus()` 映射），签名变为 `(orderNo, expectStatus, targetStatus)`；②paySuccess 影响行数 0 即返回 false，跳过 pay_order 更新与库存扣减；③deliver/complete/cancel 三变迁同步加守卫；④@Ignore 已移除，10 线程并发回归测试通过，全量测试 Skipped=0 |
@@ -284,6 +284,27 @@
 - `WeixinScanLoginMockE2ETest` 走 `authApplicationService.handleWechatScanLogin` 生产入口，断言（wx_user_{uid}/MEMBER/绑定落库/异常回滚）与本修复后的领域路径一致，注释同步更新
 
 **经验**：Trigger 层只做协议适配（解析/回执），任何 `if` 背后只要有业务语义就该问"这条规则有没有第二个入口"——本次两处重复都是被第二个入口（扫码自动注册、实体校验方法）暴露出来的；枚举 + 领域服务单一入口是这类下沉的标准形态。
+
+### A.15 P0-4：状态变更入口幂等保护（下单 requestId 幂等 + order_paid 消费幂等）
+
+**问题**：
+- `POST /orders` 无任何幂等保护：网络重试/用户双击/前端重复提交会产生重复订单，并各自预扣 Redis 库存
+- `order_paid` MQ 监听器（`OrderPaidRocketListener`）无消费幂等：RocketMQ at-least-once 重投会导致 `paySuccess` 状态机重复变迁、MySQL 库存重复扣减、微信支付成功通知重复推送
+
+**修复**：
+- `IIdempotentGateway` 扩展为通用业务幂等网关：新增 `tryAcquire(type, no, ttlSeconds)` 重载、`markDone(type, no, resultValue)`（记录业务结果值）、`getValue(type, no)`；幂等键前缀 `stock:event:` 保留不动（旧键兼容，避免 24h 窗口内库存双扣）
+- `UserOrderCreateReq` 新增可选字段 `requestId`；`OrderApplicationService.createOrder(userId, address, requestId)`：
+  - requestId 非空 → 幂等键=requestId（24h）。获取锁失败时读结果值：已完成（orderNo）则查单组装 `OrderCreateVO` 返回首次订单（payUrl 为空，前端走 continue-pay）；`PROCESSING` 中则抛"订单正在处理中"提示
+  - requestId 为空 → 降级为用户级短锁 `uid:{userId}`（10s），仅防双击/并发重发
+  - 成功后 `markDone` 写 orderNo；业务异常 `release` 允许用户重试（幂等锁在事务外，不 hold 事务）
+- `OrderPaidRocketListener.onMessage` 开头 `tryAcquire(BUSINESS_TYPE_ORDER_PAID_NOTIFY, orderNo)`：获取失败即重复消息，log 后直接 return 不抛异常（ACK 不重投）；处理异常则 `release` 并重抛（交给 MQ 重投）
+- 顺带修复：`ffd29bf` 迁移时误删 `WeixinLoginGatewayImpl.getLoginToken` 的"取后即删"，扫码登录 token 5 分钟内可重放，已恢复一次性消费语义
+
+**验证证据**：
+- 新增 `OrderCreateIdempotencyE2ETest` 三场景全绿（13/13）：①同 requestId 串行重发 → 返回同一 orderNo、pay_order 仅一行、Redis 库存仅预扣一次；②无 requestId 10 线程并发 → 恰好 1 成功 9 拒绝（IllegalStateException）；③order_paid 重复消费 → `sendPaymentSuccessNotification` 仅调用 1 次
+- 全量 `mvn clean install` EXIT=0，domain 守卫 9/9 绿
+
+**经验**：幂等锁必须在事务外获取（否则锁持有期间挂起事务连接）；"处理中"与"已完成"要用不同值区分（`PROCESSING_VALUE` vs 业务结果值），否则重发请求分不清"等一等"还是"返回结果"；MQ 消费幂等失败不抛异常是标准做法——抛异常只会触发无谓重投。
 
 ---
 

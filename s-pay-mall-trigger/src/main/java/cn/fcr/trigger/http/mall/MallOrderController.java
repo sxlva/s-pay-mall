@@ -122,8 +122,8 @@ public class MallOrderController extends BaseController {
     @PostMapping("/orders")
     public Response<UserOrderCreateRes> createOrder(@RequestBody @Valid UserOrderCreateReq request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
-        log.info("创建订单: userId={}, address={}", userId, request.getAddress());
-        OrderCreateVO orderVO = orderApplicationService.createOrder(userId, request.getAddress());
+        log.info("创建订单: userId={}, address={}, requestId={}", userId, request.getAddress(), request.getRequestId());
+        OrderCreateVO orderVO = orderApplicationService.createOrder(userId, request.getAddress(), request.getRequestId());
 
         UserOrderCreateRes result = OrderConverter.INSTANCE.toCreateResp(orderVO);
         if (orderVO.getPayUrl() != null && !orderVO.getPayUrl().isEmpty()) {

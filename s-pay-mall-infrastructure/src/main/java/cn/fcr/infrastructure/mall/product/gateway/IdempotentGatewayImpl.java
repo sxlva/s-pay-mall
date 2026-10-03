@@ -38,12 +38,16 @@ public class IdempotentGatewayImpl implements IIdempotentGateway {
 
     @Override
     public boolean tryAcquire(String businessType, String businessNo) {
+        return tryAcquire(businessType, businessNo, IDEMPOTENT_EXPIRE_HOURS * 3600);
+    }
+
+    @Override
+    public boolean tryAcquire(String businessType, String businessNo, long ttlSeconds) {
         String idempotentKey = buildKey(businessType, businessNo);
         RBucket<String> bucket = redissonClient.getBucket(idempotentKey);
 
         // 使用 trySet 实现 SETNX（仅在不存在时设置）
-        // 设置值为 "PROCESSING"，过期时间为 24 小时
-        boolean acquired = bucket.trySet(PROCESSING_VALUE, IDEMPOTENT_EXPIRE_HOURS, TimeUnit.HOURS);
+        boolean acquired = bucket.trySet(PROCESSING_VALUE, ttlSeconds, TimeUnit.SECONDS);
 
         if (acquired) {
             log.info("【幂等性检查】获取锁成功，businessType={}, businessNo={}, key={}",
@@ -78,6 +82,33 @@ public class IdempotentGatewayImpl implements IIdempotentGateway {
             log.error("【幂等性释放】释放锁异常，businessType={}, businessNo={}, key={}, error={}",
                     businessType, businessNo, idempotentKey, e.getMessage(), e);
             return false;
+        }
+    }
+
+    @Override
+    public void markDone(String businessType, String businessNo, String resultValue) {
+        String idempotentKey = buildKey(businessType, businessNo);
+        try {
+            // 直接覆盖值并续期 24h；此时持有者为本线程，无并发写冲突
+            redissonClient.getBucket(idempotentKey).set(resultValue, IDEMPOTENT_EXPIRE_HOURS, TimeUnit.HOURS);
+            log.info("【幂等性完成】业务执行完成，结果已记录，businessType={}, businessNo={}, key={}, result={}",
+                    businessType, businessNo, idempotentKey, resultValue);
+        } catch (Exception e) {
+            // 标记失败不影响主流程（重复请求会走"处理中"分支）
+            log.error("【幂等性完成】标记完成异常，businessType={}, businessNo={}, key={}, error={}",
+                    businessType, businessNo, idempotentKey, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public String getValue(String businessType, String businessNo) {
+        try {
+            RBucket<String> bucket = redissonClient.getBucket(buildKey(businessType, businessNo));
+            return bucket.get();
+        } catch (Exception e) {
+            log.error("【幂等性查询】读取幂等值异常，businessType={}, businessNo={}, error={}",
+                    businessType, businessNo, e.getMessage(), e);
+            return null;
         }
     }
 
