@@ -136,10 +136,13 @@ public class OrderRepositoryImpl implements IMallOrderQueryGateway {
     }
 
     @Override
-    public int updateOrderStatusByOrderNo(String orderNo, String status) {
+    public int updateOrderStatusByOrderNo(String orderNo, String expectStatus, String targetStatus) {
         LambdaUpdateWrapper<OrderMain> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(OrderMain::getOrderNo, orderNo);
-        updateWrapper.set(OrderMain::getStatus, status);
+        // 【P0-9 并发守卫】UPDATE 带源状态条件：并发回调同时读到旧状态时，
+        // 仅第一个事务影响 1 行，其余影响 0 行，从数据库层面杜绝重复流转
+        updateWrapper.eq(OrderMain::getStatus, expectStatus);
+        updateWrapper.set(OrderMain::getStatus, targetStatus);
         updateWrapper.set(OrderMain::getUpdateTime, LocalDateTime.now());
         return orderMainDao.update(null, updateWrapper);
     }

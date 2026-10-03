@@ -47,9 +47,14 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
             return false;
         }
 
-        // 更新 order_main 状态为 PAID
-        int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo, OrderState.PAID.getCode());
-        
+        // 更新 order_main 状态为 PAID（条件更新作并发守卫：影响行数 0 = 并发/重复回调，跳过后续副作用）
+        int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
+                OrderState.INIT.toDbStatus(), OrderState.PAID.getCode());
+        if (orderUpdated == 0) {
+            log.warn("【状态机】订单状态已被并发事务流转，拒绝重复支付处理，orderNo=" + orderNo);
+            return false;
+        }
+
         // 更新 pay_order 状态为 PAID
         payOrderGateway.updatePayStatusToPaid(orderNo);
 
@@ -57,7 +62,7 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
         syncDBStockForPaySuccess(order);
 
         log.info("【状态机】支付成功状态更新完成，orderNo=" + orderNo);
-        return orderUpdated > 0;
+        return true;
     }
 
     /**
@@ -106,14 +111,19 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
             return false;
         }
 
-        // 更新 order_main 状态为 SHIPPED
-        int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo, OrderState.SHIPPED.getCode());
-        
+        // 更新 order_main 状态为 SHIPPED（条件更新作并发守卫）
+        int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
+                OrderState.PAID.toDbStatus(), OrderState.SHIPPED.getCode());
+        if (orderUpdated == 0) {
+            log.warn("【状态机】订单状态已被并发事务流转，拒绝重复发货处理，orderNo=" + orderNo);
+            return false;
+        }
+
         // 更新 pay_order 状态为 TRADE_DONE
         payOrderGateway.updatePayStatusToTradeDone(orderNo);
 
         log.info("【状态机】发货状态更新完成，orderNo=" + orderNo);
-        return orderUpdated > 0;
+        return true;
     }
 
     @Override
@@ -131,7 +141,8 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
             return false;
         }
 
-        int updated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo, OrderState.DONE.getCode());
+        int updated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
+                OrderState.SHIPPED.toDbStatus(), OrderState.DONE.getCode());
         log.info("【状态机】订单完成状态更新完成，orderNo=" + orderNo);
         return updated > 0;
     }
@@ -154,9 +165,14 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
         // 在更新状态之前判断订单是否已支付（用于后续库存恢复判断）
         boolean isPaid = order.getState() == OrderState.PAID;
 
-        // 更新 order_main 状态为 CANCELED
-        int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo, OrderState.CANCELED.getCode());
-        
+        // 更新 order_main 状态为 CANCELED（条件更新作并发守卫：影响行数 0 = 状态已被并发流转，跳过关闭支付单与库存恢复）
+        int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
+                OrderState.INIT.toDbStatus(), OrderState.CANCELED.getCode());
+        if (orderUpdated == 0) {
+            log.warn("【状态机】订单状态已被并发事务流转，拒绝重复取消处理，orderNo=" + orderNo);
+            return false;
+        }
+
         // 更新 pay_order 状态为 CLOSED（仅当未支付时）
         PayStatus currentPayStatus = payOrderGateway.getPayStatus(orderNo);
         if (currentPayStatus == PayStatus.WAIT_PAY || currentPayStatus == PayStatus.PAYING) {
@@ -167,7 +183,7 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
         restoreStockForCancel(order, isPaid);
 
         log.info("【状态机】取消订单状态更新完成，orderNo=" + orderNo);
-        return orderUpdated > 0;
+        return true;
     }
 
     /**

@@ -338,29 +338,26 @@ public class AlipayNotifyE2ETest {
     }
 
     /**
-     * 场景 2-补：并发重放幂等（并发极端场景验证）
+     * 场景 2-补：并发重放幂等（并发极端场景回归测试，P0-9 修复后启用）
      *
-     * <p>M1 静态核实已登记的残留风险：paySuccess 先无锁读状态（canPay），
-     * 且 {@code updateOrderStatusByOrderNo} 的 UPDATE 无 status 条件
-     * （OrderRepositoryImpl.java:139-145），两个请求同时读到 INIT 时
-     * 可能双双通过守卫并各自执行一次库存扣减。</p>
+     * <p>历史缺陷（2026-10-03 实测复现）：paySuccess 先无锁读状态（canPay），
+     * 且 {@code updateOrderStatusByOrderNo} 的 UPDATE 无 status 条件，
+     * 10 线程同一瞬间重放同一合法 notify 时全部穿过守卫，
+     * MySQL 库存从 100 被扣到 80（10×2 件），库存扣减不在幂等保护内。</p>
      *
-     * <p><b>2026-10-03 实测结论：风险真实存在，比技术债预估更严重。</b>
-     * 10 线程同一瞬间重放同一合法 notify，10 个事务全部通过 canPay 守卫，
-     * 各自执行一次 syncDBStockForPaySuccess：MySQL 库存从 100 被扣到 80
-     * （10×2 件），order_main/pay_order 仍写同值 PAID。
-     * 状态写双写同值无业务损害（与技术债结论一致），
-     * 但<b>库存扣减不在幂等保护内，并发回调会重复扣库存</b>。</p>
+     * <p><b>修复方案（2026-10-03 P0-9）：条件更新作并发守卫。</b>
+     * UPDATE 增加源状态条件（INIT 的存储形式 CREATED），
+     * 并发下仅第一个事务影响 1 行，其余影响 0 行并直接返回 false，
+     * pay_order 更新与库存扣减仅在守卫通过后执行；
+     * deliver/complete/cancel 三个变迁同步加守卫。</p>
      *
-     * <p>因 M1 冻结生产代码（禁止修改 OrderStateMachineServiceImpl/
-     * OrderTransactionService），本测试暂标记 @Ignore；
-     * 待 JV-003 M2 或技术债修复（如 UPDATE 加 status 条件 +
-     * 扣减前置校验影响行数）后移除 @Ignore 启用。</p>
+     * <p>本测试作为该缺陷的永久回归测试：10 线程并发重放同一合法 notify，
+     * 硬标准为数据库终态——order_main/pay_order 双 PAID、
+     * MySQL 库存只扣一次、Redis 库存不变。</p>
      *
      * @throws Exception 请求或断言失败
      */
     @Test
-    @org.junit.Ignore("并发重放暴露库存重复扣减缺陷（实测 100→80），待 M2/技术债修复后启用")
     public void testPayNotify_concurrentDuplicateNotify() throws Exception {
         // ========== 准备真实新订单 ==========
         int quantity = 2;
@@ -408,7 +405,7 @@ public class AlipayNotifyE2ETest {
         assertNotNull(payOrder);
         assertEquals("并发回调后 pay_order 仍应为 PAID", "PAID", payOrder.getStatus());
 
-        assertEquals("并发重放下 MySQL 库存只能减少一次（暴露无状态条件更新的并发窗口）",
+        assertEquals("并发重放下 MySQL 库存只能减少一次（P0-9 条件更新守卫生效）",
                 Integer.valueOf(stockS0 - quantity), productDao.selectById(productId).getStock());
 
         long redisStockAfter = redissonClient.getAtomicLong(STOCK_KEY_PREFIX + productId).get();
