@@ -6,6 +6,7 @@ import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
 import cn.fcr.domain.mall.service.IMallCartService;
 import cn.fcr.domain.mall.service.IMallOrderService;
+import cn.fcr.domain.mall.service.IOrderStateMachineService;
 import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.service.IOrderService;
@@ -35,6 +36,8 @@ public class OrderApplicationService {
     private final IOrderPaymentGateway orderPaymentGateway;
     /** 旧订单领域服务 */
     private final IOrderService orderService;
+    /** 订单状态机服务（order_main + pay_order 状态流转唯一出口） */
+    private final IOrderStateMachineService orderStateMachineService;
     /** 支付单领域服务 */
     private final PayOrderService payOrderService;
     /** 订单事件发布器 */
@@ -46,6 +49,7 @@ public class OrderApplicationService {
                                    IMallOrderService mallOrderService,
                                    IOrderPaymentGateway orderPaymentGateway,
                                    IOrderService orderService,
+                                   IOrderStateMachineService orderStateMachineService,
                                    PayOrderService payOrderService,
                                    IOrderEventPublisher orderEventPublisher,
                                    OrderTransactionService orderTransactionService) {
@@ -53,6 +57,7 @@ public class OrderApplicationService {
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
         this.orderService = orderService;
+        this.orderStateMachineService = orderStateMachineService;
         this.payOrderService = payOrderService;
         this.orderEventPublisher = orderEventPublisher;
         this.orderTransactionService = orderTransactionService;
@@ -271,11 +276,21 @@ public class OrderApplicationService {
     /**
      * 处理超时关单
      *
+     * <p>新旧订单分流（P0-1 过渡）：order_main 中存在的订单为新订单，
+     * 走状态机 cancel 统一流转（关 pay_order + 恢复 Redis 预扣库存）；
+     * 否则走旧域逻辑。旧链下线后删除旧分支。</p>
+     *
      * @param orderNo 订单号
      * @return true表示关闭成功
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean handleTimeoutCloseOrder(String orderNo) {
+        boolean isMallOrder = mallOrderService.getOrderByNo(orderNo) != null;
+        if (isMallOrder) {
+            log.info("超时关单分流：新订单（order_main），走状态机取消，orderNo={}", orderNo);
+            return orderStateMachineService.cancel(orderNo);
+        }
+        log.info("超时关单分流：旧订单，走旧域逻辑，orderNo={}", orderNo);
         return orderService.handleTimeoutCloseOrder(orderNo);
     }
 
