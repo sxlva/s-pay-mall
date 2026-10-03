@@ -1,6 +1,7 @@
 package cn.fcr.trigger.application;
 
 import cn.fcr.domain.order.gateway.IOrderPaymentGateway;
+import cn.fcr.domain.order.gateway.IPayOrderGateway;
 import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.order.model.valobj.OrderCreateVO;
 import cn.fcr.domain.order.model.valobj.OrderVO;
@@ -34,6 +35,8 @@ public class OrderApplicationService {
     private final IMallOrderService mallOrderService;
     /** 订单支付网关 */
     private final IOrderPaymentGateway orderPaymentGateway;
+    /** 支付订单网关（pay_order 读写） */
+    private final IPayOrderGateway payOrderGateway;
     /** 旧订单领域服务 */
     private final IOrderService orderService;
     /** 订单状态机服务（order_main + pay_order 状态流转唯一出口） */
@@ -48,6 +51,7 @@ public class OrderApplicationService {
     public OrderApplicationService(IMallCartService mallCartService,
                                    IMallOrderService mallOrderService,
                                    IOrderPaymentGateway orderPaymentGateway,
+                                   IPayOrderGateway payOrderGateway,
                                    IOrderService orderService,
                                    IOrderStateMachineService orderStateMachineService,
                                    PayOrderService payOrderService,
@@ -56,6 +60,7 @@ public class OrderApplicationService {
         this.mallCartService = mallCartService;
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
+        this.payOrderGateway = payOrderGateway;
         this.orderService = orderService;
         this.orderStateMachineService = orderStateMachineService;
         this.payOrderService = payOrderService;
@@ -270,7 +275,7 @@ public class OrderApplicationService {
      * @return 订单ID列表
      */
     public List<String> queryNoPayNotifyOrder() {
-        return orderService.queryNoPayNotifyOrder();
+        return payOrderGateway.queryNoPayNotifyOrder();
     }
 
     /**

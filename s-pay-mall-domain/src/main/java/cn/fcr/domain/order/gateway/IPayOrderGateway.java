@@ -2,6 +2,8 @@ package cn.fcr.domain.order.gateway;
 
 import cn.fcr.domain.order.model.vo.PayStatus;
 
+import java.util.List;
+
 /**
  * 支付订单网关接口，提供支付订单状态更新的能力。
  *
@@ -40,4 +42,12 @@ public interface IPayOrderGateway {
      * @return 支付状态，若不存在返回 null
      */
     PayStatus getPayStatus(String orderNo);
+
+    /**
+     * 查询等待支付超过5分钟但未收到回调的订单号
+     * 用于 NoPayNotifyOrderJob 主动补单（数据口径：pay_order 表 WAIT_PAY 行）
+     *
+     * @return 需要主动补单的订单号列表
+     */
+    List<String> queryNoPayNotifyOrder();
 }

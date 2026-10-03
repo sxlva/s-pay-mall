@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 支付订单网关实现
@@ -66,5 +67,10 @@ public class PayOrderGatewayImpl implements IPayOrderGateway {
     public PayStatus getPayStatus(String orderNo) {
         String status = orderDao.queryOrderStatus(orderNo);
         return PayStatus.fromCode(status);
+    }
+
+    @Override
+    public List<String> queryNoPayNotifyOrder() {
+        return orderDao.queryNoPayNotifyOrder();
     }
 }
