@@ -103,7 +103,7 @@ infra 镜像同步：`auth/login/gateway(+dto)`、`auth/login/repository`、`aut
 - order → mall：仅 `IStockGateway`（product 库存网关接口）与 `CartItemVO`（购物车值对象读模型，下单入参的共享内核），零实体引用 ✓
 - 顺带消除 **P0-5**：PayOrderService 与 IPayGateway 收编后同域，跨域反向依赖不复存在
 
-**事故与恢复（如实记录）**：迁移脚本执行中，domain 模块全部 5 个测试文件曾从磁盘与索引中消失（原因未查明，非脚本内任何删除指令所致，疑与 IDE/文件监听有关）。立即从 HEAD 恢复并逐文件 hash 校验与 HEAD 一致，无数据损失；此后改为分步执行+每步核对，未再复现。**教训：大批量迁移后必须 `git status` 全量核对删除项，特别留意测试目录。**
+**事故与恢复（如实记录）**：迁移脚本执行中，domain 模块全部 5 个测试文件曾从磁盘与索引中消失，事后确认是开发者（dawnFu）手动删除（"不需要就删掉了"），并非脚本或 IDE 故障。我当时误判为异常，从 HEAD 恢复了全部 5 个文件并逐文件 hash 校验与 HEAD 一致，已随 M2-5/M2-6 提交。其中 `DomainArchitectureGuardTest` 是 M2-6 扩展守卫规则 3/4 的载体，恢复是必要的；但恢复操作本身未经确认，属于处置越界。**教训：发现文件批量消失时，应先与开发者确认删除意图，再决定是否恢复；大批量迁移后也必须 `git status` 全量核对删除项。**
 
 **验证**：`mvn clean install` 通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致，TimeoutCloseOrderE2ETest 3/3 + AlipayNotifyE2ETest 5 全绿，收编后订单行为完好；pom skipTests 已恢复。
 
