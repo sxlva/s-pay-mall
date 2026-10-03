@@ -8,8 +8,8 @@ import cn.fcr.api.dto.common.res.LoginRes;
 import cn.fcr.api.dto.user.res.UserProfileRes;
 import cn.fcr.domain.auth.login.service.ILoginService;
 import cn.fcr.domain.auth.login.service.WeixinBindService;
-import cn.fcr.domain.mall.model.valobj.UserProfile;
-import cn.fcr.domain.mall.service.IMallUserService;
+import cn.fcr.domain.mall.user.model.valobj.UserProfile;
+import cn.fcr.domain.mall.user.service.IMallUserService;
 import cn.fcr.trigger.http.BaseController;
 import cn.fcr.trigger.http.assembler.UserProfileAssembler;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +57,7 @@ public class MallAuthController extends BaseController {
     public Response<LoginRes> register(@RequestBody @Valid RegisterReq request) {
         log.info("用户注册请求: username={}, openId={}", request.getUsername(), request.getOpenId());
 
-        cn.fcr.domain.mall.model.valobj.UserLoginVO loginVO;
+        cn.fcr.domain.mall.user.model.valobj.UserLoginVO loginVO;
         if (request.getOpenId() != null && !request.getOpenId().isBlank()) {
             loginVO = mallUserService.registerWithWeChat(
                     request.getUsername(),
@@ -90,7 +90,7 @@ public class MallAuthController extends BaseController {
     @PostMapping("/login")
     public Response<LoginRes> login(@RequestBody @Valid LoginReq request) {
         log.info("用户登录请求: username={}", request.getUsername());
-        cn.fcr.domain.mall.model.valobj.UserLoginVO loginVO = mallUserService.login(request.getUsername(), request.getPassword());
+        cn.fcr.domain.mall.user.model.valobj.UserLoginVO loginVO = mallUserService.login(request.getUsername(), request.getPassword());
 
         LoginRes result = new LoginRes();
         result.setToken(loginVO.getToken());

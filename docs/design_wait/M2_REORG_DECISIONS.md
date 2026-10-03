@@ -76,6 +76,19 @@ infra 镜像同步：`auth/login/gateway(+dto)`、`auth/login/repository`、`aut
 
 **验证**：全仓 grep 零残留；`mvn clean install` 通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致，WeixinScanLoginMockE2ETest 2/2 证明登录链路完好。
 
+## 五之三、M2-4 实施记录（2026-10-03）
+
+**改动**：mall 拆四包（纯移动，git mv 保历史，43 文件改名 + 34 文件 import 更新）：
+- `mall/product`：Product/Category 实体、ProductSaveCommand、StockChangeMsgDTO、3 个分类/商品异常、ProductVO/CategoryVO、IMallProductService、StockChangeHandler + handler 三件套（Admin/Deduct/Restore）、IStockGateway、IIdempotentGateway
+- `mall/cart`：Cart/CartItem 实体、CartItemVO、IMallCartService、ICartRepository、IDistributedLockService（购物车分布式锁）
+- `mall/user`：UserEntity、UserLoginVO/UserProfile、IMallUserService、IUserRepository、IUserBindingGateway；UserEntityTest 同步迁移
+- `mall/statistics`：IMallStatisticsService、IStatisticsRepository
+- infra 镜像：`mall/{product,cart,user,statistics}/{gateway,repository}` 同步归位
+
+**过渡态（订单簇保留在 mall 根，M2-5 整体收编进 order）**：OrderEntity/OrderItemEntity/OrderState、OrderVO/OrderCreateVO/OrderSummaryVO、IMallOrderService/IOrderStateMachineService 及两个实现、IMallOrderQueryGateway/IOrderPaymentGateway/IOrderQueryGateway/IPayGateway/IPayOrderGateway；infra 侧 OrderRepositoryImpl/OrderQueryGatewayImpl/OrderPaymentGatewayImpl/PayOrderGatewayImpl/AlipayGatewayImpl 不动；OrderEntityTest/OrderEntityClearItemsTest 随 M2-5 迁移。
+
+**验证**：全仓 grep 旧路径零残留（命中项全部为有意保留的订单簇）；`mvn clean install` 通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致。
+
 ## 六、风险备案
 
 1. 40+ 文件移动引用漏改 → 分 6 步，编译器兜底，脚本只做机械 import 替换

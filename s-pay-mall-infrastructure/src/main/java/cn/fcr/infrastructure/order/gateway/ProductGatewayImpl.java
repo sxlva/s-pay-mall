@@ -1,6 +1,6 @@
 package cn.fcr.infrastructure.order.gateway;
 
-import cn.fcr.domain.mall.gateway.IStockGateway;
+import cn.fcr.domain.mall.product.gateway.IStockGateway;
 import cn.fcr.domain.order.gateway.IProductGateway;
 import cn.fcr.domain.order.model.entity.ProductEntity;
 import cn.fcr.infrastructure.dao.mall.IProductDao;

@@ -3,7 +3,7 @@ package cn.fcr.trigger.http.mall;
 import cn.fcr.api.response.Response;
 import cn.fcr.api.dto.common.res.CategoryRes;
 import cn.fcr.api.dto.common.res.ProductRes;
-import cn.fcr.domain.mall.service.IMallProductService;
+import cn.fcr.domain.mall.product.service.IMallProductService;
 import cn.fcr.trigger.http.BaseController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -51,7 +51,7 @@ public class MallProductController extends BaseController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Integer status) {
         log.info("商品列表查询: categoryId={}, keyword={}", categoryId, keyword);
-        List<cn.fcr.domain.mall.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
+        List<cn.fcr.domain.mall.product.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
         List<ProductRes> result = products.stream().map(p -> {
             ProductRes vo = new ProductRes();
             vo.setId(p.getId());
@@ -77,7 +77,7 @@ public class MallProductController extends BaseController {
     @GetMapping("/categories")
     public Response<List<CategoryRes>> listCategories() {
         log.info("商品分类列表查询");
-        List<cn.fcr.domain.mall.model.valobj.CategoryVO> categories = mallProductService.listCategory();
+        List<cn.fcr.domain.mall.product.model.valobj.CategoryVO> categories = mallProductService.listCategory();
         List<CategoryRes> result = categories.stream().map(c -> {
             CategoryRes vo = new CategoryRes();
             vo.setId(c.getId());

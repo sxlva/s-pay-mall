@@ -1,7 +1,7 @@
 package cn.fcr.trigger.listener;
 
 import cn.fcr.domain.order.adapter.event.PaySuccessMessageEvent;
-import cn.fcr.domain.mall.gateway.IUserBindingGateway;
+import cn.fcr.domain.mall.user.gateway.IUserBindingGateway;
 import cn.fcr.domain.mall.gateway.IMallOrderQueryGateway;
 import cn.fcr.domain.mall.model.entity.OrderEntity;
 import cn.fcr.domain.auth.login.gateway.IWeChatGateway;

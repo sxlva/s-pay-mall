@@ -2,8 +2,8 @@ package cn.fcr.trigger.http.mall;
 
 import cn.fcr.api.response.Response;
 import cn.fcr.api.dto.user.res.UserProfileRes;
-import cn.fcr.domain.mall.model.valobj.UserProfile;
-import cn.fcr.domain.mall.service.IMallUserService;
+import cn.fcr.domain.mall.user.model.valobj.UserProfile;
+import cn.fcr.domain.mall.user.service.IMallUserService;
 import cn.fcr.trigger.http.BaseController;
 import cn.fcr.trigger.http.assembler.UserProfileAssembler;
 import lombok.extern.slf4j.Slf4j;

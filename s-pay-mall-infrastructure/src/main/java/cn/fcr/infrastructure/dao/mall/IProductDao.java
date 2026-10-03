@@ -1,6 +1,6 @@
 package cn.fcr.infrastructure.dao.mall;
 
-import cn.fcr.domain.mall.model.valobj.ProductVO;
+import cn.fcr.domain.mall.product.model.valobj.ProductVO;
 import cn.fcr.infrastructure.dao.mall.po.Product;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;

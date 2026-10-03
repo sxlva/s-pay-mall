@@ -10,13 +10,13 @@ import cn.fcr.api.dto.admin.res.AdminOrderRes;
 import cn.fcr.api.dto.common.res.ProductRes;
 import cn.fcr.api.dto.admin.res.AdminSalesTrendRes;
 import cn.fcr.api.dto.admin.res.AdminUserRes;
-import cn.fcr.domain.mall.model.command.ProductSaveCommand;
+import cn.fcr.domain.mall.product.model.command.ProductSaveCommand;
 import cn.fcr.domain.auth.permission.model.valobj.Role;
 import cn.fcr.domain.mall.model.entity.OrderState;
-import cn.fcr.domain.mall.model.entity.UserEntity;
-import cn.fcr.domain.mall.service.IMallProductService;
-import cn.fcr.domain.mall.service.IMallStatisticsService;
-import cn.fcr.domain.mall.service.IMallUserService;
+import cn.fcr.domain.mall.user.model.entity.UserEntity;
+import cn.fcr.domain.mall.product.service.IMallProductService;
+import cn.fcr.domain.mall.statistics.service.IMallStatisticsService;
+import cn.fcr.domain.mall.user.service.IMallUserService;
 import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
 import javax.validation.Valid;
@@ -146,7 +146,7 @@ public class MallAdminController extends BaseController {
      */
     @GetMapping("/categories")
     public Response<List<CategoryRes>> listCategories() {
-        List<cn.fcr.domain.mall.model.valobj.CategoryVO> categories = mallProductService.listCategory();
+        List<cn.fcr.domain.mall.product.model.valobj.CategoryVO> categories = mallProductService.listCategory();
         List<CategoryRes> result = categories.stream().map(c -> {
             CategoryRes vo = new CategoryRes();
             vo.setId(c.getId());
@@ -203,7 +203,7 @@ public class MallAdminController extends BaseController {
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Integer status) {
-        List<cn.fcr.domain.mall.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
+        List<cn.fcr.domain.mall.product.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
         List<ProductRes> result = products.stream().map(p -> {
             ProductRes vo = new ProductRes();
             vo.setId(p.getId());

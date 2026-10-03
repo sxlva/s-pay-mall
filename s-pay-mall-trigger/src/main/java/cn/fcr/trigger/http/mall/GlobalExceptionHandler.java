@@ -1,8 +1,8 @@
 package cn.fcr.trigger.http.mall;
 
 import cn.fcr.api.response.Response;
-import cn.fcr.domain.mall.model.exception.CategoryHasProductsException;
-import cn.fcr.domain.mall.model.exception.ProductHasOrdersException;
+import cn.fcr.domain.mall.product.model.exception.CategoryHasProductsException;
+import cn.fcr.domain.mall.product.model.exception.ProductHasOrdersException;
 import cn.fcr.types.common.Constants;
 import cn.fcr.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;

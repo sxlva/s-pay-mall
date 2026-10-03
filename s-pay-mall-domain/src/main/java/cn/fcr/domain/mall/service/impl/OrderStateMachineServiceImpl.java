@@ -2,7 +2,7 @@ package cn.fcr.domain.mall.service.impl;
 
 import cn.fcr.domain.mall.gateway.IMallOrderQueryGateway;
 import cn.fcr.domain.mall.gateway.IPayOrderGateway;
-import cn.fcr.domain.mall.gateway.IStockGateway;
+import cn.fcr.domain.mall.product.gateway.IStockGateway;
 import cn.fcr.domain.mall.model.entity.OrderEntity;
 import cn.fcr.domain.mall.model.entity.OrderItemEntity;
 import cn.fcr.domain.mall.model.entity.OrderState;

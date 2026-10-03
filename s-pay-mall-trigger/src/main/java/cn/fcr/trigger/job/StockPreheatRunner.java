@@ -1,7 +1,7 @@
 package cn.fcr.trigger.job;
 
-import cn.fcr.domain.mall.adapter.repository.IProductRepository;
-import cn.fcr.domain.mall.gateway.IStockGateway;
+import cn.fcr.domain.mall.product.adapter.repository.IProductRepository;
+import cn.fcr.domain.mall.product.gateway.IStockGateway;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;

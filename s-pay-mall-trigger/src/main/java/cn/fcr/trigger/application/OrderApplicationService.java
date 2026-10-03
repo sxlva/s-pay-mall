@@ -1,10 +1,10 @@
 package cn.fcr.trigger.application;
 
 import cn.fcr.domain.mall.gateway.IOrderPaymentGateway;
-import cn.fcr.domain.mall.model.valobj.CartItemVO;
+import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
-import cn.fcr.domain.mall.service.IMallCartService;
+import cn.fcr.domain.mall.cart.service.IMallCartService;
 import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.mall.service.IOrderStateMachineService;
 import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;

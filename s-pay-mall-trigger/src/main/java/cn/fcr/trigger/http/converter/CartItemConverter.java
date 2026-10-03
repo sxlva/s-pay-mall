@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http.converter;
 
 import cn.fcr.api.dto.user.res.UserCartItemRes;
-import cn.fcr.domain.mall.model.valobj.CartItemVO;
+import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;

@@ -8,7 +8,7 @@ import cn.fcr.api.dto.user.res.UserOrderRes;
 import cn.fcr.api.dto.user.res.UserOrderStockCheckRes;
 import cn.fcr.api.response.Response;
 import cn.fcr.trigger.application.OrderApplicationService;
-import cn.fcr.domain.mall.model.valobj.CartItemVO;
+import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
 import cn.fcr.trigger.http.BaseController;

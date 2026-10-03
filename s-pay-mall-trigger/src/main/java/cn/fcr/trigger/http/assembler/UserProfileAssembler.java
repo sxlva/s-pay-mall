@@ -1,7 +1,7 @@
 package cn.fcr.trigger.http.assembler;
 
 import cn.fcr.api.dto.user.res.UserProfileRes;
-import cn.fcr.domain.mall.model.valobj.UserProfile;
+import cn.fcr.domain.mall.user.model.valobj.UserProfile;
 
 /**
  * 用户个人信息装配器

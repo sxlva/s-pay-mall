@@ -1,7 +1,7 @@
 package cn.fcr.domain.mall.service;
 
 import cn.fcr.domain.mall.model.entity.OrderEntity;
-import cn.fcr.domain.mall.model.valobj.CartItemVO;
+import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
 

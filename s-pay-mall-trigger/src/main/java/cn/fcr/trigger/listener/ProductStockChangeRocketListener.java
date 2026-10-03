@@ -1,7 +1,7 @@
 package cn.fcr.trigger.listener;
 
-import cn.fcr.domain.mall.model.dto.StockChangeMsgDTO;
-import cn.fcr.domain.mall.service.StockChangeHandler;
+import cn.fcr.domain.mall.product.model.dto.StockChangeMsgDTO;
+import cn.fcr.domain.mall.product.service.StockChangeHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
