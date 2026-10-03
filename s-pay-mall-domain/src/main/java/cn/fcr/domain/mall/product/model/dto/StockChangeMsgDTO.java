@@ -56,9 +56,20 @@ public class StockChangeMsgDTO {
     private Long timestamp;
 
     /**
-     * 变更类型常量
+     * 变更类型：后台管理员修改库存
+     * 走全量更新语义，使用 {@link #newStock} 直接设置库存
      */
     public static final String CHANGE_TYPE_ADMIN_UPDATE = "ADMIN_UPDATE";
+
+    /**
+     * 变更类型：支付成功扣减库存
+     * {@link #changeQuantity} 为负数，对应 DeductHandler
+     */
     public static final String CHANGE_TYPE_PAY_DEDUCT = "PAY_DEDUCT";
+
+    /**
+     * 变更类型：订单取消/超时关单恢复库存
+     * {@link #changeQuantity} 为正数，对应 RestoreHandler
+     */
     public static final String CHANGE_TYPE_ORDER_RESTORE = "ORDER_RESTORE";
 }
