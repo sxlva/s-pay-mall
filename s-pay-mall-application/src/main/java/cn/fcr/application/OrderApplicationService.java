@@ -2,11 +2,13 @@ package cn.fcr.application;
 
 import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.cart.service.IMallCartService;
+import cn.fcr.domain.mall.product.gateway.IIdempotentGateway;
 import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.gateway.IOrderPaymentGateway;
 import cn.fcr.domain.order.gateway.IPayOrderGateway;
 import cn.fcr.domain.order.model.valobj.OrderCreateVO;
 import cn.fcr.domain.order.model.valobj.OrderVO;
+import cn.fcr.domain.order.model.vo.PayTradeStatus;
 import cn.fcr.domain.order.service.IMallOrderService;
 import cn.fcr.domain.order.service.IOrderStateMachineService;
 import cn.fcr.domain.order.service.PayOrderService;
@@ -42,6 +44,8 @@ public class OrderApplicationService {
     private final IPayOrderGateway payOrderGateway;
     /** 订单事务服务（内部使用） */
     private final OrderTransactionService orderTransactionService;
+    /** 幂等网关（P0-4：下单幂等守门） */
+    private final IIdempotentGateway idempotentGateway;
 
     public OrderApplicationService(IMallCartService mallCartService,
                                    IMallOrderService mallOrderService,
@@ -50,7 +54,8 @@ public class OrderApplicationService {
                                    IOrderEventPublisher orderEventPublisher,
                                    IOrderStateMachineService orderStateMachineService,
                                    IPayOrderGateway payOrderGateway,
-                                   OrderTransactionService orderTransactionService) {
+                                   OrderTransactionService orderTransactionService,
+                                   IIdempotentGateway idempotentGateway) {
         this.mallCartService = mallCartService;
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
@@ -59,6 +64,7 @@ public class OrderApplicationService {
         this.orderStateMachineService = orderStateMachineService;
         this.payOrderGateway = payOrderGateway;
         this.orderTransactionService = orderTransactionService;
+        this.idempotentGateway = idempotentGateway;
     }
 
     // ==================== 购物车 ====================
@@ -114,27 +120,72 @@ public class OrderApplicationService {
     // ==================== 订单 ====================
 
     /**
-     * 创建订单
+     * 创建订单（P0-4 幂等保护）
      *
      * <p>事务边界在 OrderTransactionService 中控制，MQ 消息发送在事务外执行，
      * 避免 sendDelayCloseMessage 在事务内部导致事务 hold 问题。</p>
      *
-     * @param userId  用户ID
-     * @param address 收货地址
+     * <p>幂等语义：
+     * <ul>
+     *   <li>requestId 非空：以 requestId 为幂等键（24h），重复请求返回首次创建的订单；
+     *       首次请求仍在处理中时抛异常提示稍后查询</li>
+     *   <li>requestId 为空：降级为用户级短锁（10s），仅防双击/并发重发，不承诺跨请求幂等</li>
+     * </ul>
+     * 执行异常时释放幂等键，允许用户重试。</p>
+     *
+     * @param userId    用户ID
+     * @param address   收货地址
+     * @param requestId 幂等键（客户端生成的 UUID，可为空）
      * @return 订单创建结果，含orderNo和payUrl
      */
-    public OrderCreateVO createOrder(Long userId, String address) {
-        // 事务内完成所有 DB 操作
-        OrderCreateVO result = orderTransactionService.createOrderInTransaction(userId, address);
-
-        // 事务提交后发送延时关闭消息（失败不影响主流程）
-        try {
-            orderPaymentGateway.sendDelayCloseMessage(result.getOrderNo());
-        } catch (Exception e) {
-            log.warn("发送延时关闭消息失败，orderNo: {}, error: {}", result.getOrderNo(), e.getMessage());
+    public OrderCreateVO createOrder(Long userId, String address, String requestId) {
+        // ===== P0-4 幂等守门 =====
+        boolean hasRequestId = requestId != null && !requestId.isBlank();
+        String idemNo = hasRequestId ? requestId : "uid:" + userId;
+        long ttlSeconds = hasRequestId ? 24 * 3600 : 10;
+        boolean acquired = idempotentGateway.tryAcquire(
+                IIdempotentGateway.BUSINESS_TYPE_ORDER_CREATE, idemNo, ttlSeconds);
+        if (!acquired) {
+            if (hasRequestId) {
+                // 同 requestId 重发：返回首次创建的订单（payUrl 走 continue-pay 重新获取）
+                String doneOrderNo = idempotentGateway.getValue(
+                        IIdempotentGateway.BUSINESS_TYPE_ORDER_CREATE, idemNo);
+                if (doneOrderNo != null && !IIdempotentGateway.PROCESSING_VALUE.equals(doneOrderNo)) {
+                    OrderVO existed = mallOrderService.getOrderByNo(doneOrderNo);
+                    if (existed != null) {
+                        log.info("创建订单幂等命中：同 requestId 返回已有订单，orderNo={}", doneOrderNo);
+                        return OrderCreateVO.builder()
+                                .orderNo(existed.getOrderNo())
+                                .totalAmount(existed.getTotalAmount())
+                                .status(existed.getStatus())
+                                .build();
+                    }
+                }
+            }
+            throw new IllegalStateException("订单正在处理中或已提交，请勿重复下单");
         }
 
-        return result;
+        try {
+            // 事务内完成所有 DB 操作
+            OrderCreateVO result = orderTransactionService.createOrderInTransaction(userId, address);
+
+            // 事务提交后发送延时关闭消息（失败不影响主流程）
+            try {
+                orderPaymentGateway.sendDelayCloseMessage(result.getOrderNo());
+            } catch (Exception e) {
+                log.warn("发送延时关闭消息失败，orderNo: {}, error: {}", result.getOrderNo(), e.getMessage());
+            }
+
+            // 记录幂等结果：同 requestId 重发时返回本订单
+            if (hasRequestId) {
+                idempotentGateway.markDone(IIdempotentGateway.BUSINESS_TYPE_ORDER_CREATE, idemNo, result.getOrderNo());
+            }
+            return result;
+        } catch (RuntimeException e) {
+            // 创建失败：释放幂等键允许重试
+            idempotentGateway.release(IIdempotentGateway.BUSINESS_TYPE_ORDER_CREATE, idemNo);
+            throw e;
+        }
     }
 
     /**
@@ -217,14 +268,38 @@ public class OrderApplicationService {
     // ==================== 支付回调与补偿 ====================
 
     /**
-     * 验证支付回调签名
+     * 处理支付宝支付异步回调（P0-6：业务判断从 Trigger 层下沉）
      *
-     * @param params          回调参数
-     * @param alipayPublicKey 支付宝公钥
-     * @return true表示验签通过
+     * <p>由应用层按序完成：交易状态判断（{@link PayTradeStatus#isSuccess()}）→
+     * 验签 → 订单履约。Controller 仅负责解析参数与回传 success/false。</p>
+     *
+     * @param params          支付宝回调参数
+     * @param alipayPublicKey 支付宝公钥（验签）
+     * @return true 表示已受理并触发履约，应回 "success"；false 表示忽略或验签失败，应回 "false"
      */
-    public boolean verifyPayCallbackSign(Map<String, String> params, String alipayPublicKey) {
-        return payOrderService.verifyCallbackSign(params, alipayPublicKey);
+    public boolean handleAlipayCallback(Map<String, String> params, String alipayPublicKey) {
+        String tradeStatusCode = params.get("trade_status");
+        PayTradeStatus tradeStatus = PayTradeStatus.fromCode(tradeStatusCode);
+        if (tradeStatus == null || !tradeStatus.isSuccess()) {
+            log.info("支付回调，非成功状态忽略: trade_status={}", tradeStatusCode);
+            return false;
+        }
+
+        boolean signVerified = payOrderService.verifyCallbackSign(params, alipayPublicKey);
+        if (!signVerified) {
+            log.error("支付回调，签名验证失败。公钥长度: {}, 公钥前100字符: {}, 接收参数: {}",
+                    alipayPublicKey != null ? alipayPublicKey.length() : 0,
+                    alipayPublicKey != null && alipayPublicKey.length() > 100 ? alipayPublicKey.substring(0, 100) : alipayPublicKey,
+                    params);
+            return false;
+        }
+
+        String tradeNo = params.get("out_trade_no");
+        log.info("支付回调，验签通过，交易名称: {}, 商户订单号: {}, 交易金额: {}",
+                params.get("subject"), tradeNo, params.get("total_amount"));
+
+        changeOrderPaySuccess(tradeNo);
+        return true;
     }
 
     /**

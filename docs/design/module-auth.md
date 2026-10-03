@@ -145,12 +145,15 @@ flowchart LR
 - `user_binding`：`identity_type` (WECHAT_MP) + `identifier` (openid) 联合唯一索引
 - `user_role`：用户-角色关联
 
-**创建新用户流程（WeixinLoginGatewayImpl.createWechatUserAndBind()）：**
+**创建新用户流程（`IMallUserService.registerWeChatUserByScan()`，P0-6 起建户规则唯一收敛在 domain 层用户领域服务）：**
 
-1. 创建临时用户 `temp_{uuid8}` → 获取自增 ID
+1. 创建临时用户 `temp_{uuid8}` → 获取自增 ID（公共步骤 `createUser`：查重 + 建户 + 赋 MEMBER 角色）
 2. 更新用户名为 `wx_user_{userId}`
 3. 创建 `user_binding` 绑定记录
-4. 初始化角色为 `MEMBER`（roleId=2）
+4. 签发 JWT（username=`wx_user_{userId}`，role=MEMBER）
+
+> 注：P0-6 前该流程位于 `WeixinLoginGatewayImpl.createWechatUserAndBind()`（Infrastructure 层直写三个 DAO），
+> 与 `MallUserServiceImpl.registerWithWeChat()` 双写同一套建户规则；现已上收，网关只保留 openid 查询与登录态缓存。
 
 ---
 
@@ -164,7 +167,7 @@ flowchart LR
 | **安全性** | 凭证可能被窃取吗？ | ticket→openid 仅存 Redis 5min，get 后即删；前端只见 ticket，短 TTL 降低重放窗口 |
 | **一次性消费** | getLoginToken 为何读后即删？ | 防止同一 ticket 被多次轮询取走，保证 token 一次使用后失效 |
 | **DDD 应用** | 端口与适配器体现？ | IWeChatGateway 接口由 WeixinGatewayImpl (Retrofit2) 适配实现；领域层 WeixinLoginService 不感知 HTTP 客户端 |
-| **新用户处理** | 首次扫码如何自动注册？ | WeixinLoginGatewayImpl.createWechatUserAndBind()：创建 mall_user → user_binding → 初始化 MEMBER 角色，一气呵成 |
+| **新用户处理** | 首次扫码如何自动注册？ | `WeixinLoginService` 判定 openid 未绑定 → `IMallUserService.registerWeChatUserByScan()`：建 mall_user（临时名→`wx_user_{id}`）→ 绑 user_binding → 赋 MEMBER 角色 → 签发 JWT，一气呵成；"是否新用户"规则在 auth 域，建户规则在 user 域，均不在 Infrastructure |
 
 ---
 
@@ -181,7 +184,8 @@ flowchart LR
 
 > **关键源码索引**：
 > - AccessToken 缓存：[`WeixinGatewayImpl.getAccessToken()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/auth/gateway/WeixinGatewayImpl.java#L148)
-> - 登录 Token：[`WeixinLoginGatewayImpl.saveLoginToken()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/auth/gateway/WeixinLoginGatewayImpl.java#L109)
+> - 登录 Token：[`WeixinLoginGatewayImpl.saveLoginToken()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/auth/login/gateway/WeixinLoginGatewayImpl.java)
+> - 扫码自动注册：[`MallUserServiceImpl.registerWeChatUserByScan()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/mall/user/service/impl/MallUserServiceImpl.java)（P0-6，建户规则唯一入口）
 > - 回调入口：[`WeixinPortalController.post()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/WeixinPortalController.java#L59)
 > - 轮询入口：[`LoginController.checkLogin()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/LoginController.java#L65)
 > - Redis Key 常量：[`Constants.REDIS_WECHAT_ACCESS_TOKEN_PREFIX`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-types/src/main/java/cn/fcr/types/common/Constants.java#L12)

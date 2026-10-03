@@ -33,7 +33,9 @@ public class AliPayController extends BaseController {
     /**
      * 支付宝支付异步回调通知
      *
-     * <p>接收支付宝服务器发送的支付结果通知，验签后更新订单支付状态</p>
+     * <p>接收支付宝服务器发送的支付结果通知。Controller 只做协议适配：
+     * 解析参数并委托应用层 {@link OrderApplicationService#handleAlipayCallback}
+     * 完成状态判断、验签与履约（P0-6，业务规则已下沉，本类无 trade_status 判断）。</p>
      *
      * @param request HTTP请求，包含支付宝POST过来的回调参数
      * @return "success" 表示处理成功，"false" 表示处理失败
@@ -48,29 +50,9 @@ public class AliPayController extends BaseController {
 
         log.info("支付回调，消息接收 trade_status:{}", request.getParameter("trade_status"));
 
-        if (!"TRADE_SUCCESS".equals(request.getParameter("trade_status"))
-                && !"TRADE_FINISHED".equals(request.getParameter("trade_status"))) {
-            return "false";
-        }
-
         Map<String, String> params = extractParams(request);
-
-        boolean signVerified = orderApplicationService.verifyPayCallbackSign(params, alipayPublicKey);
-        if (!signVerified) {
-            log.error("支付回调，签名验证失败。公钥长度: {}, 公钥前100字符: {}, 接收参数: {}",
-                    alipayPublicKey != null ? alipayPublicKey.length() : 0,
-                    alipayPublicKey != null && alipayPublicKey.length() > 100 ? alipayPublicKey.substring(0, 100) : alipayPublicKey,
-                    params);
-            return "false";
-        }
-
-        String tradeNo = params.get("out_trade_no");
-        log.info("支付回调，验签通过，交易名称: {}, 商户订单号: {}, 交易金额: {}",
-                params.get("subject"), tradeNo, params.get("total_amount"));
-
-        orderApplicationService.changeOrderPaySuccess(tradeNo);
-
-        return "success";
+        boolean accepted = orderApplicationService.handleAlipayCallback(params, alipayPublicKey);
+        return accepted ? "success" : "false";
     }
 
     /**

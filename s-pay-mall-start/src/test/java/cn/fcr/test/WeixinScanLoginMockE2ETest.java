@@ -182,10 +182,11 @@ public class WeixinScanLoginMockE2ETest {
     /**
      * 场景 3：自动注册后中途异常（微信模板通知失败）→ 4 个写操作整体回滚
      *
-     * <p>【P0-3 验收】事务边界上移至 AuthApplicationService 后，
-     * createWechatUserAndBind 的 4 个写操作（插 mall_user → 更新用户名 →
-     * 插 user_binding → 插 user_role）在同一事务内；扫码登录流程末端的
-     * 模板消息通知抛异常时，自动注册必须整体回滚，不得留下"无绑定的用户"。</p>
+     * <p>【P0-3/P0-6 验收】事务边界位于 AuthApplicationService，自动注册的写操作
+     * （插 mall_user → 更新用户名 → 插 user_binding → 插 user_role，现由
+     * {@code IMallUserService.registerWeChatUserByScan} 统一执行）在同一事务内；
+     * 扫码登录流程末端的模板消息通知抛异常时，自动注册必须整体回滚，
+     * 不得留下"无绑定的用户"。</p>
      *
      * @throws Exception 断言失败
      */

@@ -17,6 +17,15 @@ public interface IUserRepository {
 
     Long insert(String username, String password, Integer status);
 
+    /**
+     * 更新用户名（用于扫码自动注册后固化默认用户名 wx_user_{userId}）
+     *
+     * @param userId   用户ID
+     * @param username 新用户名
+     * @return 影响行数
+     */
+    int updateUsername(Long userId, String username);
+
     int updateStatus(Long userId, Integer status);
 
     int updateUser(UserEntity user);

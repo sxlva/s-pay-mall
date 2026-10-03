@@ -12,6 +12,7 @@ import cn.fcr.types.common.Constants;
 import cn.fcr.types.exception.AppException;
 
 import java.util.List;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,6 +22,9 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class MallUserServiceImpl implements IMallUserService {
+
+    /** 会员角色ID（商城注册用户默认角色） */
+    private static final Long MEMBER_ROLE_ID = 2L;
 
     private final IUserRepository userRepository;
     private final IAuthTokenGateway authTokenGateway;
@@ -38,36 +42,82 @@ public class MallUserServiceImpl implements IMallUserService {
     }
 
     @Override
-    public UserLoginVO register(String username, String password) {
-        Integer count = userRepository.countByUsername(username);
-        if (count != null && count > 0) {
-            throw new IllegalArgumentException("用户名已存在");
+    public UserLoginVO register(String username, String password, String openId) {
+        if (openId != null && !openId.isBlank()) {
+            return registerWithWeChat(username, password, openId);
+        }
+        return registerWithPassword(username, password);
+    }
+
+    /**
+     * 账密注册
+     *
+     * @param username 用户名
+     * @param password 明文密码（内部加密存储）
+     * @return 登录信息（含JWT token）
+     */
+    private UserLoginVO registerWithPassword(String username, String password) {
+        createUser(username, password, Constants.USER_STATUS_ACTIVE);
+        return login(username, password);
+    }
+
+    /**
+     * 微信注册（注册账号并同时绑定微信）
+     *
+     * @param username 用户名
+     * @param password 明文密码（内部加密存储）
+     * @param openId   微信 OpenID
+     * @return 登录信息（含JWT token）
+     */
+    private UserLoginVO registerWithWeChat(String username, String password, String openId) {
+        if (userBindingGateway.isWeChatOpenIdBound(openId)) {
+            throw new IllegalArgumentException("该微信账号已被其他用户绑定");
         }
 
-        Long userId = userRepository.insert(username, authTokenGateway.encodePassword(password), Constants.USER_STATUS_ACTIVE);
-        userRepository.insertUserRole(userId, 2L);
+        Long userId = createUser(username, password, Constants.USER_STATUS_WECHAT);
+        userBindingGateway.bindWeChatOpenId(userId, openId);
+        log.info("微信扫码注册并绑定成功: userId={}, username={}, openId={}", userId, username, openId);
 
         return login(username, password);
     }
 
     @Override
-    public UserLoginVO registerWithWeChat(String username, String password, String openId) {
-        if (userBindingGateway.isWeChatOpenIdBound(openId)) {
-            throw new IllegalArgumentException("该微信账号已被其他用户绑定");
-        }
+    public UserLoginVO registerWeChatUserByScan(String openId) {
+        // 先以临时名落库拿自增ID，再固化为 wx_user_{userId}（与扫码登录侧的用户名约定一致）
+        Long userId = createUser("temp_" + UUID.randomUUID().toString().substring(0, 8), "",
+                Constants.USER_STATUS_WECHAT);
+        String username = "wx_user_" + userId;
+        userRepository.updateUsername(userId, username);
 
+        userBindingGateway.bindWeChatOpenId(userId, openId);
+        log.info("微信扫码自动注册并绑定成功: userId={}, openId={}", userId, openId);
+
+        String token = authTokenGateway.createToken(userId, username, Constants.DEFAULT_ROLE_MEMBER);
+        return UserLoginVO.builder()
+                .token(token)
+                .userId(userId)
+                .username(username)
+                .role(Constants.DEFAULT_ROLE_MEMBER)
+                .build();
+    }
+
+    /**
+     * 创建用户（查重 + 落库 + 赋会员角色），注册各路径的公共步骤
+     *
+     * @param username 用户名
+     * @param password 已加密密码
+     * @param status   用户状态（Constants.USER_STATUS_*）
+     * @return 新用户ID
+     */
+    private Long createUser(String username, String password, Integer status) {
         Integer count = userRepository.countByUsername(username);
         if (count != null && count > 0) {
             throw new IllegalArgumentException("用户名已存在");
         }
 
-        Long userId = userRepository.insert(username, authTokenGateway.encodePassword(password), Constants.USER_STATUS_WECHAT);
-        userRepository.insertUserRole(userId, 2L);
-
-        userBindingGateway.bindWeChatOpenId(userId, openId);
-        log.info("微信扫码注册并绑定成功: userId=" + userId + ", username=" + username + ", openId=" + openId);
-
-        return login(username, password);
+        Long userId = userRepository.insert(username, authTokenGateway.encodePassword(password), status);
+        userRepository.insertUserRole(userId, MEMBER_ROLE_ID);
+        return userId;
     }
 
     @Override

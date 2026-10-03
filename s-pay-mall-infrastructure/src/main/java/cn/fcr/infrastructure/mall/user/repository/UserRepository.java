@@ -60,6 +60,15 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
+    public int updateUsername(Long userId, String username) {
+        LambdaUpdateWrapper<MallUser> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(MallUser::getId, userId);
+        updateWrapper.set(MallUser::getUsername, username);
+        updateWrapper.set(MallUser::getUpdateTime, LocalDateTime.now());
+        return mallUserDao.update(null, updateWrapper);
+    }
+
+    @Override
     public int updateStatus(Long userId, Integer status) {
         LambdaUpdateWrapper<MallUser> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(MallUser::getId, userId);

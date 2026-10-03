@@ -95,17 +95,18 @@ sequenceDiagram
     participant WeChat as WeixinGatewayImpl
 
     Ali->>C: POST /pay-api/v1/alipay/alipay_notify_url
-    C->>C: 检查 trade_status ∈ {TRADE_SUCCESS, TRADE_FINISHED}
+    C->>C: extractParams(request)（仅协议适配，无业务判断）
 
-    C->>S: verifyPayCallbackSign(params, alipayPublicKey)
+    C->>S: handleAlipayCallback(params, alipayPublicKey)
+    S->>S: PayTradeStatus.fromCode(trade_status).isSuccess()
+    Note over S: "算成功"的规则唯一收敛在 PayTradeStatus 枚举（P0-6）
     S->>PS: verifyCallbackSign(params, alipayPublicKey)
     Note over PS: RSA2 (SHA256WithRSA) 验签
 
-    alt 验签失败
-        PS-->>S: false
+    alt 状态非成功或验签失败
         S-->>C: false
-        C-->>Ali: 拒绝处理 (返回非 "success")
-    else 验签成功
+        C-->>Ali: "false"
+    else 受理成功
         PS-->>S: true
         S->>TX: changeOrderPaySuccessInTransaction(orderId)
         TX->>R: UPDATE pay_order SET status='PAY_SUCCESS'
@@ -248,7 +249,9 @@ OrderRepository → IOrderDao`
 ---
 
 > **关键源码索引**：
-> - 支付回调入口：[`AliPayController.payNotify()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/AliPayController.java#L66)
+> - 支付回调入口：[`AliPayController.payNotify()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/AliPayController.java#L66)（仅协议适配）
+> - 回调编排（状态判断 + 验签 + 履约）：[`OrderApplicationService.handleAlipayCallback()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-application/src/main/java/cn/fcr/application/OrderApplicationService.java)
+> - 交易状态枚举：[`PayTradeStatus`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/order/model/vo/PayTradeStatus.java)（isSuccess() 唯一承载"算成功"规则，P0-6）
 > - 验签逻辑：[`PayOrderService.verifyCallbackSign()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/order/service/PayOrderService.java)
 > - 状态机：[`OrderStateMachineServiceImpl`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/mall/service/impl/OrderStateMachineServiceImpl.java)
 > - 事件发布：[`RocketMqOrderEventPublisher`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/order/event/RocketMqOrderEventPublisher.java)

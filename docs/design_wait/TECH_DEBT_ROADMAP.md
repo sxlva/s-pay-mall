@@ -17,7 +17,7 @@
 | P0-3 | Infrastructure 层 @Transactional 违规 | ~~`WeixinLoginGatewayImpl.createWechatUserAndBind()` 标注了 `@Transactional`~~（2026-10-04 已上移，详见附录 A.13） | 创建 `AuthApplicationService`，将事务上移至 Application 层 | 已处理（2026-10-04） |
 | P0-4 | 幂等性设计缺失 | 所有状态变更 API 入口均无 `requestId` 幂等保护；MQ Listener 未进行 SETNX 消费幂等检查 | 状态变更 DTO 添加 `requestId` 字段；Application 层实现事务外锁操作；MQ Listener 加 `tryAcquire()` | 待处理 |
 | P0-5 | Domain 层跨领域反向依赖 | `domain/order/service/PayOrderService.java` import 了 `domain.mall.gateway.IPayGateway` | 方案A: IPayGateway → `domain/shared/`；方案B: 领域事件解耦；方案C: PayOrderService → `domain/mall/` | 已处理（2026-10-03，M2-5：IPayGateway 随 mall 订单簇收编进 `domain/order/gateway`，PayOrderService 与 IPayGateway 同域，反向依赖自然消除，无需三选一） |
-| P0-6 | Controller 中业务路由逻辑 | `MallAuthController` 含 `if (openId != null)` 注册策略判断；`AliPayController` 含 `"TRADE_SUCCESS".equals()` 支付状态判断 | 业务判断下沉到 Domain Service | 待处理 |
+| P0-6 | Controller 中业务路由逻辑 | ~~`MallAuthController` 含 `if (openId != null)` 注册策略判断；`AliPayController` 含 `"TRADE_SUCCESS".equals()` 支付状态判断~~（2026-10-04 已下沉，详见附录 A.14） | 业务判断下沉到 Domain Service | 已处理（2026-10-04） |
 | P0-9 | 并发回调重复扣库存 | `OrderStateMachineServiceImpl.paySuccess()` 先无锁读状态（`canPay()`），且 `OrderRepositoryImpl.updateOrderStatusByOrderNo` 的 UPDATE 无 status 条件（139-145 行）：并发 notify 均读到 INIT 时全部穿过守卫，各自执行 `syncDBStockForPaySuccess` 重复扣 MySQL 库存。**2026-10-03 实测复现**（10 线程同一瞬间重放同一合法 notify，证据：`s-pay-mall-start/src/test/java/cn/fcr/test/AlipayNotifyE2ETest.java#testPayNotify_concurrentDuplicateNotify`）：10 个事务全部通过 `canPay()`，库存 100→80（扣 10×2 件）；order_main/pay_order 双写同值无业务损害，但**库存扣减不在幂等保护内**。串行重放幂等正常（同测试类场景 2），仅并发触发 | ①`updateOrderStatusByOrderNo` UPDATE 加源状态条件，以影响行数作守卫（0 行即重复回调，直接返回不再扣库存）②`syncDBStockForPaySuccess` 仅在守卫通过时执行 ③修复后移除该测试的 `@Ignore` 作为回归测试。建议纳入 JV-003 M2（与超时关单分流同批触碰状态机） | **已关闭（2026-10-03）**：①UPDATE 增加 `expectStatus` 源状态条件（INIT 存储形式 CREATED，经 `OrderState.toDbStatus()` 映射），签名变为 `(orderNo, expectStatus, targetStatus)`；②paySuccess 影响行数 0 即返回 false，跳过 pay_order 更新与库存扣减；③deliver/complete/cancel 三变迁同步加守卫；④@Ignore 已移除，10 线程并发回归测试通过，全量测试 Skipped=0 |
 
 ### 🟡 P1 (重要级)
@@ -262,6 +262,28 @@
 - 依赖方向保持 `Trigger → Application → Domain → Gateway` 单向
 
 **经验**：事务边界必须挂在调用链最外层的 Spring 代理入口；Domain 纯 POJO 无法持有事务，"判断规则留 Domain、用例编排+事务留 Application"是两边都不重写的最小方案。
+
+### A.14 P0-6：Controller 业务路由逻辑下沉（注册策略 + 支付状态判断）
+
+**问题**：
+- `MallAuthController#register` 用 `if (openId != null)` 在 Trigger 层路由注册策略；且 Domain 侧 `register()`/`registerWithWeChat()` 约 80% 步骤复制（查重/建户/赋角色硬编码 `2L`）
+- `AliPayController#payNotify` 用 `"TRADE_SUCCESS".equals()` 裸字符串判断支付状态；Domain 侧 `PayOrderEntity.verifyCallbackSign(Map, orderNo, amount)` 重复同一状态判断且**全仓零调用**（死代码，方法名与实际行为"对单号/对金额/看状态"不符）
+- 跨模块双写：`WeixinLoginGatewayImpl.createWechatUserAndBind`（infrastructure）直写 mall_user/user_binding/user_role 三个 DAO，与 `MallUserServiceImpl.registerWithWeChat` 是同一套建户规则的两份实现
+
+**修复**：
+- 新增 `domain/order/model/vo/PayTradeStatus` 枚举（WAIT_BUYER_PAY/TRADE_CLOSED/TRADE_SUCCESS/TRADE_FINISHED），`isSuccess()` 唯一承载"算成功"规则
+- `OrderApplicationService.handleAlipayCallback(params, alipayPublicKey)`：状态判断 → 验签 → `changeOrderPaySuccess` 一步编排，Controller 只解析参数并回 success/false；删除 `verifyPayCallbackSign` 中转方法与实体死方法
+- `IMallUserService#register(username, password, openId)` 统一注册入口（openId 空白→账密注册，否则微信注册并绑定），原两个 public 方法降为实现内私有方法；公共步骤收敛为私有 `createUser`（查重+建户+赋角色），角色 ID 提为常量 `MEMBER_ROLE_ID`
+- 新增 `IMallUserService#registerWeChatUserByScan(openId)`：扫码自动注册（临时名落库 → `IUserRepository.updateUsername` 固化 `wx_user_{userId}` → 绑定 → 签发 token）收敛进用户领域服务；`WeixinLoginService` 构造注入 `IMallUserService`（跨域协作走 domain 服务接口，"是否新用户"规则仍在 auth 域）；`IWechatLoginGateway`/`WeixinLoginGatewayImpl` 删除 `createWechatUserAndBind`，移除 mall_user/user_role DAO 依赖，只留查询+缓存
+- `IUserRepository` 新增 `updateUsername`（既有 `updateUser` 只更新 status/password，语义不匹配）
+- `DomainServiceConfig` 同步 `weixinLoginService` Bean 装配（mallUserService → weixinLoginService 单向，无循环依赖）
+
+**验证证据**：
+- 全仓 grep 确认旧入口（`verifyPayCallbackSign`/`registerWithWeChat` public 签名/`createWechatUserAndBind`）零残留，仅文档/历史附录提及
+- 8 模块 `mvn compile` BUILD SUCCESS
+- `WeixinScanLoginMockE2ETest` 走 `authApplicationService.handleWechatScanLogin` 生产入口，断言（wx_user_{uid}/MEMBER/绑定落库/异常回滚）与本修复后的领域路径一致，注释同步更新
+
+**经验**：Trigger 层只做协议适配（解析/回执），任何 `if` 背后只要有业务语义就该问"这条规则有没有第二个入口"——本次两处重复都是被第二个入口（扫码自动注册、实体校验方法）暴露出来的；枚举 + 领域服务单一入口是这类下沉的标准形态。
 
 ---
 

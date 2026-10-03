@@ -48,8 +48,9 @@ public class DomainServiceConfig {
     @Bean
     public WeixinLoginService weixinLoginService(IWeChatGateway weChatGateway,
                                                  IWechatLoginGateway wechatLoginGateway,
-                                                 IAuthTokenGateway authTokenGateway) {
-        return new WeixinLoginService(weChatGateway, wechatLoginGateway, authTokenGateway);
+                                                 IAuthTokenGateway authTokenGateway,
+                                                 IMallUserService mallUserService) {
+        return new WeixinLoginService(weChatGateway, wechatLoginGateway, authTokenGateway, mallUserService);
     }
 
     // ==================== 微信绑定服务 ====================

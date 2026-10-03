@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 /**
  * 支付订单实体，定义在 shared 模块中供 order 和 mall 领域共同使用，
@@ -65,28 +64,6 @@ public class PayOrderEntity {
         this.payUrl = payUrl;
         this.status = PayStatus.PAYING;
         this.updateTime = LocalDateTime.now();
-    }
-
-    public void verifyCallbackSign(Map<String, String> callbackParams, String expectedOrderNo, BigDecimal expectedAmount) {
-        if (callbackParams == null || callbackParams.isEmpty()) {
-            throw new IllegalArgumentException("回调参数不能为空");
-        }
-
-        String callbackOrderNo = callbackParams.get("out_trade_no");
-        String callbackAmount = callbackParams.get("total_amount");
-        String tradeStatus = callbackParams.get("trade_status");
-
-        if (!expectedOrderNo.equals(callbackOrderNo)) {
-            throw new IllegalStateException("回调订单号不匹配：期望[" + expectedOrderNo + "]，实际[" + callbackOrderNo + "]");
-        }
-
-        if (expectedAmount.compareTo(new BigDecimal(callbackAmount)) != 0) {
-            throw new IllegalStateException("回调金额不匹配：期望[" + expectedAmount + "]，实际[" + callbackAmount + "]");
-        }
-
-        if (!"TRADE_SUCCESS".equals(tradeStatus) && !"TRADE_FINISHED".equals(tradeStatus)) {
-            throw new IllegalStateException("交易状态异常：[ " + tradeStatus + " ]");
-        }
     }
 
     public void completePay(String tradeNo) {

@@ -8,6 +8,7 @@ import cn.fcr.api.dto.common.res.LoginRes;
 import cn.fcr.api.dto.user.res.UserProfileRes;
 import cn.fcr.domain.auth.login.service.ILoginService;
 import cn.fcr.domain.auth.login.service.WeixinBindService;
+import cn.fcr.domain.mall.user.model.valobj.UserLoginVO;
 import cn.fcr.domain.mall.user.model.valobj.UserProfile;
 import cn.fcr.domain.mall.user.service.IMallUserService;
 import cn.fcr.trigger.http.BaseController;
@@ -48,7 +49,9 @@ public class MallAuthController extends BaseController {
     /**
      * 用户注册
      *
-     * <p>支持普通账号注册和微信扫码注册（传入openId时走微信注册流程）</p>
+     * <p>统一注册入口：仅传用户名密码为账密注册；同时携带 openId 则为
+     * 微信注册（注册并绑定）。注册策略的判定在 Domain 层
+     * {@link IMallUserService#register} 内完成（P0-6）。</p>
      *
      * @param request 注册请求，包含用户名、密码和可选的openId
      * @return 登录信息（含JWT token）
@@ -57,19 +60,11 @@ public class MallAuthController extends BaseController {
     public Response<LoginRes> register(@RequestBody @Valid RegisterReq request) {
         log.info("用户注册请求: username={}, openId={}", request.getUsername(), request.getOpenId());
 
-        cn.fcr.domain.mall.user.model.valobj.UserLoginVO loginVO;
-        if (request.getOpenId() != null && !request.getOpenId().isBlank()) {
-            loginVO = mallUserService.registerWithWeChat(
-                    request.getUsername(),
-                    request.getPassword(),
-                    request.getOpenId()
-            );
-        } else {
-            loginVO = mallUserService.register(
-                    request.getUsername(),
-                    request.getPassword()
-            );
-        }
+        UserLoginVO loginVO = mallUserService.register(
+                request.getUsername(),
+                request.getPassword(),
+                request.getOpenId()
+        );
 
         LoginRes result = new LoginRes();
         result.setToken(loginVO.getToken());
@@ -90,7 +85,7 @@ public class MallAuthController extends BaseController {
     @PostMapping("/login")
     public Response<LoginRes> login(@RequestBody @Valid LoginReq request) {
         log.info("用户登录请求: username={}", request.getUsername());
-        cn.fcr.domain.mall.user.model.valobj.UserLoginVO loginVO = mallUserService.login(request.getUsername(), request.getPassword());
+        UserLoginVO loginVO = mallUserService.login(request.getUsername(), request.getPassword());
 
         LoginRes result = new LoginRes();
         result.setToken(loginVO.getToken());
