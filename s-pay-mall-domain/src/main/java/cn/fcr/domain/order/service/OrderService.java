@@ -4,8 +4,8 @@ import cn.fcr.domain.order.gateway.IPaymentGateway;
 import cn.fcr.domain.order.gateway.IProductGateway;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
-import cn.fcr.domain.shared.model.vo.PayStatus;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.vo.PayStatus;
 
 import java.math.BigDecimal;
 import java.util.List;

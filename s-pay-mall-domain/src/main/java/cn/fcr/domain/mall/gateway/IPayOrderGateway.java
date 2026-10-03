@@ -1,6 +1,6 @@
 package cn.fcr.domain.mall.gateway;
 
-import cn.fcr.domain.shared.model.vo.PayStatus;
+import cn.fcr.domain.order.model.vo.PayStatus;
 
 /**
  * 支付订单网关接口，提供支付订单状态更新的能力。

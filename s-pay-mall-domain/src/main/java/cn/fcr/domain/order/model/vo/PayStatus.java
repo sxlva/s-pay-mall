@@ -1,4 +1,4 @@
-package cn.fcr.domain.shared.model.vo;
+package cn.fcr.domain.order.model.vo;
 
 /**
  * 支付状态枚举，定义在 shared 模块中供 order 和 mall 领域共同使用。

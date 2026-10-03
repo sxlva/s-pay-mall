@@ -7,7 +7,7 @@ import cn.fcr.domain.mall.model.entity.OrderEntity;
 import cn.fcr.domain.mall.model.entity.OrderItemEntity;
 import cn.fcr.domain.mall.model.entity.OrderState;
 import cn.fcr.domain.mall.service.IOrderStateMachineService;
-import cn.fcr.domain.shared.model.vo.PayStatus;
+import cn.fcr.domain.order.model.vo.PayStatus;
 
 import lombok.extern.slf4j.Slf4j;
 

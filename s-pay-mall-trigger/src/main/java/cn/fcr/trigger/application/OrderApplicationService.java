@@ -11,7 +11,7 @@ import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.service.IOrderService;
 import cn.fcr.domain.order.service.PayOrderService;
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

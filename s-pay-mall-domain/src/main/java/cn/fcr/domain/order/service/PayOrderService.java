@@ -1,14 +1,18 @@
 package cn.fcr.domain.order.service;
 
 import cn.fcr.domain.mall.gateway.IPayGateway;
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
-import cn.fcr.domain.shared.model.vo.PayStatus;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.vo.PayStatus;
 
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 支付订单领域服务，负责生成支付链接和验证支付回调签名。
+ * 支付订单领域服务，负责支付单状态流转与支付回调验签。
+ *
+ * <p>职责定死（M2-2）：支付单状态流转（生成支付链接 WAIT_PAY→PAYING、
+ * 生成失败标记 FAILED）只允许经本服务入口；持久化由 gateway 承担，
+ * 本服务不直接访问仓储。验签仅做参数合法性校验，不流转状态。</p>
  *
  * @author 傅崇睿
  */

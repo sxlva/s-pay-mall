@@ -1,6 +1,6 @@
 package cn.fcr.domain.order.gateway;
 
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
 
 /**
  * 支付网关接口，定义支付链接生成和支付订单更新的抽象

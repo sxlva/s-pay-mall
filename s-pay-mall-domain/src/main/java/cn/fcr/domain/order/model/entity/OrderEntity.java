@@ -220,23 +220,4 @@ public class OrderEntity {
     public boolean isClosed() {
         return this.orderStatusVO == OrderStatusVO.CLOSE;
     }
-
-    /**
-     * 设置支付链接
-     * 校验状态和参数
-     * @param payUrl 支付链接
-     * @throws IllegalStateException 当前状态不允许此操作
-     * @throws IllegalArgumentException 支付链接为空
-     */
-    public void initPayUrl(String payUrl) {
-        if (payUrl == null || payUrl.trim().isEmpty()) {
-            throw new IllegalArgumentException("支付链接不能为空");
-        }
-        if (!canPay()) {
-            throw new IllegalStateException(
-                "订单状态为 [" + getSafeStateDesc() + "]，无法生成支付链接"
-            );
-        }
-        this.payUrl = payUrl;
-    }
 }

@@ -54,7 +54,18 @@
 
 全量：domain 6/6；app 12（11 过 + 1 存量 error OrderServiceTest + 1 @Ignore 并发幂等），与基线一致（新增 3 过）。
 
-## 五、风险备案
+## 五、M2-2 实施记录（2026-10-03）
+
+**改动**：
+1. `shared` 包整体并入 order：`PayOrderEntity` → `order/model/entity`，`PayStatus` → `order/model/vo`（git mv 保历史），23 个文件 import 机械替换，`domain.shared` 包删除
+2. 删除旧 `OrderEntity.initPayUrl`（死代码，全仓无调用方，与 `PayOrderEntity.initPayUrl` 重复）
+3. 职责定死：`PayOrderService` javadoc 明确——支付单状态流转（生成支付链接 WAIT_PAY→PAYING、失败标记 FAILED）只允许经本服务入口，持久化由 gateway 承担
+
+**过渡期说明**：mall 侧 8 个文件暂 import order/model 的 `PayOrderEntity`/`PayStatus`（跨域实体引用的过渡态），M2-5 收编 mall 订单代码后消除。
+
+**验证**：全仓 grep 无 `domain.shared` 残留（infra `config/shared` 为另一包，保留）；`mvn clean install` 全量构建通过；domain 6/6、app 12（11 过 + 1 存量 error + 1 @Ignore）与基线一致。
+
+## 六、风险备案
 
 1. 40+ 文件移动引用漏改 → 分 6 步，编译器兜底，脚本只做机械 import 替换
 2. Eclipse 污染 target → 每步 `mvn clean install`；改动期间建议关闭 Eclipse 自动构建

@@ -8,7 +8,7 @@ import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.service.IMallCartService;
 import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.order.service.IOrderService;
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

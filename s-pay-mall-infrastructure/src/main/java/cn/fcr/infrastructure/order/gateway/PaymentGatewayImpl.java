@@ -1,7 +1,7 @@
 package cn.fcr.infrastructure.order.gateway;
 
 import cn.fcr.domain.order.gateway.IPaymentGateway;
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.service.PayOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -10,7 +10,7 @@ import cn.fcr.domain.mall.model.valobj.OrderCreateVO;
 import cn.fcr.domain.mall.model.valobj.OrderVO;
 import cn.fcr.domain.mall.service.IMallOrderService;
 import cn.fcr.domain.mall.service.IOrderStateMachineService;
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
 
 import java.util.ArrayList;
 import java.util.List;

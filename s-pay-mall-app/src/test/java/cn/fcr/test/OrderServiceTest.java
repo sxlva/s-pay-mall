@@ -1,6 +1,6 @@
 package cn.fcr.test;
 
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.service.IOrderService;
 import com.alibaba.fastjson.JSON;

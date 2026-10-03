@@ -2,7 +2,7 @@ package cn.fcr.trigger.http;
 
 import cn.fcr.api.dto.common.req.CreatePayReq;
 import cn.fcr.api.response.Response;
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import cn.fcr.trigger.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
 import cn.fcr.types.common.Constants;

@@ -5,7 +5,7 @@ import cn.fcr.domain.order.gateway.IProductGateway;
 import cn.fcr.domain.order.adapter.repository.IOrderRepository;
 import cn.fcr.domain.order.model.aggregate.CreateOrderAggregate;
 import cn.fcr.domain.order.model.entity.OrderEntity;
-import cn.fcr.domain.shared.model.entity.PayOrderEntity;
+import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import cn.fcr.domain.order.model.entity.ProductEntity;
 import cn.fcr.domain.order.model.entity.ShopCartEntity;
 import cn.fcr.domain.order.model.valobj.OrderStatusVO;

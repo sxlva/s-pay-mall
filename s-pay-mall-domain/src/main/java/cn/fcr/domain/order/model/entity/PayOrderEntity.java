@@ -1,6 +1,6 @@
-package cn.fcr.domain.shared.model.entity;
+package cn.fcr.domain.order.model.entity;
 
-import cn.fcr.domain.shared.model.vo.PayStatus;
+import cn.fcr.domain.order.model.vo.PayStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
