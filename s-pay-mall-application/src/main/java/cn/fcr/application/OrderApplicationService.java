@@ -3,19 +3,27 @@ package cn.fcr.application;
 import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.mall.cart.service.IMallCartService;
 import cn.fcr.domain.mall.product.gateway.IIdempotentGateway;
+import cn.fcr.domain.mall.user.gateway.IUserBindingGateway;
 import cn.fcr.domain.order.adapter.event.IOrderEventPublisher;
 import cn.fcr.domain.order.gateway.IOrderPaymentGateway;
 import cn.fcr.domain.order.gateway.IPayOrderGateway;
+import cn.fcr.domain.order.gateway.IMallOrderQueryGateway;
+import cn.fcr.domain.order.model.entity.OrderEntity;
+import cn.fcr.domain.order.model.entity.OrderState;
 import cn.fcr.domain.order.model.valobj.OrderCreateVO;
 import cn.fcr.domain.order.model.valobj.OrderVO;
 import cn.fcr.domain.order.model.vo.PayTradeStatus;
 import cn.fcr.domain.order.service.IMallOrderService;
 import cn.fcr.domain.order.service.IOrderStateMachineService;
 import cn.fcr.domain.order.service.PayOrderService;
+import cn.fcr.domain.order.gateway.IAlipayQueryGateway;
+import cn.fcr.domain.auth.login.gateway.IWeChatGateway;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +54,17 @@ public class OrderApplicationService {
     private final OrderTransactionService orderTransactionService;
     /** 幂等网关（P0-4：下单幂等守门） */
     private final IIdempotentGateway idempotentGateway;
+    /** 订单查询网关（P1-3：支付成功通知编排） */
+    private final IMallOrderQueryGateway mallOrderQueryGateway;
+    /** 用户绑定网关（P1-3：查询微信 openid） */
+    private final IUserBindingGateway userBindingGateway;
+    /** 微信网关（P1-3：发送模板消息） */
+    private final IWeChatGateway weChatGateway;
+    /** 支付宝交易查询网关（B2：超时关单前的二次确认） */
+    private final IAlipayQueryGateway alipayQueryGateway;
+
+    /** 支付时间格式化器 */
+    private static final DateTimeFormatter PAY_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public OrderApplicationService(IMallCartService mallCartService,
                                    IMallOrderService mallOrderService,
@@ -55,7 +74,11 @@ public class OrderApplicationService {
                                    IOrderStateMachineService orderStateMachineService,
                                    IPayOrderGateway payOrderGateway,
                                    OrderTransactionService orderTransactionService,
-                                   IIdempotentGateway idempotentGateway) {
+                                   IIdempotentGateway idempotentGateway,
+                                   IMallOrderQueryGateway mallOrderQueryGateway,
+                                   IUserBindingGateway userBindingGateway,
+                                   IWeChatGateway weChatGateway,
+                                   IAlipayQueryGateway alipayQueryGateway) {
         this.mallCartService = mallCartService;
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
@@ -65,6 +88,10 @@ public class OrderApplicationService {
         this.payOrderGateway = payOrderGateway;
         this.orderTransactionService = orderTransactionService;
         this.idempotentGateway = idempotentGateway;
+        this.mallOrderQueryGateway = mallOrderQueryGateway;
+        this.userBindingGateway = userBindingGateway;
+        this.weChatGateway = weChatGateway;
+        this.alipayQueryGateway = alipayQueryGateway;
     }
 
     // ==================== 购物车 ====================
@@ -246,12 +273,19 @@ public class OrderApplicationService {
     /**
      * 取消订单
      *
+     * <p>P1-2：事务内只做 DB 状态流转（{@link OrderTransactionService#cancelOrderInTransaction}），
+     * 库存恢复在事务提交后执行，避免 DB 回滚时 Redis 库存无法回滚导致超卖。</p>
+     *
      * @param orderId 订单ID
      * @return 影响行数
      */
-    @Transactional(rollbackFor = Exception.class)
     public int cancelOrder(Long orderId) {
-        return mallOrderService.cancelOrder(orderId);
+        String orderNo = orderTransactionService.cancelOrderInTransaction(orderId);
+        if (orderNo == null) {
+            return 0;
+        }
+        restoreStockAfterCancel(orderNo);
+        return 1;
     }
 
     /**
@@ -294,11 +328,14 @@ public class OrderApplicationService {
             return false;
         }
 
-        String tradeNo = params.get("out_trade_no");
-        log.info("支付回调，验签通过，交易名称: {}, 商户订单号: {}, 交易金额: {}",
-                params.get("subject"), tradeNo, params.get("total_amount"));
+        String orderNo = params.get("out_trade_no");
+        // 支付宝交易号（trade_no）与商户订单号（out_trade_no）是两个字段：
+        // 前者是支付宝侧流水号，随支付成功事件透传给 order_paid 消费者；后者用于本地履约
+        String alipayTradeNo = params.get("trade_no");
+        log.info("支付回调，验签通过，交易名称: {}, 商户订单号: {}, 支付宝交易号: {}, 交易金额: {}",
+                params.get("subject"), orderNo, alipayTradeNo, params.get("total_amount"));
 
-        changeOrderPaySuccess(tradeNo);
+        changeOrderPaySuccess(orderNo, alipayTradeNo);
         return true;
     }
 
@@ -307,17 +344,63 @@ public class OrderApplicationService {
      *
      * <p>事务边界在 OrderTransactionService 中控制，事件发布在事务外执行。</p>
      *
-     * @param orderId 订单ID
+     * @param orderNo 商户订单号（order_main.order_no）
+     * @param tradeNo 支付宝交易号（回调 trade_no；补单等无交易号的场景可为 null）
      */
-    public void changeOrderPaySuccess(String orderId) {
+    public void changeOrderPaySuccess(String orderNo, String tradeNo) {
+        // 【B2 晚到支付异常路径】订单已关闭仍收到支付成功通知：钱已收但订单不可履约，
+        // 明确记录待人工介入（退款或补履约），不触发履约、不发布支付成功事件；
+        // 仍由 Controller 回支付宝 success 以终止其通知重试（重试只会重复进入本路径）
+        OrderVO order = mallOrderService.getOrderByNo(orderNo);
+        if (order != null && OrderState.CANCELED.getCode().equals(order.getStatus())) {
+            log.error("晚到支付：订单已关闭仍收到支付成功通知，需人工核实退款或补履约, orderNo={}, tradeNo={}", orderNo, tradeNo);
+            return;
+        }
+
         // 事务内完成 DB 状态更新
-        orderTransactionService.changeOrderPaySuccessInTransaction(orderId);
+        orderTransactionService.changeOrderPaySuccessInTransaction(orderNo);
 
         // 事务提交后发布支付成功事件（失败不影响主流程）
         try {
-            orderEventPublisher.publishPaySuccess(orderId, orderId);
+            orderEventPublisher.publishPaySuccess(tradeNo, orderNo);
         } catch (Exception e) {
-            log.warn("发布支付成功事件失败，orderId: {}, error: {}", orderId, e.getMessage());
+            log.warn("发布支付成功事件失败，orderNo: {}, error: {}", orderNo, e.getMessage());
+        }
+    }
+
+    /**
+     * 发送支付成功微信模板消息通知（P1-3：业务编排从 Listener 下沉到应用层）
+     *
+     * <p>按序编排：查订单 → 查微信 openid → 发送模板消息。
+     * 订单不存在或未绑定微信时静默跳过；发送失败仅记日志，不影响消费 ACK。</p>
+     *
+     * @param orderNo 订单号
+     */
+    public void sendPaySuccessNotification(String orderNo) {
+        try {
+            OrderEntity order = mallOrderQueryGateway.findByOrderNo(orderNo);
+            if (order == null) {
+                log.warn("发送支付通知失败：订单不存在，orderNo={}", orderNo);
+                return;
+            }
+
+            String openid = userBindingGateway.getWeChatOpenIdByUserId(order.getUserId());
+            if (openid == null) {
+                log.info("用户未绑定微信，跳过支付通知推送，userId={}", order.getUserId());
+                return;
+            }
+
+            String productName = order.getItems() != null && !order.getItems().isEmpty()
+                    ? order.getItems().get(0).getProductName()
+                    : "商品";
+            String amount = order.getTotalAmount() != null ? order.getTotalAmount().toString() : "0";
+            String payTime = LocalDateTime.now().format(PAY_TIME_FORMATTER);
+
+            weChatGateway.sendPaymentSuccessNotification(openid, productName, orderNo, amount, payTime);
+            log.info("支付成功微信通知发送成功，orderNo={}, openid={}", orderNo, openid);
+
+        } catch (Exception e) {
+            log.error("发送支付成功微信通知异常，orderNo={}", orderNo, e);
         }
     }
 
@@ -337,21 +420,50 @@ public class OrderApplicationService {
      * 处理超时关单
      *
      * <p>【M2-1 超时关单分流】order_main 存在的订单走状态机 cancel
-     * （关 pay_order + 恢复 Redis 预扣库存，状态机守卫保证幂等）；
+     * （仅 DB 状态流转，状态机守卫保证幂等）；
      * order_main 不存在的订单记 warn 日志并返回 false（legacy 已下线，
      * 不影响 MQ 消费重试语义）。</p>
      *
+     * <p>P1-2：库存恢复在事务提交后执行，与主动取消订单一致。</p>
+     *
+     * <p>【B2 关单前二次确认】关单前先向支付宝查询交易状态，已支付则转履约路径不关闭。</p>
+     *
      * @param orderNo 订单号
-     * @return true表示关闭成功
+     * @return true表示关闭成功或已转履约
      */
-    @Transactional(rollbackFor = Exception.class)
     public boolean handleTimeoutCloseOrder(String orderNo) {
         OrderVO order = mallOrderService.getOrderByNo(orderNo);
         if (order == null) {
             log.warn("超时关单：order_main 不存在，忽略处理: orderNo={}", orderNo);
             return false;
         }
-        return orderStateMachineService.cancel(orderNo);
+        // 【B2 关单前二次确认】关单瞬间用户可能已完成支付（回调/补单尚未到达），
+        // 先向支付宝确认交易状态；已支付则转履约路径，杜绝"订单已关闭但钱已收"的死路
+        if (alipayQueryGateway.queryTradeSuccess(orderNo)) {
+            log.warn("超时关单：支付宝侧交易已成功，转履约路径不关闭订单: orderNo={}", orderNo);
+            changeOrderPaySuccess(orderNo, null);
+            return true;
+        }
+        boolean canceled = orderTransactionService.cancelOrderInTransaction(orderNo);
+        if (canceled) {
+            restoreStockAfterCancel(orderNo);
+        }
+        return canceled;
+    }
+
+    /**
+     * 取消事务提交后恢复 Redis 预扣库存（P1-2）
+     *
+     * <p>失败仅记 error 日志不回滚：订单已取消为终态，库存未恢复只损失可售库存，不构成超卖。</p>
+     *
+     * @param orderNo 订单号
+     */
+    private void restoreStockAfterCancel(String orderNo) {
+        try {
+            orderStateMachineService.restoreStockForCancel(orderNo);
+        } catch (Exception e) {
+            log.error("取消订单后恢复库存失败，需人工补偿, orderNo={}", orderNo, e);
+        }
     }
 
     // ==================== 跨域共享（Mall Domain 查询） ====================

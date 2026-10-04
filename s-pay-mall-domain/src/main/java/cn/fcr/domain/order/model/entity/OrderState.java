@@ -3,6 +3,10 @@ package cn.fcr.domain.order.model.entity;
 /**
  * 订单状态枚举，封装领域状态码、中文描述与数据库存储状态的映射。
  *
+ * <p>【状态口径】领域与接口层统一使用 {@link #code}（INIT/PAID/SHIPPED/DONE/CANCELED）；
+ * DB 存储为混合口径（历史实现与 E2E 验收固化，不可单方面改动）：INIT 存 CREATED（{@link #toDbStatus()}），
+ * 其余状态按 code 原样存储；读取统一经 {@link #fromDbStatus(String)}（内含 code 兜底）双向兼容。</p>
+ *
  * @author 傅崇睿
  */
 public enum OrderState {

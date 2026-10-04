@@ -31,7 +31,8 @@ public interface IMallUserService {
      *
      * <p>【P0-6】原实现位于 Infrastructure 网关（WeixinLoginGatewayImpl），
      * 与 {@link #register} 双写同一套建户规则；现收敛为本领域唯一入口。
-     * 用户名规则：先以临时名落库，再以自增ID固化为 wx_user_{userId}。</p>
+     * 用户名规则：先以临时名落库，再以自增ID固化为
+     * {@code Constants.WX_USER_USERNAME_PREFIX} + userId。</p>
      *
      * @param openId 微信 OpenID（调用方已确认未绑定）
      * @return 登录信息（含JWT token，角色 MEMBER）

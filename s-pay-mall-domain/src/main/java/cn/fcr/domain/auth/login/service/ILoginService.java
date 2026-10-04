@@ -15,10 +15,14 @@ public interface ILoginService {
     String createQrCodeTicket();
 
     /**
-     * 检查登录状态
+     * 检查登录状态（前端轮询入口）
+     *
+     * <p>返回票据槽位中最后一次存入的凭证：扫码登录完成前是 openid，
+     * 扫码登录完成后是 JWT token；取出后即删除（Redis get 后删的既有行为）。
+     * 槽位为空表示未登录。</p>
      *
      * @param ticket 票据
-     * @return openid，如果未登录则返回 null
+     * @return 槽位中的凭证（openid 或 JWT token），未登录返回 null
      */
     String checkLogin(String ticket);
 

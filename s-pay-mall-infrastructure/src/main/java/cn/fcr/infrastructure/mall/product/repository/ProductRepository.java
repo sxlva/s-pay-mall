@@ -12,6 +12,7 @@ import cn.fcr.infrastructure.dao.order.po.OrderItem;
 import cn.fcr.infrastructure.dao.mall.po.Product;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
@@ -72,8 +73,9 @@ public class ProductRepository implements IProductRepository {
     public int deleteCategory(Long id) {
         try {
             return categoryDao.deleteById(id);
-        } catch (Exception e) {
-            throw new cn.fcr.domain.mall.product.model.exception.CategoryHasProductsException("该分类下仍有关联商品，无法删除");
+        } catch (DataIntegrityViolationException e) {
+            // 仅外键约束冲突（分类下仍存在商品）转译为业务异常，其他数据库错误原样抛出
+            throw new cn.fcr.domain.mall.product.model.exception.CategoryHasProductsException("该分类下仍有关联商品，无法删除", e);
         }
     }
 
@@ -134,8 +136,9 @@ public class ProductRepository implements IProductRepository {
     public int deleteProduct(Long id) {
         try {
             return productDao.deleteById(id);
-        } catch (Exception e) {
-            throw new cn.fcr.domain.mall.product.model.exception.ProductHasOrdersException("该商品下仍有关联订单，无法删除");
+        } catch (DataIntegrityViolationException e) {
+            // 仅外键约束冲突（商品仍存在关联订单）转译为业务异常，其他数据库错误原样抛出
+            throw new cn.fcr.domain.mall.product.model.exception.ProductHasOrdersException("该商品下仍有关联订单，无法删除", e);
         }
     }
 

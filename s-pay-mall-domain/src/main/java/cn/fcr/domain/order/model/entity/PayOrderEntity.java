@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 支付订单实体，定义在 shared 模块中供 order 和 mall 领域共同使用，
+ * 支付订单实体，供 order 领域内部及各网关传输使用（2026-10-03 M2 重组后归属 order 领域），
  * 代表一笔支付交易的完整信息，包含支付链接、第三方交易号和支付状态。
  *
  * @author 傅崇睿

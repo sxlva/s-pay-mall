@@ -58,7 +58,7 @@
             <template v-else-if="scope.row.status === 'DONE'">
               <el-tag type="success">已完成</el-tag>
             </template>
-            <template v-else-if="scope.row.status === 'CANCELLED' || scope.row.status === 'CLOSE'">
+            <template v-else-if="scope.row.status === 'CANCELED' || scope.row.status === 'CLOSE'">
               <el-tag type="danger">已取消</el-tag>
             </template>
           </template>

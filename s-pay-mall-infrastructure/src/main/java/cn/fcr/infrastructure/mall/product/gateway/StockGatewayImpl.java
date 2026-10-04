@@ -5,13 +5,11 @@ import cn.fcr.domain.mall.product.gateway.IStockGateway;
 import cn.fcr.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RAtomicLong;
-import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 库存网关实现（Redisson RAtomicLong原子操作）
@@ -32,16 +30,6 @@ public class StockGatewayImpl implements IStockGateway {
      * 库存 Key 前缀 - 统一规范
      */
     private static final String STOCK_KEY_PREFIX = "mall:product:stock:";
-
-    /**
-     * 幂等性 Key 前缀 - 消息处理标记
-     */
-    private static final String IDEMPOTENT_KEY_PREFIX = "mall:stock:msg:processed:";
-
-    /**
-     * 幂等性 Key 过期时间（秒）- 24小时
-     */
-    private static final long IDEMPOTENT_EXPIRE_SECONDS = 86400;
 
     @Override
     public long deductStock(Long productId, Integer quantity) {
@@ -133,23 +121,6 @@ public class StockGatewayImpl implements IStockGateway {
 
         log.info("【库存设置成功】productId={}, 新库存={}", productId, stock);
         return stock;
-    }
-
-    @Override
-    public boolean checkMessageIdempotent(String messageId) {
-        String idempotentKey = IDEMPOTENT_KEY_PREFIX + messageId;
-        RBucket<String> bucket = redissonClient.getBucket(idempotentKey);
-
-        // 使用 trySet 实现 SETNX（仅在不存在时设置）
-        boolean isFirstProcess = bucket.trySet("1", IDEMPOTENT_EXPIRE_SECONDS, TimeUnit.SECONDS);
-
-        if (isFirstProcess) {
-            log.info("【幂等性检查】messageId={}, 首次处理，继续执行业务逻辑", messageId);
-            return true;
-        } else {
-            log.info("【幂等性检查】messageId={}, 已处理过，跳过执行", messageId);
-            return false;
-        }
     }
 
     @Override

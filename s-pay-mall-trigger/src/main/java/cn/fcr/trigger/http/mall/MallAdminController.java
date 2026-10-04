@@ -203,7 +203,7 @@ public class MallAdminController extends BaseController {
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Integer status) {
-        List<cn.fcr.domain.mall.product.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
+        List<cn.fcr.domain.mall.product.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, keyword, minPrice, maxPrice, status);
         List<ProductRes> result = products.stream().map(p -> {
             ProductRes vo = new ProductRes();
             vo.setId(p.getId());

@@ -49,7 +49,13 @@ public interface IMallOrderService {
 
     int deliverOrder(Long orderId);
 
-    int cancelOrder(Long orderId);
+    /**
+     * 取消订单（仅 DB 状态流转，库存恢复由 Application 层在事务提交后编排）
+     *
+     * @param orderId 订单ID
+     * @return 取消成功返回订单号，否则返回 null（订单不存在或状态不允许取消）
+     */
+    String cancelOrder(Long orderId);
 
     void paySuccess(String orderNo);
 

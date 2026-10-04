@@ -79,12 +79,4 @@ public class UserEntity {
     public interface PasswordMatcher {
         boolean matches(String rawPassword, String encodedPassword);
     }
-
-    /**
-     * 密码编码器接口
-     */
-    @FunctionalInterface
-    public interface PasswordEncoder {
-        String encode(String rawPassword);
-    }
 }

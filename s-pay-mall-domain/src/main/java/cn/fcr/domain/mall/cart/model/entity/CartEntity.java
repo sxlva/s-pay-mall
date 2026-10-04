@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,33 +24,6 @@ public class CartEntity {
 
     /** 购物车商品项列表 */
     private List<CartItemEntity> items;
-
-    public static CartEntity of(Long userId) {
-        return CartEntity.builder()
-                .userId(userId)
-                .items(new ArrayList<>())
-                .build();
-    }
-
-    public BigDecimal calculateTotalAmount() {
-        if (items == null || items.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        return items.stream()
-                .filter(item -> Boolean.TRUE.equals(item.getSelected()))
-                .map(CartItemEntity::calculateItemAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    public Integer calculateTotalCount() {
-        if (items == null || items.isEmpty()) {
-            return 0;
-        }
-        return items.stream()
-                .filter(item -> Boolean.TRUE.equals(item.getSelected()))
-                .mapToInt(CartItemEntity::getQuantity)
-                .sum();
-    }
 
     public void addItem(CartItemEntity newItem) {
         if (newItem == null) {
@@ -81,36 +52,6 @@ public class CartEntity {
     public void removeItem(Long cartItemId) {
         if (items == null) return;
         items.removeIf(item -> cartItemId.equals(item.getId()));
-    }
-
-    public void clear() {
-        if (items != null) {
-            items.clear();
-        }
-    }
-
-    public void toggleAll() {
-        if (items == null || items.isEmpty()) return;
-        boolean allSelected = isAllSelected();
-        items.forEach(item -> item.setSelected(!allSelected));
-    }
-
-    public void toggleItem(Long cartItemId) {
-        findItemById(cartItemId)
-                .ifPresent(CartItemEntity::toggleSelect);
-    }
-
-    public boolean isAllSelected() {
-        if (items == null || items.isEmpty()) return false;
-        return items.stream()
-                .allMatch(item -> Boolean.TRUE.equals(item.getSelected()));
-    }
-
-    public List<CartItemEntity> getSelectedItems() {
-        if (items == null) return new ArrayList<>();
-        return items.stream()
-                .filter(item -> Boolean.TRUE.equals(item.getSelected()))
-                .toList();
     }
 
     private Optional<CartItemEntity> findItemByProductId(Long productId) {

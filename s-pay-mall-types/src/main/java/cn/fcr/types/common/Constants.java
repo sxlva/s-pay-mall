@@ -27,6 +27,8 @@ public class Constants {
     public static final String IDENTITY_TYPE_WECHAT_MP = "WECHAT_MP";
     /** 默认角色：会员 */
     public static final String DEFAULT_ROLE_MEMBER = "MEMBER";
+    /** 微信扫码自动注册的默认用户名前缀（落库时固化为 wx_user_{userId}） */
+    public static final String WX_USER_USERNAME_PREFIX = "wx_user_";
     /** 用户状态：正常 */
     public static final Integer USER_STATUS_ACTIVE = 1;
     /** 用户状态：已绑定微信 */

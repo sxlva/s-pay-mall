@@ -162,9 +162,6 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
             return false;
         }
 
-        // 在更新状态之前判断订单是否已支付（用于后续库存恢复判断）
-        boolean isPaid = order.getState() == OrderState.PAID;
-
         // 更新 order_main 状态为 CANCELED（条件更新作并发守卫：影响行数 0 = 状态已被并发流转，跳过关闭支付单与库存恢复）
         int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
                 OrderState.INIT.toDbStatus(), OrderState.CANCELED.getCode());
@@ -179,21 +176,31 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
             payOrderGateway.closePayOrder(orderNo);
         }
 
-        // 恢复库存（用户主动取消订单，需恢复预扣的库存）
-        restoreStockForCancel(order, isPaid);
+        // P1-2：库存恢复不在事务内执行，由调用方在事务提交后调用 restoreStockForCancel(orderNo)
 
         log.info("【状态机】取消订单状态更新完成，orderNo=" + orderNo);
         return true;
     }
 
+    @Override
+    public void restoreStockForCancel(String orderNo) {
+        OrderEntity order = mallOrderQueryGateway.findByOrderNo(orderNo);
+        if (order == null) {
+            log.warn("【库存恢复】订单不存在，跳过库存恢复，orderNo=" + orderNo);
+            return;
+        }
+        restoreStockForCancel(order);
+    }
+
     /**
-     * 恢复库存（取消订单）
-     * 用户主动取消订单时调用，恢复 Redis 和 MySQL 中已扣减的库存
+     * 恢复库存（取消待支付订单）
+     * 用户主动取消或超时关单时调用，仅恢复 Redis 预扣库存。
+     * cancel 守卫仅允许 INIT（待支付）状态流转（设计文档 module-order-pay.md §四），
+     * 此时尚未同步扣减 MySQL 库存，故无需恢复 MySQL
      *
      * @param order 订单实体
-     * @param isPaid 是否已支付（已支付的订单需要恢复 MySQL 库存）
      */
-    private void restoreStockForCancel(OrderEntity order, boolean isPaid) {
+    private void restoreStockForCancel(OrderEntity order) {
         if (order.getItems() == null || order.getItems().isEmpty()) {
             log.warn("【库存恢复】订单无子项，跳过库存恢复，orderNo=" + order.getOrderNo());
             return;
@@ -210,16 +217,6 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
             // 恢复 Redis 库存
             stockGateway.restoreStock(productId, quantity);
             log.info("【库存恢复】Redis库存已恢复，productId=" + productId + ", quantity=" + quantity + ", orderNo=" + order.getOrderNo());
-
-            // 如果订单已支付，还需要恢复 MySQL 库存
-            if (isPaid) {
-                boolean dbRestoreSuccess = stockGateway.syncDBStockRestore(productId, quantity);
-                if (dbRestoreSuccess) {
-                    log.info("【库存恢复】MySQL库存已恢复，productId=" + productId + ", quantity=" + quantity + ", orderNo=" + order.getOrderNo());
-                } else {
-                    log.warn("【库存恢复】MySQL库存恢复失败，productId=" + productId + ", quantity=" + quantity + ", orderNo=" + order.getOrderNo());
-                }
-            }
         }
     }
 }

@@ -83,10 +83,11 @@ public class MallUserServiceImpl implements IMallUserService {
 
     @Override
     public UserLoginVO registerWeChatUserByScan(String openId) {
-        // 先以临时名落库拿自增ID，再固化为 wx_user_{userId}（与扫码登录侧的用户名约定一致）
+        // 先以临时名落库拿自增ID，再固化为 Constants.WX_USER_USERNAME_PREFIX + userId
+        //（与扫码登录侧的用户名约定一致）
         Long userId = createUser("temp_" + UUID.randomUUID().toString().substring(0, 8), "",
                 Constants.USER_STATUS_WECHAT);
-        String username = "wx_user_" + userId;
+        String username = Constants.WX_USER_USERNAME_PREFIX + userId;
         userRepository.updateUsername(userId, username);
 
         userBindingGateway.bindWeChatOpenId(userId, openId);

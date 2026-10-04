@@ -21,7 +21,7 @@ public interface IMallProductService {
 
     int deleteCategory(Long id);
 
-    List<ProductVO> listProducts(Long categoryId, String category, String keyword, BigDecimal minPrice, BigDecimal maxPrice, Integer status);
+    List<ProductVO> listProducts(Long categoryId, String keyword, BigDecimal minPrice, BigDecimal maxPrice, Integer status);
 
     int saveProduct(ProductSaveCommand command);
 

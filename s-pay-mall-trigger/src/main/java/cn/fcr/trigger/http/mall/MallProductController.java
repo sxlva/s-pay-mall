@@ -51,7 +51,7 @@ public class MallProductController extends BaseController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Integer status) {
         log.info("商品列表查询: categoryId={}, keyword={}", categoryId, keyword);
-        List<cn.fcr.domain.mall.product.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, null, keyword, minPrice, maxPrice, status);
+        List<cn.fcr.domain.mall.product.model.valobj.ProductVO> products = mallProductService.listProducts(categoryId, keyword, minPrice, maxPrice, status);
         List<ProductRes> result = products.stream().map(p -> {
             ProductRes vo = new ProductRes();
             vo.setId(p.getId());

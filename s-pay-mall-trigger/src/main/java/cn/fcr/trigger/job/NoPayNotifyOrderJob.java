@@ -41,7 +41,8 @@ public class NoPayNotifyOrderJob {
 
             for (String orderId : orderIds) {
                 if (alipayQueryGateway.queryTradeSuccess(orderId)) {
-                    orderApplicationService.changeOrderPaySuccess(orderId);
+                    // 补单路径仅确认支付成功，未取回支付宝交易号，tradeNo 传 null
+                    orderApplicationService.changeOrderPaySuccess(orderId, null);
                 }
             }
         } catch (Exception e) {

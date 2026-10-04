@@ -5,6 +5,7 @@ import cn.fcr.domain.order.gateway.IOrderPaymentGateway;
 import cn.fcr.domain.mall.product.gateway.IStockGateway;
 import cn.fcr.domain.order.model.entity.OrderEntity;
 import cn.fcr.domain.order.model.entity.OrderItemEntity;
+import cn.fcr.domain.order.model.entity.OrderState;
 import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
 import cn.fcr.domain.order.model.valobj.OrderCreateVO;
 import cn.fcr.domain.order.model.valobj.OrderVO;
@@ -93,13 +94,12 @@ public class MallOrderServiceImpl implements IMallOrderService {
     }
 
     @Override
-    public int cancelOrder(Long orderId) {
+    public String cancelOrder(Long orderId) {
         OrderEntity order = mallOrderQueryGateway.findById(orderId);
         if (order == null) {
-            return 0;
+            return null;
         }
-        boolean success = orderStateMachineService.cancel(order.getOrderNo());
-        return success ? 1 : 0;
+        return orderStateMachineService.cancel(order.getOrderNo()) ? order.getOrderNo() : null;
     }
 
     @Override
@@ -132,7 +132,9 @@ public class MallOrderServiceImpl implements IMallOrderService {
                 .userId(orderEntity.getUserId())
                 .totalAmount(orderEntity.getTotalAmount())
                 .address(orderEntity.getAddress())
-                .status(orderEntity.getState() != null ? orderEntity.getState().getCode() : "CREATED")
+                // API 状态统一输出领域 code 口径，与订单列表（toOrderVO）保持一致；
+                // state 为 null（存储值无法识别）时兜底 INIT
+                .status(orderEntity.getState() != null ? orderEntity.getState().getCode() : OrderState.INIT.getCode())
                 .statusDesc(orderEntity.getState() != null ? orderEntity.getState().getDescription() : "")
                 .createTime(orderEntity.getCreateTime())
                 .updateTime(orderEntity.getUpdateTime())
@@ -154,12 +156,9 @@ public class MallOrderServiceImpl implements IMallOrderService {
             throw new IllegalStateException("订单状态不允许支付: " + orderEntity.getState().getDescription());
         }
 
-        // 3. 重新生成支付链接
+        // 3. 重新生成支付链接（pay_order 保持 WAIT_PAY 落库，PAYING 仅为内存实体状态，与下单口径一致）
         PayOrderEntity payOrderEntity = orderEntity.toPayOrder();
         String payUrl = orderPaymentGateway.generatePayUrl(payOrderEntity);
-
-        // 4. 更新支付订单信息
-        orderPaymentGateway.updatePayOrderInfo(payOrderEntity);
 
         log.info("继续支付订单成功，orderNo=" + orderNo);
 

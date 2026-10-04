@@ -13,4 +13,8 @@ public class ProductHasOrdersException extends RuntimeException {
     public ProductHasOrdersException(String message) {
         super(message);
     }
+
+    public ProductHasOrdersException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

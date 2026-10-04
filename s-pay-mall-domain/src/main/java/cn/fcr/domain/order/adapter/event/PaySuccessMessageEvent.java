@@ -11,12 +11,17 @@ import org.apache.commons.lang3.RandomStringUtils;
 import java.util.Date;
 
 /**
- * 支付成功消息事件，定义支付成功消息的结构和消息主题 topic=pay_success。
- * 实例化由 Infrastructure 层实现。
+ * 支付成功消息契约：定义消息结构（{@link PaySuccessMessage}）与 Topic 常量。
+ * 消息体以裸 JSON 发送（不走 {@link BaseEvent#buildEventMessage} 信封），
+ * 消费方为 OrderPaidRocketListener。
  *
  * @author 傅崇睿
  */
 public class PaySuccessMessageEvent extends BaseEvent<PaySuccessMessageEvent.PaySuccessMessage> {
+
+    /** 支付成功消息 Topic */
+    public static final String TOPIC = "order_paid";
+
     @Override
     public EventMessage<PaySuccessMessage> buildEventMessage(PaySuccessMessage data) {
         return EventMessage.<PaySuccessMessage>builder()
@@ -28,7 +33,7 @@ public class PaySuccessMessageEvent extends BaseEvent<PaySuccessMessageEvent.Pay
 
     @Override
     public String topic() {
-        return "pay_success";
+        return TOPIC;
     }
 
     @Data

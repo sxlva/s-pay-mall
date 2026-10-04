@@ -127,15 +127,6 @@ public class OrderRepositoryImpl implements IMallOrderQueryGateway {
     }
 
     @Override
-    public int updateOrderStatus(Long orderId, String status) {
-        LambdaUpdateWrapper<OrderMain> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(OrderMain::getId, orderId);
-        updateWrapper.set(OrderMain::getStatus, status);
-        updateWrapper.set(OrderMain::getUpdateTime, LocalDateTime.now());
-        return orderMainDao.update(null, updateWrapper);
-    }
-
-    @Override
     public int updateOrderStatusByOrderNo(String orderNo, String expectStatus, String targetStatus) {
         LambdaUpdateWrapper<OrderMain> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(OrderMain::getOrderNo, orderNo);
@@ -147,28 +138,21 @@ public class OrderRepositoryImpl implements IMallOrderQueryGateway {
         return orderMainDao.update(null, updateWrapper);
     }
 
-    @Override
-    public BigDecimal sumDailySales(String date) {
-        return orderMainDao.sumDailySales(date);
-    }
-
-    @Override
-    public Integer countDailyOrders(String date) {
-        return orderMainDao.countDailyOrders(date);
-    }
-
     private OrderVO toOrderVO(OrderMain order) {
+        OrderState state = OrderState.fromDbStatus(order.getStatus());
+
         OrderVO.OrderVOBuilder builder = OrderVO.builder()
                 .id(order.getId())
                 .orderNo(order.getOrderNo())
                 .userId(order.getUserId())
                 .totalAmount(order.getTotalAmount())
                 .address(order.getAddress())
-                .status(order.getStatus())
+                // API 状态统一输出领域 code 口径（前端按 INIT/PAID/SHIPPED/DONE/CANCELED 过滤），
+                // 无法识别的存储值原样透出
+                .status(state != null ? state.getCode() : order.getStatus())
                 .createTime(order.getCreateTime())
                 .updateTime(order.getUpdateTime());
 
-        OrderState state = OrderState.fromDbStatus(order.getStatus());
         if (state != null) {
             builder.statusDesc(state.getDescription());
         }

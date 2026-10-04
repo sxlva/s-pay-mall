@@ -7,6 +7,7 @@ import cn.fcr.domain.order.gateway.IMallOrderQueryGateway;
 import cn.fcr.domain.order.model.entity.OrderEntity;
 import cn.fcr.domain.order.model.valobj.OrderCreateVO;
 import cn.fcr.domain.order.service.IMallOrderService;
+import cn.fcr.domain.order.service.IOrderStateMachineService;
 import cn.fcr.domain.order.model.entity.PayOrderEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,15 +33,19 @@ class OrderTransactionService {
     private final IOrderPaymentGateway orderPaymentGateway;
     /** 商城订单查询网关（用于区分新旧链订单） */
     private final IMallOrderQueryGateway mallOrderQueryGateway;
+    /** 订单状态机服务（P1-2：取消事务仅做 DB 状态流转） */
+    private final IOrderStateMachineService orderStateMachineService;
 
     public OrderTransactionService(IMallCartService mallCartService,
                                    IMallOrderService mallOrderService,
                                    IOrderPaymentGateway orderPaymentGateway,
-                                   IMallOrderQueryGateway mallOrderQueryGateway) {
+                                   IMallOrderQueryGateway mallOrderQueryGateway,
+                                   IOrderStateMachineService orderStateMachineService) {
         this.mallCartService = mallCartService;
         this.mallOrderService = mallOrderService;
         this.orderPaymentGateway = orderPaymentGateway;
         this.mallOrderQueryGateway = mallOrderQueryGateway;
+        this.orderStateMachineService = orderStateMachineService;
     }
 
     /**
@@ -63,7 +68,8 @@ class OrderTransactionService {
 
             PayOrderEntity payOrderEntity = orderEntity.toPayOrder();
             String payUrl = orderPaymentGateway.generatePayUrl(payOrderEntity);
-            orderPaymentGateway.updatePayOrderInfo(payOrderEntity);
+            // pay_order 保持 WAIT_PAY 落库（PAYING 仅为内存实体状态）：唤起支付宝不改变落库状态，
+            // 超时关单与补单查询均以 pay_order 的 WAIT_PAY 行为准，无需额外持久化支付信息
 
             mallCartService.clearCart(userId);
 
@@ -102,5 +108,27 @@ class OrderTransactionService {
             // order_main 不存在：legacy 旧链已下线，记日志由人工巡检兜底，不回抛异常（支付宝回调仍返回 success）
             log.warn("支付成功回调：order_main 不存在，忽略状态更新: orderNo={}", orderId);
         }
+    }
+
+    /**
+     * 在事务内完成取消订单的 DB 状态流转（P1-2：仅 DB，库存恢复在事务外执行）
+     *
+     * @param orderId 订单ID
+     * @return 取消成功返回订单号，否则返回 null
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public String cancelOrderInTransaction(Long orderId) {
+        return mallOrderService.cancelOrder(orderId);
+    }
+
+    /**
+     * 在事务内完成取消订单的 DB 状态流转（按订单号，供超时关单 MQ 消费使用）
+     *
+     * @param orderNo 订单号
+     * @return 是否取消成功
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public boolean cancelOrderInTransaction(String orderNo) {
+        return orderStateMachineService.cancel(orderNo);
     }
 }

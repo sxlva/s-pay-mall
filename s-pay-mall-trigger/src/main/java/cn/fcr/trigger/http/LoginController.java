@@ -62,7 +62,7 @@ public class LoginController {
      * 轮询检查微信扫码登录状态
      *
      * <p>微信扫码登录流程第二步：前端获取二维码后，每隔3秒调用此接口轮询登录状态。
-     * 如果用户已扫码并确认登录，返回openidToken（JWT token）；否则返回未登录状态。</p>
+     * 如果用户已扫码并确认登录，返回 JWT token；否则返回未登录状态。</p>
      *
      * @param ticket 二维码ticket
      * @return JWT token（登录成功）或未登录状态
@@ -70,14 +70,14 @@ public class LoginController {
     @RequestMapping(value = "check_login", method = RequestMethod.GET)
     public Response<String> checkLogin(String ticket) {
         try {
-            String openidToken = loginService.checkLogin(ticket);
+            String token = loginService.checkLogin(ticket);
             log.info("扫码检测登录结果 ticket:{}", ticket);
 
-            if (StringUtils.isNotBlank(openidToken)) {
+            if (StringUtils.isNotBlank(token)) {
                 return Response.<String>builder()
                         .code(Constants.ResponseCode.SUCCESS.getCode())
                         .info(Constants.ResponseCode.SUCCESS.getInfo())
-                        .data(openidToken)
+                        .data(token)
                         .build();
             } else {
                 return Response.<String>builder()

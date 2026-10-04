@@ -32,18 +32,14 @@ public class OrderPaymentGatewayImpl implements IOrderPaymentGateway {
     }
 
     @Override
-    public void updatePayOrderInfo(PayOrderEntity payOrderEntity) {
-        // 暂未实现：更新支付订单信息（需要补充数据库持久化逻辑）
-        log.warn("updatePayOrderInfo 暂未实现，orderNo={}", payOrderEntity.getOrderNo());
-    }
-
-    @Override
     public void sendDelayCloseMessage(String orderNo) {
         log.info("发送订单延时关闭消息: orderNo={}", orderNo);
         try {
-            // 【延时消息】delayLevel=5 对应 1 分钟，开发环境合理延时
+            // 【延时消息】delayLevel=9 对应 30 分钟（RocketMQ 官方级别：1s/5s/10s/30s/1m/2m/5m/10m/30m...），
+            // 与下单到关单的业务支付超时窗口一致；B2 修复前为 level 5（1 分钟），
+            // 用户付款时订单可能已被关闭，形成"钱已收、订单死"的死角
             Message<String> message = MessageBuilder.withPayload(orderNo).build();
-            rocketMQTemplate.syncSend("order-timeout-topic", message, 3000, 5);
+            rocketMQTemplate.syncSend("order-timeout-topic", message, 3000, 9);
             log.info("订单延时关闭消息发送成功: orderNo={}", orderNo);
         } catch (Exception e) {
             log.error("发送订单延时关闭消息失败: orderNo={}, error={}", orderNo, e.getMessage(), e);

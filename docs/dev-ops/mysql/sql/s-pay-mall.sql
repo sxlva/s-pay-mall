@@ -178,7 +178,7 @@ CREATE TABLE `order_main` (
 `order_no` varchar(32) NOT NULL COMMENT '订单编号，唯一标识',
 `user_id` bigint unsigned NOT NULL COMMENT '用户ID，关联mall_user表',
 `total_amount` decimal(10,2) NOT NULL COMMENT '订单总金额',
-`status` varchar(32) NOT NULL DEFAULT 'CREATED' COMMENT '订单状态：CREATED-已创建、PAID-已支付、SHIPPED-已发货、COMPLETED-已完成、CANCELLED-已取消',
+`status` varchar(32) NOT NULL DEFAULT 'CREATED' COMMENT '订单状态：CREATED-待支付、PAID-已支付、SHIPPED-已发货、DONE-已完成、CANCELED-已取消（CREATED 为 INIT 的存储形式，与 OrderState.toDbStatus() 一致）',
 `address` varchar(256) DEFAULT NULL COMMENT '收货地址',
 `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
 `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

@@ -68,15 +68,6 @@ public interface IStockGateway {
     long setStock(Long productId, Integer stock);
 
     /**
-     * 检查消息是否已处理（幂等性检查）
-     * 使用 Redis SETNX 实现
-     *
-     * @param messageId 消息唯一ID
-     * @return true=首次处理，false=已处理过
-     */
-    boolean checkMessageIdempotent(String messageId);
-
-    /**
      * 同步扣减 MySQL 数据库库存
      * 支付成功后调用，确保 Redis 预扣结果持久化到 MySQL
      * 使用乐观锁保证幂等性：只有库存充足时才扣减

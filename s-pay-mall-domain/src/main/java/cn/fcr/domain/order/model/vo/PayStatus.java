@@ -1,7 +1,8 @@
 package cn.fcr.domain.order.model.vo;
 
 /**
- * 支付状态枚举，定义在 shared 模块中供 order 和 mall 领域共同使用。
+ * 支付状态枚举，归属 order 领域（2026-10-03 M2 重组后由 shared 收编），
+ * pay_order 表 status 列与本枚举 code 一一对应。
  *
  * @author 傅崇睿
  */

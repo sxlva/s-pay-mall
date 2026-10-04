@@ -220,17 +220,12 @@ sequenceDiagram
     alt 状态不允许取消
         SM-->>S: false
     else 允许取消
-        SM->>SM: 判断是否已支付 (isPaid)
         SM->>DB: UPDATE order_main status='CANCELED'
         SM->>DB: UPDATE pay_order status='CLOSED' (未支付时)
 
-        loop 逐商品恢复
+        loop 逐商品恢复（仅 Redis 预扣，事务外执行）
             SM->>Stock: restoreStock(productId, quantity)
             Stock->>R: addAndGet(quantity) (Redis 恢复)
-            opt 已支付
-                SM->>Stock: syncDBStockRestore(productId, quantity)
-                Stock->>DB: UPDATE product SET stock=stock+quantity (MySQL 恢复)
-            end
         end
         SM-->>S: true
     end
