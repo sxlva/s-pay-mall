@@ -81,6 +81,14 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- ③ JUnit 4 → JUnit Platform 桥接：start 的测试均为 JUnit 4（SpringRunner），
+             Surefire/Failsafe 3.x 检测到 jupiter 后走 JUnitPlatform provider，
+             缺 vintage engine 时 JUnit 4 测试会被静默跳过（与 domain 批次同因） -->
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
@@ -148,14 +156,34 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.6</version>
+                <!-- ③ 测试分层：2.6 升级 3.2.5；start 测试全部依赖真实中间件，
+                     由 skipStartTests 控制（默认 true，-P e2e / -DskipStartTests=false 放开） -->
+                <version>3.2.5</version>
                 <configuration>
-                    <skipTests>true</skipTests>
+                    <skipTests>${skipStartTests}</skipTests>
                     <testFailureIgnore>false</testFailureIgnore>
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
                 </configuration>
+            </plugin>
+            <!-- ③ E2E 集成测试由 Failsafe 在 integration-test/verify 阶段执行（**/*E2EIT.java）；
+                 与 Surefire 共用 skipStartTests 开关，仅 -P e2e 激活 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <skipTests>${skipStartTests}</skipTests>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

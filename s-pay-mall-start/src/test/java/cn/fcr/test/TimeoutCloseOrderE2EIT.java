@@ -9,6 +9,7 @@ import cn.fcr.infrastructure.dao.order.po.OrderItem;
 import cn.fcr.infrastructure.dao.order.po.OrderMain;
 import cn.fcr.infrastructure.dao.order.po.PayOrder;
 import cn.fcr.application.OrderApplicationService;
+import cn.fcr.infrastructure.order.gateway.AlipayQueryGatewayImpl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
@@ -17,6 +18,7 @@ import org.junit.runner.RunWith;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.Resource;
@@ -32,6 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
 /**
  * 超时关单分流 E2E 测试（M2-1 行为修复验收）
@@ -50,7 +53,7 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class TimeoutCloseOrderE2ETest {
+public class TimeoutCloseOrderE2EIT {
 
     /** Redis 库存 Key 前缀（与 StockGatewayImpl 一致） */
     private static final String STOCK_KEY_PREFIX = "mall:product:stock:";
@@ -82,6 +85,14 @@ public class TimeoutCloseOrderE2ETest {
     /** JdbcTemplate：仅用于 @After 物理清理 pay_order（IOrderDao 无 delete 方法） */
     @Resource
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    /**
+     * 支付宝交易查询网关 Mock（B2）：超时关单前二次确认依赖它；
+     * 默认返回 false（未支付，走关单），场景 3 显式置 true 验证"已支付转履约"。
+     * Mock 同时避免 E2E 测试对外网支付宝的真实请求。
+     */
+    @MockBean
+    private AlipayQueryGatewayImpl alipayQueryGateway;
 
     /** 本测试类创建的订单号与商品ID，用于 @After 物理清理 */
     private final List<String> testOrderNos = new ArrayList<>();
@@ -204,6 +215,48 @@ public class TimeoutCloseOrderE2ETest {
                 redissonClient.getAtomicLong(STOCK_KEY_PREFIX + productId).get());
         assertEquals("守卫拒绝后 MySQL 库存不得恢复", Integer.valueOf(stockS0 - quantity),
                 productDao.selectById(productId).getStock());
+    }
+
+    /**
+     * 场景 3（B2）：关单前支付宝侧已交易成功 → 转履约路径，不关闭订单
+     *
+     * <p>order_main=CREATED、pay_order=WAIT_PAY，但用户已在支付宝完成支付
+     * （延时消息到期瞬间付款）。handleTimeoutCloseOrder 应先查询支付宝：
+     * 已支付 → 走 paySuccess 履约（order_main=PAID、pay_order=PAID、
+     * MySQL 库存同步扣减），绝不关闭订单。</p>
+     *
+     * @throws Exception 断言失败
+     */
+    @Test
+    public void testTimeoutClose_alipayPaidRescued() throws Exception {
+        int quantity = 2;
+        int stockS0 = 100;
+        Long productId = createTestProduct(stockS0);
+        String orderNo = uniqueOrderNo("TC3");
+        createNewChainOrder(orderNo, productId, "M2E2E测试商品", quantity,
+                new BigDecimal("19.90"), "WAIT_PAY", "CREATED");
+
+        // 模拟下单时 Redis 预扣（支付链路不重复扣 Redis）
+        redissonClient.getAtomicLong(STOCK_KEY_PREFIX + productId).set(stockS0 - quantity);
+
+        // 支付宝侧查询确认：交易已成功
+        when(alipayQueryGateway.queryTradeSuccess(orderNo)).thenReturn(true);
+
+        // ========== 超时关单入口：应转履约而非关单 ==========
+        boolean handled = orderApplicationService.handleTimeoutCloseOrder(orderNo);
+        assertTrue("支付宝已支付时关单入口应返回 true（已转履约）", handled);
+
+        // ========== 断言 1：订单被履约而非关闭 ==========
+        assertEquals("order_main 应为 PAID", "PAID", queryOrderMain(orderNo).getStatus());
+        assertEquals("pay_order 应为 PAID", "PAID", orderDao.queryByOrderNo(orderNo).getStatus());
+
+        // ========== 断言 2：MySQL 库存按支付链路同步扣减（S0 - quantity） ==========
+        assertEquals("MySQL 库存应扣减为 S0-quantity", Integer.valueOf(stockS0 - quantity),
+                productDao.selectById(productId).getStock());
+
+        // ========== 断言 3：Redis 预扣值不变（支付链路不重复扣 Redis） ==========
+        assertEquals("Redis 库存应保持预扣值", stockS0 - quantity,
+                redissonClient.getAtomicLong(STOCK_KEY_PREFIX + productId).get());
     }
 
     /* ==================== 测试数据构造工具 ==================== */

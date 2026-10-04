@@ -67,7 +67,7 @@ import static org.mockito.Mockito.verify;
 @Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class OrderCreateIdempotencyE2ETest {
+public class OrderCreateIdempotencyE2EIT {
 
     /** Redis 库存 Key 前缀（与 StockGatewayImpl 一致） */
     private static final String STOCK_KEY_PREFIX = "mall:product:stock:";

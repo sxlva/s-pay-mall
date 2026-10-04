@@ -46,7 +46,7 @@ s-pay-mall/
 ## 环境配置
 
 ```bash
-DB_HOST=localhost        DB_PORT=3306        DB_NAME=s_pay_mall
+DB_HOST=localhost        DB_PORT=3306        DB_NAME=s-pay-mall
 REDIS_HOST=localhost     REDIS_PORT=6379
 WECHAT_APP_ID=xxx       WECHAT_APP_SECRET=xxx
 ALIPAY_APP_ID=xxx       ALIPAY_PRIVATE_KEY=xxx

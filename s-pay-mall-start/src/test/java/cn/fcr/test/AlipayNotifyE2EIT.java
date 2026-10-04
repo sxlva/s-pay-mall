@@ -87,7 +87,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-public class AlipayNotifyE2ETest {
+public class AlipayNotifyE2EIT {
 
     /** 支付宝异步通知地址（与 AliPayController 路径一致，dev profile api-version=v1） */
     private static final String NOTIFY_URL = "/pay-api/v1/alipay/alipay_notify_url";

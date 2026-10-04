@@ -27,14 +27,6 @@ public interface ILoginService {
     String checkLogin(String ticket);
 
     /**
-     * 保存登录状态
-     *
-     * @param ticket 票据
-     * @param openid 用户微信 openid
-     */
-    void saveLoginState(String ticket, String openid);
-
-    /**
      * 处理微信扫码登录，实现自动注册与绑定
      * 
      * @param ticket 票据

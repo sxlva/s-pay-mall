@@ -1,7 +1,7 @@
 package cn.fcr.domain.order.model.entity;
 
 import cn.fcr.domain.mall.cart.model.valobj.CartItemVO;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * OrderEntity 单元测试
@@ -110,7 +110,7 @@ public class OrderEntityTest {
             order.pay();
             fail("Expected IllegalStateException");
         } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("无法执行支付操作"));
+            assertTrue(e.getMessage().contains("拒绝支付操作"));
         }
     }
 
@@ -136,7 +136,7 @@ public class OrderEntityTest {
             order.cancel();
             fail("Expected IllegalStateException");
         } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("无法执行取消操作"));
+            assertTrue(e.getMessage().contains("拒绝取消操作"));
         }
     }
 
@@ -162,7 +162,7 @@ public class OrderEntityTest {
             order.deliver();
             fail("Expected IllegalStateException");
         } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("无法执行发货操作"));
+            assertTrue(e.getMessage().contains("拒绝发货操作"));
         }
     }
 
@@ -188,7 +188,7 @@ public class OrderEntityTest {
             order.complete();
             fail("Expected IllegalStateException");
         } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("无法执行完成操作"));
+            assertTrue(e.getMessage().contains("拒绝完成操作"));
         }
     }
 
@@ -360,7 +360,7 @@ public class OrderEntityTest {
             OrderEntity.createFromCart(1L, "Address", Collections.emptyList());
             fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException e) {
-            assertEquals("购物车为空", e.getMessage());
+            assertEquals("购物车数据流为空，无法组装订单", e.getMessage());
         }
     }
 
@@ -370,7 +370,7 @@ public class OrderEntityTest {
             OrderEntity.createFromCart(1L, "Address", null);
             fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException e) {
-            assertEquals("购物车为空", e.getMessage());
+            assertEquals("购物车数据流为空，无法组装订单", e.getMessage());
         }
     }
 
@@ -396,11 +396,5 @@ public class OrderEntityTest {
         
         assertEquals(new BigDecimal("250.00"), order.getTotalAmount());
         assertEquals(2, order.getItems().size());
-    }
-
-    // ==================== 辅助方法 ====================
-
-    private void fail(String message) {
-        throw new AssertionError(message);
     }
 }

@@ -1,9 +1,9 @@
 package cn.fcr.domain.mall.user.model.entity;
 
 import cn.fcr.types.common.Constants;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * UserEntity 单元测试
@@ -133,23 +133,5 @@ public class UserEntityTest {
                 .build();
 
         assertEquals(Constants.DEFAULT_ROLE_MEMBER, user.getRoleOrDefault());
-    }
-
-    private void assertDoesNotThrow(Runnable runnable) {
-        try {
-            runnable.run();
-        } catch (Exception e) {
-            fail("Expected no exception but got: " + e.getMessage());
-        }
-    }
-
-    private IllegalStateException assertThrows(Class<IllegalStateException> exceptionClass, Runnable runnable) {
-        try {
-            runnable.run();
-            fail("Expected exception of type " + exceptionClass.getName() + " but none was thrown");
-            return null;
-        } catch (IllegalStateException e) {
-            return e;
-        }
     }
 }

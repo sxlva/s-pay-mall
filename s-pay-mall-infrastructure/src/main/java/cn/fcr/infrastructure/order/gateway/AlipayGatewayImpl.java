@@ -65,12 +65,13 @@ public class AlipayGatewayImpl implements IPayGateway {
             String sign = params.get("sign");
             String signType = params.get("sign_type");
 
-            log.info("【验签调试】收到的参数数量: {}, sign_type: {}, sign长度: {}",
+            // 【验签调试】降为 debug 级：排障时可临时调高日志级别，生产默认不输出
+            log.debug("【验签调试】收到的参数数量: {}, sign_type: {}, sign长度: {}",
                     params.size(), signType, sign != null ? sign.length() : 0);
-            log.info("【验签调试】sign值前50字符: {}", sign != null && sign.length() > 50 ? sign.substring(0, 50) : sign);
+            log.debug("【验签调试】sign值前50字符: {}", sign != null && sign.length() > 50 ? sign.substring(0, 50) : sign);
 
             String signCheckContent = getSignCheckContentV1(params);
-            log.info("【验签调试】待验签字符串长度: {}, 前200字符: {}",
+            log.debug("【验签调试】待验签字符串长度: {}, 前200字符: {}",
                     signCheckContent.length(),
                     signCheckContent.length() > 200 ? signCheckContent.substring(0, 200) : signCheckContent);
 
@@ -83,9 +84,8 @@ public class AlipayGatewayImpl implements IPayGateway {
                     "UTF-8"
             );
 
-            log.info("【验签调试】验签结果: {}", result);
+            log.debug("【验签调试】验签结果: {}", result);
             return result;
-
         } catch (AlipayApiException e) {
             log.error("支付宝签名验证异常: {}", e.getMessage(), e);
             return false;

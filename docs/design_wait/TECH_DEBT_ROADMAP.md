@@ -25,10 +25,10 @@
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
 | P1-1 | Controller 大面积缺 @Valid | ~~11 个 Controller 仅 2 个方法使用了 `@Valid`~~（2026-10-02 核实：实际仅 1 处 `MallAdminController#saveProduct`，原记载与代码不符） | 逐个 Controller 方法加 `@Valid` + DTO 字段加校验注解 | 已处理（2026-10-02：8 个 `@RequestBody` DTO 端点补齐 `@Valid`；trigger 模块补 `spring-boot-starter-validation` 依赖——此前全项目无 JSR-303 实现，注解静默失效；`GlobalExceptionHandler` 新增 `MethodArgumentNotValidException → 0002` 映射；`CategorySaveRequestDTO.status`/`UserSaveRequestDTO.status` 的 `@NotNull` 放宽为可选以匹配前端表单；全部端点经真实请求实测） |
-| P1-2 | Redis+DB 跨资源事务一致性 | `cancelOrder()` 在 `@Transactional` 内包含 `stockGateway.restoreStock()`，DB 回滚时 Redis 无法回滚 | 参照 `createOrder` 模式，将库存恢复移到事务外 | 待处理 |
-| P1-3 | OrderPaidRocketListener 含业务编排 | `sendPaymentNotification()` 在 Listener 中直接实现（查订单→查微信→发模板消息） | 提取到 Application Service | 待处理 |
-| P1-4 | MQ 消息发送缺超时参数 | `RocketMqOrderEventPublisher.convertAndSend` 无超时（`OrderEventGatewayImpl` 已于 2026-10-01 删除） | 添加 3000ms 超时参数 | 待处理 |
-| P1-5 | Domain 层 POM 非必要技术依赖 | POM 含 `spring-context`, `spring-tx`, `alipay-sdk-java`, `jjwt`, `fastjson` → 存在误用风险 | 逐个确认实际引用，移除或替换为标准 API | 待处理 |
+| P1-2 | Redis+DB 跨资源事务一致性 | ~~`cancelOrder()` 在 `@Transactional` 内包含 `stockGateway.restoreStock()`，DB 回滚时 Redis 无法回滚~~ | 参照 `createOrder` 模式，将库存恢复移到事务外 | 已处理（2026-10-04）：状态机 `cancel()` 改为仅 DB 状态流转，新增 `restoreStockForCancel(orderNo)` 由 `OrderApplicationService` 在事务提交后调用（主动取消与超时关单两个入口同模式）；`IMallOrderService.cancelOrder` 返回订单号以支撑事务外恢复；恢复失败仅告警不回滚（取消为终态，不构成超卖） |
+| P1-3 | OrderPaidRocketListener 含业务编排 | ~~`sendPaymentNotification()` 在 Listener 中直接实现（查订单→查微信→发模板消息）~~ | 提取到 Application Service | 已处理（2026-10-04）：编排下沉为 `OrderApplicationService.sendPaySuccessNotification()`，Listener 仅保留幂等守门与消费语义，不再注入领域网关 |
+| P1-4 | MQ 消息发送缺超时参数 | ~~`RocketMqOrderEventPublisher.convertAndSend` 无超时（`OrderEventGatewayImpl` 已于 2026-10-01 删除）~~ | 添加 3000ms 超时参数 | 已处理（2026-10-04）：`convertAndSend` 增加 3000ms 超时，与 `sendDelayCloseMessage` 约定一致 |
+| P1-5 | Domain 层 POM 非必要技术依赖 | ~~POM 含 `spring-context`, `spring-tx`, `alipay-sdk-java`, `jjwt`, `fastjson` → 存在误用风险~~ | 逐个确认实际引用，移除或替换为标准 API | 已处理（2026-10-04）：domain 内 5 项依赖 + `guava`/`commons-codec`（均无引用）一并移除；`alipay-sdk-java` 改由 infrastructure 显式声明（原为 domain 传递依赖隐性引入，编译已证实）；全仓库无引用的 `java-jwt` 从 domain/start/根 pom 清理；`mvn test-compile` 全绿 |
 
 ### 🔵 P2 (优化级)
 
@@ -394,6 +394,14 @@ s-pay-mall-domain       → types / api
 |------|---------|-------------|
 | P0-4 (幂等性设计) | 需前端配合改造请求参数；当前状态机提供了部分防护 | 前端排期支持 |
 | P0-5 (Domain 跨模块依赖) | 需仔细分析影响范围，选方案三选一 | 有时间分析时 |
+| C1：`changeOrderClose` 关单时写 `pay_time=now()` | 数据字段语义污染（未支付订单有支付时间），不影响功能正确性 | 支付链路审计时一并处理 |
+| C2：`OrderState.DONE` 存储口径不一致（`toDbStatus()`=COMPLETED vs 状态机写 `getCode()`=DONE） | 读取端 `fromDbStatus` 双兼容已兜住 | 订单状态口径统一时处理 |
+| C3：支付回调未校验 `total_amount` 与订单应付金额一致 | 验签已保证参数真实性，属支付安全增强而非 correctness blocker；需 BigDecimal 比较 | 支付安全加固批次 |
+| C4：重复回调重复发布 `order_paid` 事件 | 下游消费幂等（orderNo 幂等键）已兜底，仅产生冗余消息 | 事件链路优化时 |
+| C5：`sendDelayCloseMessage` 内层 catch 吞异常 | 失败仅靠 `NoPayNotifyOrderJob` 补偿；外层 catch 已成死代码；涉及可靠性设计取舍 | 可靠性设计专题 |
+| ~~6 个零调用 public API（`ILoginService.saveLoginState` + `IOrderDao` 的 `queryTimeoutCloseOrderList`/`queryUnPayOrder`/`queryOrderByOrderNo`/`closeOrderWithOptimisticLock`/`updateStatus`）~~ | ~~无调用方，但删除前需按项目规则再全仓核对一遍引用~~ | 已处理（2026-10-04，⑦ P2 批次）：删除前全仓（含测试与 XML）零引用复核通过，接口/实现/私有 helper 一并移除 |
+| ~~`AlipayGatewayImpl`【验签调试】日志打印 sign 前 50 字符与待签串前缀~~ | ~~生产噪音~~ | 已处理（2026-10-04，⑦ P2 批次）：4 条调试日志降为 debug 级，排障可临时调高，生产默认不输出 |
+| ~~实际 DB 名 `s-pay-mall` 与 AGENTS.md `DB_NAME=s_pay_mall` 不一致~~ | ~~文档小差异~~ | 已处理（2026-10-04，⑦ P2 批次）：AGENTS.md 修正为 `s-pay-mall` |
 
 ---
 
@@ -407,3 +415,77 @@ s-pay-mall-domain       → types / api
 | DOC-2 | Redis 幂等 Key 格式不一致 | `mall:stock:msg:processed:{messageId}`（DEVELOPMENT_GUIDE §五 原文） | `stock:event:{businessType}:{businessNo}` | [IdempotentGatewayImpl.java](../../s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/mall/gateway/IdempotentGatewayImpl.java) | 新 SSOT 以代码为准，标注差异 |
 | DOC-3 | ~~AdminApiController 路径描述不精确~~ | ~~"与 MallAdminController 重复路径结构"（DEVELOPMENT_GUIDE §1.6 原文）~~ | ~~前缀不同（`/pay-api/.../admin` vs `/mall-api/.../admin`），功能 CRUD 重复~~ | ~~[MallAdminController.java](../../s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/mall/MallAdminController.java) / [AdminApiController.java](../../s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/mall/AdminApiController.java)~~ | 已处理（2026-10-01，JV-003 第二批：删除 `AdminApiController` + SecurityConfig 死规则 + 契约 §4.2 移除） |
 | DOC-4 | REVIEW.md 悬空引用 | 引用 `CLAUDE_project_guide_v2.md`（3 处） | 该文件不存在 | [REVIEW.md](../../REVIEW.md) 原 §1.1/§7.4.4/§三 | REVIEW.md v3.0 已修复，改为引用 DDD_ARCHITECTURE_SPEC.md |
+
+---
+
+## 十二、附录 G：支付状态修复与测试机制分层（2026-10-04，①②③④ 批次）
+
+> 批次纪律：一次只处理一个问题，先调查/修改/验证再进入下一个。本附录按批次记录。
+
+### G.1 ① B1：支付宝交易查询误判支付成功
+
+**问题**：`AlipayQueryGatewayImpl.queryTradeSuccess` 只判断 `code == "10000"`——该业务码仅表示**查询请求本身成功**，不代表交易支付成功。`NoPayNotifyOrderJob`（每 30s）会把 `WAIT_BUYER_PAY`（待付款）的订单误判为支付成功并触发履约。属支付状态机入口错误。
+
+**修复**：判定口径改为 `code=10000 && tradeStatus=TRADE_SUCCESS` 双重校验；异常/空响应分支语义不变。顺带将 `@Resource` 字段注入改为构造器注入（与同包 `AlipayGatewayImpl` 风格一致）。
+
+**验证证据**：新增 `AlipayQueryGatewayImplTest` 7 用例全绿（TRADE_SUCCESS→true / WAIT_BUYER_PAY→false / TRADE_CLOSED→false / code≠10000→false / tradeStatus 缺失→false / 空响应→false / 客户端异常→false）；全仓 `mvn test-compile` 通过；唯一调用方 `NoPayNotifyOrderJob` 语义直接改善，无需改动。
+
+**经验**：第三方网关的"调用成功"与"业务成功"必须分开判断；SDK 业务码的第一语义是通信/请求层面。
+
+### G.2 ② Domain 测试发现机制修复
+
+**问题**：`OrderEntityTest`（29 用例）与 `UserEntityTest`（10 用例）使用 JUnit 4，domain pom 同时有 junit-jupiter + Surefire 3.0.0-M5 → provider 走 JUnit Platform → **缺 `junit-vintage-engine` 时 JUnit 4 类被静默跳过**，无任何告警。`mvn test` 显示 "Tests run: 9" 但名义测试远多于此。
+
+**修复**：两个测试类迁移到 JUnit 5（删除自写 `fail`/`assertThrows`/`assertDoesNotThrow` 辅助方法）；domain pom 移除 `junit:junit`（消除 footgun）。
+
+**迁移后暴露的断言漂移**：6 处失败均为异常消息文本与生产代码脱节（守卫行为正确）——生产消息早已改为"拒绝支付/取消/发货/完成操作"与"购物车数据流为空，无法组装订单"，测试断言同步对齐。
+
+**验证证据**：`mvn test -pl s-pay-mall-domain -am` 从 Tests run: 9 恢复到 **48/48 全绿（4 个类全部被执行）**。
+
+**经验**：Surefire 3.x + jupiter 环境下，JUnit 4 测试缺失 vintage engine 是**静默**跳过——测试计数（Tests run 总数）是发现此问题的唯一信号，排查时应先核对"类数 × 每类用例数"与报告总数。
+
+### G.3 ③ Surefire / Failsafe 测试分层
+
+**目标结构**：`mvn test` = 快速单测（无 Docker 依赖）；`mvn verify -P e2e` = 需 MySQL(23306)/Redis(26379)/RocketMQ(9876) 的完整 E2E。
+
+**修复**：
+- 根 pom：新增 `<skipStartTests>true</skipStartTests>` 默认值 + `e2e` profile（置 false）
+- start pom：Surefire 2.6 → 3.2.5 并参数化 `skipTests=${skipStartTests}`；新增 Failsafe 3.2.5（integration-test/verify goals）
+- 4 个 E2E 类 `git mv` 改名 `*E2ETest → *E2EIT`（匹配 Failsafe 默认 include，保留 git 历史）；`ApiTest` 不动，自然归入 e2e
+- start pom 新增 `junit-vintage-engine`（test）——Failsafe/Surefire 3.2.5 检测到 jupiter 后走 JUnitPlatform provider，start 测试均为 JUnit 4，否则 **0 测试被执行**（G.2 同因）
+
+**踩坑记录（重要）**：最初按惯例把 `<skipTests>true</skipTests>` 定义在根 properties——**它是 Surefire 的 user property，会被所有模块的 Surefire 拾取，导致全部单元测试被跳过**。已改用专用属性名 `skipStartTests`。教训：Surefire/Failsafe 的参数名（skipTests/skip/maven.test.skip）不可占用为项目属性名。
+
+**验证证据**：`mvn clean test`：domain 48 + application（当时 0）+ infrastructure 7 全绿，start "Tests are skipped"；`mvn verify -P e2e -pl s-pay-mall-start`：ApiTest 1 + 4 个 E2EIT 共 13 用例全绿，BUILD SUCCESS。
+
+### G.4 ④ B2：超时关单与晚到支付死路
+
+**问题**：延时关单消息写死 `delayLevel=5`（1 分钟），用户付款时订单可能已被关闭：回调验签通过 → 状态机 `canPay=false` 只记 warn → 应用层不抛异常仍回支付宝 success（不再重投）→ 订单 CANCELED 但钱已收；且 `queryNoPayNotifyOrder` 只捞 `WAIT_PAY` 订单，这笔死单永远无法被补偿。
+
+**业务规则**（先行明确）：订单关闭前允许支付；关闭后收到成功支付通知必须进入明确异常路径，不能静默。
+
+**修复**（三道防线）：
+1. **延长关单窗口**：`delayLevel=5`(1min) → `9`(30min)，与 `queryTimeoutCloseOrderList` 的 30 分钟口径一致
+2. **关单前二次确认**：`handleTimeoutCloseOrder` 先 `alipayQueryGateway.queryTradeSuccess(orderNo)`，已支付则转 `changeOrderPaySuccess` 履约路径、不关闭订单（注入 `IAlipayQueryGateway`）
+3. **晚到支付异常路径**：`changeOrderPaySuccess` 发现订单已 CANCELED → error 日志"需人工核实退款或补履约"，**不履约、不发布支付成功事件**；仍回支付宝 success 以终止其重试（重试只会重复进入本路径）
+
+**验证证据**：新增 `OrderApplicationServiceTest` 5 用例全绿（订单不存在/已支付转履约/未支付关单+恢复库存/守卫拒绝不恢复库存/晚到支付异常路径）——application 模块首个单测；`TimeoutCloseOrderE2EIT` 加 `@MockBean AlipayQueryGatewayImpl`（避免 E2E 请求外网支付宝）并新增场景 3"关单前已支付→转履约（PAID+DB 库存扣减）"全绿；单测 60 + E2E 14 全量通过。
+
+**经验**：支付链路的"时间窗"与"二次确认"是互补关系——延长窗口降低撞车概率，二次确认兜底残余窗口；晚到支付的终态必须显式（日志留痕 + 人工介入标记），静默 ACK 是资金类 bug 的温床。
+
+### G.5 观察记录（未复现，持续观察）
+
+- 2026-10-04 批次③验证期间：两次出现**一次性、不可复现**的失败——① domain 大面积 error（48 中 41 error + 5 failure，重跑即绿）；② E2E 中 `OrderCreateIdempotencyE2EIT` 上下文加载失败（`PasswordEncoder` 缺失，同命令重跑即绿）。两次均非确定性，同命令立即重跑均通过。疑似 Windows 文件锁/资源时序类环境问题。**若再次出现，优先怀疑环境而非代码**，并保留完整输出与 dump 文件（`target/surefire-reports/*.dumpstream`）。
+
+### G.6 ⑦ P2：零调用 API 清理与日志降噪
+
+**问题**：审查确认 6 个 public API 全仓零引用——`ILoginService.saveLoginState`（含 `WeixinLoginService` 实现与私有 `persistLoginState`）；`IOrderDao` 的 `queryUnPayOrder`、`queryTimeoutCloseOrderList`、`queryOrderByOrderNo`、`closeOrderWithOptimisticLock`、`updateStatus`。另 `AlipayGatewayImpl` 回调验签留有 4 条【验签调试】info 级日志，回调高峰期污染日志。
+
+**修复**：
+- 删除上述 6 个零调用 API（删除前全仓引用复核；`IUserRepository.updateStatus` 为另一接口，未受影响）
+- `AlipayGatewayImpl` 4 条验签调试日志降为 debug 级（保留排查能力，生产默认不输出）
+- 文档修正：`AGENTS.md` 环境示例 `DB_NAME=s_pay_mall` → `s-pay-mall`（与实际库名一致）
+
+**验证证据**：`mvn clean test` 单测 60/60 全绿（domain 48 + application 5 + infrastructure 7，start 跳过）；`install -DskipTests` + `mvn verify -P e2e -pl s-pay-mall-start` 14/14 全绿。
+
+**经验**：删 API 前必须全仓引用复核（含 XML、注释外的调用方），且注意"同名不同类"陷阱（`updateStatus` 在 `IUserRepository` 与 `IOrderDao` 各有一份，只删其一）；日志降噪用级别调整而非删除，排查路径不丢。

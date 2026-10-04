@@ -23,12 +23,7 @@
             <groupId>cn.fcr</groupId>
             <artifactId>s-pay-mall-types</artifactId>
         </dependency>
-        <!-- 测试依赖 -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
+        <!-- 测试依赖（统一 JUnit 5：Surefire 走 JUnit Platform，混用 JUnit 4 会因缺 vintage engine 被静默跳过） -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

@@ -63,7 +63,7 @@ import static org.mockito.Mockito.when;
 @Slf4j
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class WeixinScanLoginMockE2ETest {
+public class WeixinScanLoginMockE2EIT {
 
     /** 登录领域服务（WeixinLoginService，DomainServiceConfig 手动装配），用于取 ticket/轮询 */
     @Resource

@@ -49,6 +49,11 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <!-- 测试分层（③）：默认跳过 start 模块测试（全部依赖 MySQL/Redis/RocketMQ 真实中间件）；
+             -P e2e 或命令行 -DskipStartTests=false 可覆盖。
+             注意：不能用全局名 skipTests——它是 Surefire 的 user property，定义在根 properties
+             会被所有模块的 Surefire 拾取，导致单元测试也被跳过 -->
+        <skipStartTests>true</skipStartTests>
     </properties>
 
     <developers>
@@ -238,6 +243,13 @@
     </build>
 
     <profiles>
+        <!-- E2E 测试开关：激活后运行依赖 MySQL/Redis/RocketMQ 的集成测试（mvn verify -P e2e） -->
+        <profile>
+            <id>e2e</id>
+            <properties>
+                <skipStartTests>false</skipStartTests>
+            </properties>
+        </profile>
         <profile>
             <id>dev</id>
             <activation>

@@ -38,18 +38,6 @@ public interface IOrderDao {
     PayOrder queryByOrderNo(@Param("orderNo") String orderNo);
 
     /**
-     * 查询用户未支付订单
-     * 根据用户ID和商品ID查询最近一条未支付订单
-     * 用于判断是否需要创建新订单或继续支付
-     *
-     * @param payOrderReq 查询条件，包含 userId 和 productId
-     * @return 未支付订单对象，若不存在返回 null
-     */
-    @Select("select product_id, product_name, order_id, order_time, total_amount, status, pay_url " +
-            "from pay_order where user_id = #{userId} and product_id = #{productId} order by id desc limit 1")
-    PayOrder queryUnPayOrder(PayOrder payOrderReq);
-
-    /**
      * 更新订单支付信息
      * 在调用第三方支付接口后，保存支付链接和状态
      *
@@ -66,16 +54,6 @@ public interface IOrderDao {
      */
     @Update("update pay_order set status = #{status}, pay_time = now(), update_time = now() where order_id = #{orderId}")
     void changeOrderPaySuccess(PayOrder payOrderReq);
-
-    /**
-     * 查询超时未支付订单
-     * 查找创建时间超过30分钟但仍为 WAIT_PAY 状态的订单
-     * 用于定时任务关闭超期未支付的订单
-     *
-     * @return 超时未支付的订单ID列表
-     */
-    @Select("select order_id from pay_order where status = 'WAIT_PAY' and TIMESTAMPDIFF(MINUTE, create_time, NOW()) > 30")
-    List<String> queryTimeoutCloseOrderList();
 
     /**
      * 查询等待支付超过5分钟但未收到支付宝回调的订单（pay_order.status = WAIT_PAY），用于主动补单
@@ -103,34 +81,4 @@ public interface IOrderDao {
      */
     @Select("select status from pay_order where order_id = #{orderNo}")
     String queryOrderStatus(@Param("orderNo") String orderNo);
-
-    /**
-     * 根据订单号查询订单列表
-     *
-     * @param orderNo 订单号
-     * @return 订单列表
-     */
-    @Select("select product_id, product_name, order_id, total_amount, status from pay_order where order_id = #{orderNo}")
-    List<PayOrder> queryOrderByOrderNo(@Param("orderNo") String orderNo);
-
-    /**
-     * 乐观锁方式关闭订单
-     *
-     * @param orderNo      订单号
-     * @param expectStatus 期望状态
-     * @return 影响行数
-     */
-    @Update("update pay_order set status = 'CLOSED', pay_time = now(), update_time = now() where order_id = #{orderNo} and status = #{expectStatus}")
-    int closeOrderWithOptimisticLock(@Param("orderNo") String orderNo, @Param("expectStatus") String expectStatus);
-
-    /**
-     * 更新订单状态
-     * 【DDD】用于保存聚合根的状态变更
-     *
-     * @param orderNo 订单号
-     * @param status  新状态
-     * @return 影响行数
-     */
-    @Update("update pay_order set status = #{status}, update_time = now() where order_id = #{orderNo}")
-    int updateStatus(@Param("orderNo") String orderNo, @Param("status") String status);
 }

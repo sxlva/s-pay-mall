@@ -47,12 +47,6 @@ public class WeixinLoginService implements ILoginService {
     }
 
     @Override
-    public void saveLoginState(String ticket, String openid) {
-        wechatLoginGateway.saveLoginToken(ticket, openid);
-        weChatGateway.sendLoginNotification(openid);
-    }
-
-    @Override
     public String handleWechatScanLogin(String ticket, String openid) {
         log.info("处理微信扫码登录: ticket={}, openid={}", ticket, openid);
 
