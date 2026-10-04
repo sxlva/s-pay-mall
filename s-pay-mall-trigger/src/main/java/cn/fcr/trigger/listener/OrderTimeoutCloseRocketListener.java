@@ -15,7 +15,8 @@ import javax.annotation.Resource;
  */
 @Slf4j
 @Component
-@RocketMQMessageListener(topic = "order-timeout-topic", consumerGroup = "s-pay-mall-timeout-group")
+@RocketMQMessageListener(topic = "order-timeout-topic", consumerGroup = "s-pay-mall-timeout-group",
+        maxReconsumeTimes = 5)
 public class OrderTimeoutCloseRocketListener implements RocketMQListener<String> {
 
     /** 订单应用层服务 */

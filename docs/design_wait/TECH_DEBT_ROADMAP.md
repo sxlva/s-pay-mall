@@ -35,7 +35,7 @@
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
 | P2-1 | createPayOrder 缺事务保护 | ~~`OrderApplicationService.createPayOrder()` 无 `@Transactional`~~（方法已删除） | 加注事务或委托给 `OrderTransactionService` | 已关闭（2026-10-03）：`createPayOrder` 为无调用方死端点，随 legacy 下线步骤 B 一并删除，条目失效 |
-| P2-2 | 缺死信队列配置 | 3 个 RocketMQ Listener 均未配置 DLQ | 为 `order_paid`, `order-timeout-topic`, `product-stock-change-topic` 配置 DLQ | 待处理 |
+| P2-2 | 缺死信队列配置 | 3 个 RocketMQ Listener 均未配置 DLQ | 为 `order_paid`, `order-timeout-topic`, `product-stock-change-topic` 配置 DLQ | 部分处理（2026-10-04）：三个 Listener 已显式配置 `maxReconsumeTimes=5`（重试耗尽自动进 `%DLQ%`）；DLQ 告警与重放流程属运维项，方案见 [UPGRADE_POINTS.md](UPGRADE_POINTS.md) U-5，暂不实现 |
 | P2-3 | WeixinGatewayImpl 缺超时配置 | `Retrofit2Config.java` 未显式配置 OkHttpClient 超时 | 设置 `connectTimeout=5s`, `readTimeout=10s` | 待处理 |
 | P2-4 | ~~`pay-success-topic` 无消费者~~ | ~~`OrderEventGatewayImpl.sendPaySuccessMessage()` 发送消息但无消费者订阅~~ | ~~接入消费者或删除未使用的发送逻辑~~ | 已处理（2026-10-01，JV-003：删除 `IOrderEventGateway`/`OrderEventGatewayImpl`，topic 随之废弃） |
 | P2-5 | ~~支付成功消息通道重复~~ | ~~`order_paid` 和 `pay-success-topic` 两个 Topic 职责不清~~ | ~~明确职责或合并~~ | 已处理（2026-10-01，JV-003：保留 `order_paid`，删除 `pay-success-topic` 通道） |

@@ -19,7 +19,8 @@ import java.util.List;
 @Component
 @RocketMQMessageListener(
         topic = "product-stock-change-topic",
-        consumerGroup = "s-pay-mall-stock-change-consumer"
+        consumerGroup = "s-pay-mall-stock-change-consumer",
+        maxReconsumeTimes = 5
 )
 public class ProductStockChangeRocketListener implements RocketMQListener<StockChangeMsgDTO> {
 

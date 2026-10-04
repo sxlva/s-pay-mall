@@ -23,7 +23,8 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 @Component
-@RocketMQMessageListener(topic = "order_paid", consumerGroup = "s-pay-mall-order-paid-consumer")
+@RocketMQMessageListener(topic = "order_paid", consumerGroup = "s-pay-mall-order-paid-consumer",
+        maxReconsumeTimes = 5)
 public class OrderPaidRocketListener implements RocketMQListener<PaySuccessMessageEvent.PaySuccessMessage> {
 
     /** 订单应用服务 */
@@ -73,7 +74,7 @@ public class OrderPaidRocketListener implements RocketMQListener<PaySuccessMessa
 
         try {
             orderApplicationService.paySuccess(message.getOrderNo());
-            log.info("订单状态更新成功，触发后续履约链路：开始发货、用户充值、发放会员权益、计算返利...");
+            log.info("订单状态更新成功: orderNo={}", message.getOrderNo());
 
             sendPaymentNotification(message.getOrderNo());
 
