@@ -25,7 +25,7 @@
 sequenceDiagram
     autonumber
     participant U as 用户
-    participant C as AliPayController
+    participant C as MallOrderController
     participant S as OrderApplicationService
     participant TX as OrderTransactionService
     participant M as MallOrderServiceImpl
@@ -34,16 +34,14 @@ sequenceDiagram
     participant DB as MySQL
     participant Ali as AlipayGatewayImpl
 
-    U->>C: POST /pay-api/v1/alipay/create_pay_order
-    C->>S: createPayOrder(userId, productId)
-    S->>S: 组装 ShopCartEntity
-    S->>S: orderService.createOrder(shopCartEntity)
-    Note over S: OrderService 内部做幂等查询<br/>queryUnPayOrder(userId, productId)
-    alt 存在未支付订单
-        Note over S: 直接返回原 payUrl<br/>（L1 幂等：业务层防重）
-    else 无未支付订单
-        S->>M: checkAndDeductStock(cart)
-        M->>M: hasEnoughStock() 预检查
+    U->>C: POST /mall-api/v1/orders (address, requestId)
+    C->>S: createOrder(userId, address, requestId)
+    Note over S: P0-4 幂等守门：SETNX stock:event:order_create:{requestId}（24h）<br/>无 requestId 降级 uid:{userId} 短锁（10s）
+    alt 同 requestId 重发且已完成
+        S-->>C: 返回首次订单（payUrl 为空，前端走 continue-pay）
+    else 获取锁成功
+        S->>TX: createOrderInTransaction()（@Transactional）
+        TX->>M: listCart(userId) + checkAndDeductStock(cart)
         M->>Stock: deductStock(productId, quantity)
         Stock->>R: addAndGet(-quantity)
         alt remainingStock < 0
@@ -52,28 +50,29 @@ sequenceDiagram
         else 扣减成功
             Stock-->>M: remainingStock
         end
-        M-->>S: deductedItems
-        S->>TX: createOrderInTransaction()
         TX->>DB: INSERT order_main + order_item
-        TX->>Ali: generatePayUrl()
-        Ali->>Ali: AlipayClient.pageExecute()
-        Ali-->>TX: payUrl (form HTML)
-        TX->>DB: INSERT/UPDATE pay_order
-        TX-->>S: OrderCreateVO
+        TX->>Ali: generatePayUrl()（pay_order 保持 WAIT_PAY 落库）
+        TX->>DB: INSERT pay_order
+        TX->>M: clearCart(userId)
+        TX-->>S: OrderCreateVO（异常时回滚已扣库存 restoreDeductedStock）
+        Note over S: 事务提交后（MQ 发送失败不影响主流程）
+        S->>S: sendDelayCloseMessage(orderNo)（delayLevel=9，30min）
+        S->>S: markDone 记录幂等结果（orderNo）
+        S-->>C: OrderCreateVO
     end
-    S->>S: orderPaymentGateway.sendDelayCloseMessage(orderNo)
-    Note over S: 发送延时关单消息 (topic: order-timeout-topic)
-    S-->>C: payUrl
-    C-->>U: 渲染支付宝收银台
+    C-->>U: 订单号 + 支付宝收银台 HTML
 ```
+
+> 注：唤起支付宝（generatePayUrl）在创建订单事务内完成；pay_order 落库状态始终为 WAIT_PAY——
+> 用户打开收银台不改变落库状态，超时关单与补单查询均以 pay_order 的 WAIT_PAY 行为准。
 
 ### 2.2 幂等性三层防御
 
 | 层级 | 防御机制 | 实现位置 |
 |------|----------|----------|
-| **L1：业务层** | 前置查询未支付订单（同用户+同商品） | `OrderService.createOrder()` 内部 `queryUnPayOrder` |
-| **L2：数据层** | `order_no` 唯一索引 | `pay_order` 表 DDL |
-| **L3：MQ 层** | SETNX 幂等键 (`mall:stock:msg:processed:{messageId}`，24h TTL) | `StockGatewayImpl.checkMessageIdempotent()` |
+| **L1：应用层** | 下单幂等：requestId 为幂等键（Redis SETNX，key=`stock:event:order_create:{requestId}`，24h）；`PROCESSING` 与结果值（orderNo）分态——重发且已完成返回首次订单，处理中抛"请勿重复下单"；无 requestId 降级用户级短锁（10s）仅防双击 | `OrderApplicationService.createOrder()`（P0-4） |
+| **L2：数据层** | `order_main.order_no` 唯一索引（`uq_order_no`）兜底，重复落库直接约束拒绝 | `docs/dev-ops/mysql/sql/s-pay-mall.sql` |
+| **L3：状态机/MQ 层** | ① 支付履约 UPDATE 带源状态条件（影响行数 0 = 并发/重复回调，跳过全部副作用，防重复扣库存）② `order_paid` 消费幂等 SETNX（key=`stock:event:order_paid_notify:{orderNo}`，24h，消费失败释放并抛异常走重试） | `OrderStateMachineServiceImpl`（P0-9）/ `OrderPaidRocketListener`（P0-4） |
 
 ---
 
@@ -89,10 +88,8 @@ sequenceDiagram
     participant S as OrderApplicationService
     participant PS as PayOrderService
     participant TX as OrderTransactionService
-    participant R as MySQL
     participant MQ as RocketMqOrderEventPublisher
     participant L as OrderPaidRocketListener
-    participant WeChat as WeixinGatewayImpl
 
     Ali->>C: POST /pay-api/v1/alipay/alipay_notify_url
     C->>C: extractParams(request)（仅协议适配，无业务判断）
@@ -108,18 +105,21 @@ sequenceDiagram
         C-->>Ali: "false"
     else 受理成功
         PS-->>S: true
-        S->>TX: changeOrderPaySuccessInTransaction(orderId)
-        TX->>R: UPDATE pay_order SET status='PAY_SUCCESS'
+        Note over S: 【B2 晚到支付守卫】订单已 CANCELED 仍收成功通知：<br/>error 日志标记人工核实（退款/补履约），<br/>不履约、不发布事件；仍回 success 终止支付宝重试
+        S->>TX: changeOrderPaySuccessInTransaction(orderNo)
+        Note over TX: 状态机统一处理（天然幂等）：order_main → PAID<br/>pay_order → PAID + 同步扣减 MySQL 库存
         TX-->>S: void
-        Note over S: 事务提交后发布事件
-        S->>MQ: publishPaySuccess(orderId, tradeNo)
+        Note over S: 事务提交后发布事件（失败仅告警）
+        S->>MQ: publishPaySuccess(tradeNo, orderNo)
         MQ->>MQ: convertAndSend("order_paid", PaySuccessMessage)
         C-->>Ali: "success"
 
         MQ->>L: onMessage(PaySuccessMessage)
+        Note over L: P0-4 消费幂等守门：SETNX order_paid_notify:{orderNo}
         L->>S: paySuccess(orderNo)
-        Note over S: 更新 order_main 状态 + 同步 DB 库存
-        L->>WeChat: sendPaymentSuccessNotification(openid, productName, orderNo, amount, payTime)
+        Note over S: @Transactional；状态机条件更新守卫，<br/>回调已履约则影响行数 0 直接跳过
+        L->>S: sendPaySuccessNotification(orderNo)
+        Note over S: P1-3 编排下沉：查订单 → 查 openid → 微信模板消息（best-effort）
         L-->>MQ: ACK
     end
 ```
@@ -141,26 +141,27 @@ sequenceDiagram
 
 ```mermaid
 stateDiagram-v2
-    [*] --> CREATE: 创建订单 (OrderService.createOrder)
-    CREATE --> PAY_WAIT: 唤起支付宝 (AlipayGatewayImpl.generatePayUrl)
-    PAY_WAIT --> PAY_SUCCESS: 支付成功回调 (AliPayController.payNotify)
-    PAY_WAIT --> CLOSE: 超时关单 (OrderTimeoutCloseRocketListener)
-    PAY_WAIT --> CLOSE: 用户主动取消
-    PAY_SUCCESS --> DEAL_DONE: 履约完成 (OrderStateMachineServiceImpl.complete)
-    CLOSE --> [*]
-    DEAL_DONE --> [*]
+    [*] --> INIT: 创建订单 (OrderTransactionService.createOrderInTransaction)
+    INIT --> PAID: 支付成功回调/补单 (状态机 paySuccess)
+    INIT --> CANCELED: 超时关单 (OrderTimeoutCloseRocketListener) / 用户主动取消
+    PAID --> SHIPPED: 发货 (状态机 deliver)
+    SHIPPED --> DONE: 确认完成 (状态机 complete)
+    CANCELED --> [*]
+    DONE --> [*]
 ```
 
-> 状态值来源：`cn.fcr.domain.order.model.valobj.OrderStatusVO` — CREATE / PAY_WAIT / PAY_SUCCESS / DEAL_DONE / CLOSE
+> 状态值来源：`cn.fcr.domain.order.model.entity.OrderState` — INIT / PAID / SHIPPED / DONE / CANCELED。
+> **状态口径**：领域与接口层统一用 code；DB 存储为混合口径（INIT 存 CREATED、DONE 存 COMPLETED、CANCELED 存 CANCELLED，
+> 历史实现固化不可单方面改动），读取统一经 `OrderState.fromDbStatus()` 双向兼容。
 
 **状态流转保护（OrderStateMachineServiceImpl）：**
 
 | 方法 | 行号 | 守卫条件 | 操作 |
 |------|------|----------|------|
-| `paySuccess()` | 37 | `order.canPay()` | 更新 order_main → PAID，pay_order → PAID，同步扣减 DB 库存 |
-| `deliver()` | 96 | `order.canDeliver()` | 更新 order_main → SHIPPED，pay_order → TRADE_DONE |
-| `complete()` | 121 | `order.canComplete()` | 更新 order_main → DONE |
-| `cancel()` | 141 | `order.canCancel()` | 更新 order_main → CANCELED，关闭 pay_order，恢复 Redis+DB 库存 |
+| `paySuccess()` | 36 | `order.canPay()` | 条件更新 order_main INIT→PAID（影响行数 0 = 并发/重复回调，跳过后续副作用）→ pay_order → PAID → 同步扣减 MySQL 库存 |
+| `deliver()` | 100 | `order.canDeliver()` | 条件更新 order_main PAID→SHIPPED → pay_order → TRADE_DONE |
+| `complete()` | 130 | `order.canComplete()` | 条件更新 order_main SHIPPED→DONE |
+| `cancel()` | 151 | `order.canCancel()` | 条件更新 order_main INIT→CANCELED → 关闭 pay_order（仅 WAIT_PAY/PAYING）→ 库存恢复由调用方在**事务提交后**经 `restoreStockForCancel()` 执行（仅恢复 Redis——INIT 时尚未扣 MySQL 库存） |
 
 ---
 
@@ -170,12 +171,12 @@ stateDiagram-v2
 
 ```mermaid
 flowchart LR
-    A["AliPayController.payNotify()"] -->|验签通过| B["OrderApplicationService<br/>.changeOrderPaySuccess()"]
+    A["AliPayController.payNotify()"] -->|验签通过| B["OrderApplicationService<br/>.handleAlipayCallback()"]
     B -->|事务外发送| C["RocketMqOrderEventPublisher<br/>convertAndSend('order_paid')"]
     C --> D["order_paid Topic"]
-    D --> E["OrderPaidRocketListener.onMessage()"]
-    E --> F["更新订单状态<br/>OrderStateMachineServiceImpl.paySuccess()"]
-    E --> G["微信模板消息通知<br/>WeixinGatewayImpl.sendPaymentSuccessNotification()"]
+    D --> E["OrderPaidRocketListener.onMessage()<br/>（P0-4 消费幂等守门）"]
+    E --> F["订单履约<br/>OrderApplicationService.paySuccess()<br/>→ 状态机（条件更新守卫）"]
+    E --> G["支付成功通知编排<br/>OrderApplicationService.sendPaySuccessNotification()<br/>→ WeixinGatewayImpl 模板消息（P1-3）"]
 ```
 
 ### 5.2 Topic 矩阵
@@ -199,24 +200,37 @@ sequenceDiagram
     participant MQ as RocketMQ
     participant L as OrderTimeoutCloseRocketListener
     participant S as OrderApplicationService
+    participant Q as AlipayQueryGatewayImpl
     participant OSS as OrderStateMachineServiceImpl
     participant DB as MySQL
 
     TX->>TX: 创建订单事务提交
     TX->>GW: sendDelayCloseMessage(orderNo)
-    GW->>MQ: syncSend("order-timeout-topic", orderNo, 3000ms)
-    Note over MQ: 延时消息在 Broker 等待
+    GW->>MQ: syncSend("order-timeout-topic", orderNo, 3000ms, delayLevel=9)
+    Note over MQ: 延时消息在 Broker 等待 30 分钟<br/>（level 9 = 30min，与业务支付超时窗口一致）
     MQ->>L: 延时到达后投递 (topic: order-timeout-topic)
     L->>S: handleTimeoutCloseOrder(orderNo)
-    S->>OSS: cancel(orderNo) — 需验证调用链
-    OSS->>DB: 检查订单状态
-    alt 状态仍为 CREATE / PAY_WAIT
-        OSS->>DB: UPDATE order_main SET status='CANCELED'
-        OSS->>OSS: restoreStockForCancel() 恢复 Redis+DB 库存
-    else 状态已变更
-        Note over OSS: 跳过（用户已支付或已取消）
+    alt order_main 不存在（legacy 已下线）
+        S->>S: warn 日志并忽略
+    else 订单存在
+        S->>Q: queryTradeSuccess(orderNo)
+        alt 支付宝侧交易已成功（B2 关单前二次确认）
+            S->>S: changeOrderPaySuccess(orderNo, null) 转履约，不关闭
+        else 未支付
+            S->>TX: cancelOrderInTransaction(orderNo)（@Transactional）
+            TX->>OSS: cancel(orderNo)
+            OSS->>DB: 条件更新 order_main INIT→CANCELED（守卫幂等）
+            OSS->>DB: 关闭 pay_order（仅 WAIT_PAY/PAYING）
+            TX-->>S: true
+            Note over S: 事务提交后（P1-2，DB 回滚时 Redis 无法回滚）
+            S->>OSS: restoreStockForCancel(orderNo)
+            Note over OSS: 仅恢复 Redis 预扣库存（INIT 时尚未扣 MySQL）
+        end
     end
 ```
+
+> 三道防线互补：延长关单窗口（30min）降低"支付瞬间撞关单"概率；关单前二次确认兜底残余窗口；
+> 晚到支付终态显式（error 日志 + 人工介入标记），静默 ACK 是资金类 bug 的温床。
 
 ---
 
@@ -236,25 +250,32 @@ sequenceDiagram
 
 ## 八、兜底定时任务
 
-`NoPayNotifyOrderJob` — 每 30 秒扫描 `pay_order` 表中创建超过 5 分钟且状态仍为
-`WAIT_PAY` 的订单，调用 `IAlipayQueryGateway.queryTradeSuccess()` 主动向支付宝核实
-交易状态，对确认支付成功的订单执行补单（`changeOrderPaySuccess()`），作为支付回调
-丢失场景的兜底保障。
+`NoPayNotifyOrderJob` — `@Scheduled(cron = "0/30 * * * * ?")` 每 30 秒执行：查询 `pay_order` 中
+创建超过 5 分钟且状态仍为 `WAIT_PAY` 的订单（`IPayOrderGateway.queryNoPayNotifyOrder()`），
+逐个调用 `IAlipayQueryGateway.queryTradeSuccess()` 主动向支付宝核实交易状态
+（`code=10000 && tradeStatus=TRADE_SUCCESS` 双重校验），确认支付成功的订单执行补单
+（`changeOrderPaySuccess(orderNo, null)`——补单路径无支付宝交易号，tradeNo 传 null），
+作为支付回调丢失场景的兜底保障。补偿路径与 MQ 消费路径都汇聚到状态机 `paySuccess`，
+条件更新守卫保证并发安全。
 
-SQL：`WHERE status = 'WAIT_PAY' AND create_time < DATE_SUB(NOW(), INTERVAL 5 MINUTE)`
+调用链：`NoPayNotifyOrderJob → OrderApplicationService.queryNoPayNotifyOrder →
+IPayOrderGateway（PayOrderGatewayImpl）→ MyBatis Mapper`；核实与补单在 Job 内直接完成。
 
-调用链：`NoPayNotifyOrderJob → OrderApplicationService → OrderService →
-OrderRepository → IOrderDao`
+> 多实例部署时该 Job 为裸 `@Scheduled` 会重复执行（幂等守卫保证无害但产生冗余查询），
+> 分布式锁方案见 [ROADMAP](ROADMAP.md) U-1。
 
 ---
 
-> **关键源码索引**：
-> - 支付回调入口：[`AliPayController.payNotify()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/http/AliPayController.java#L66)（仅协议适配）
-> - 回调编排（状态判断 + 验签 + 履约）：[`OrderApplicationService.handleAlipayCallback()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-application/src/main/java/cn/fcr/application/OrderApplicationService.java)
-> - 交易状态枚举：[`PayTradeStatus`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/order/model/vo/PayTradeStatus.java)（isSuccess() 唯一承载"算成功"规则，P0-6）
-> - 验签逻辑：[`PayOrderService.verifyCallbackSign()`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/order/service/PayOrderService.java)
-> - 状态机：[`OrderStateMachineServiceImpl`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-domain/src/main/java/cn/fcr/domain/mall/service/impl/OrderStateMachineServiceImpl.java)
-> - 事件发布：[`RocketMqOrderEventPublisher`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-infrastructure/src/main/java/cn/fcr/infrastructure/order/event/RocketMqOrderEventPublisher.java)
-> - 支付成功消费：[`OrderPaidRocketListener`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/listener/OrderPaidRocketListener.java)
-> - 超时关单消费：[`OrderTimeoutCloseRocketListener`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-trigger/src/main/java/cn/fcr/trigger/listener/OrderTimeoutCloseRocketListener.java)
-> - Application Service：[`OrderApplicationService`](file:///Users/xiaolv/Develop/projects/backend/java/s-pay-mall/s-pay-mall-application/src/main/java/cn/fcr/application/OrderApplicationService.java)
+> **关键源码索引**（仓库内相对路径）：
+> - 订单创建入口：`s-pay-mall-trigger/.../trigger/http/mall/MallOrderController.java`（`POST /mall-api/v1/orders`）
+> - 下单编排 + 幂等守门：`s-pay-mall-application/.../application/OrderApplicationService.java`（`createOrder()` / `handleAlipayCallback()` / `changeOrderPaySuccess()` / `handleTimeoutCloseOrder()`）
+> - 事务边界：`s-pay-mall-application/.../application/OrderTransactionService.java`（`createOrderInTransaction()` / `changeOrderPaySuccessInTransaction()` / `cancelOrderInTransaction()`）
+> - 交易状态枚举：`s-pay-mall-domain/.../domain/order/model/vo/PayTradeStatus.java`（`isSuccess()` 唯一承载"算成功"规则，P0-6）
+> - 验签逻辑：`s-pay-mall-domain/.../domain/order/service/PayOrderService.java`（`verifyCallbackSign()`）
+> - 状态机：`s-pay-mall-domain/.../domain/order/service/impl/OrderStateMachineServiceImpl.java`（含条件更新并发守卫，P0-9）
+> - 订单状态枚举：`s-pay-mall-domain/.../domain/order/model/entity/OrderState.java`（code ↔ DB 状态双向映射）
+> - 事件发布：`s-pay-mall-infrastructure/.../infrastructure/order/event/RocketMqOrderEventPublisher.java`
+> - 延时关单消息：`s-pay-mall-infrastructure/.../infrastructure/order/gateway/OrderPaymentGatewayImpl.java`（`sendDelayCloseMessage()`，delayLevel=9）
+> - 支付成功消费：`s-pay-mall-trigger/.../trigger/listener/OrderPaidRocketListener.java`（消费幂等守门）
+> - 超时关单消费：`s-pay-mall-trigger/.../trigger/listener/OrderTimeoutCloseRocketListener.java`
+> - 回调补偿 Job：`s-pay-mall-trigger/.../trigger/job/NoPayNotifyOrderJob.java`

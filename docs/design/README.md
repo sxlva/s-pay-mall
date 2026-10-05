@@ -14,16 +14,16 @@ flowchart TB
     subgraph Trigger["Trigger Layer (s-pay-mall-trigger)"]
         T1["http/<br/>AliPayController, LoginController,<br/>WeixinPortalController, MallOrderController…"]
         T2["listener/<br/>OrderPaidRocketListener<br/>OrderTimeoutCloseRocketListener<br/>ProductStockChangeRocketListener"]
-        T3["job/<br/>StockPreheatRunner<br/>NoPayNotifyOrderJob<br/>TimeoutCloseOrderJob"]
+        T3["job/<br/>StockPreheatRunner<br/>NoPayNotifyOrderJob<br/>ImageCleanupJob"]
     end
 
     subgraph App["Application Layer (s-pay-mall-application)"]
-        T4["cn.fcr.application<br/>OrderApplicationService<br/>OrderTransactionService"]
+        T4["cn.fcr.application<br/>OrderApplicationService<br/>OrderTransactionService<br/>AuthApplicationService<br/>ProductImageCleanupService"]
     end
 
     subgraph Start["Start Layer (s-pay-mall-start)"]
         A1["Application.java 启动类"]
-        A2["config/<br/>RedisConfig, SecurityConfig,<br/>Retrofit2Config, ThreadPoolConfig"]
+        A2["config/<br/>RedisConfig, SecurityConfig,<br/>Retrofit2Config, ThreadPoolConfig,<br/>DotenvEnvironmentPostProcessor"]
     end
 
     subgraph Domain["Domain Layer (s-pay-mall-domain) — 核心"]
@@ -33,8 +33,8 @@ flowchart TB
     end
 
     subgraph Infra["Infrastructure Layer (s-pay-mall-infrastructure)"]
-        I1["auth/ login+token/<br/>WeixinGatewayImpl, AuthTokenGatewayImpl<br/>JwtTokenProvider"]
-        I2["mall/ product|cart|user|statistics/<br/>StockGatewayImpl, CartRepository…"]
+        I1["auth/ login+token/<br/>WeixinGatewayImpl, WeixinLoginGatewayImpl,<br/>AuthTokenGatewayImpl, JwtTokenProvider"]
+        I2["mall/ product|cart|user|statistics/<br/>StockGatewayImpl, LocalProductImageGatewayImpl,<br/>CartRepository…"]
         I3["order/ gateway/<br/>OrderRepositoryImpl, PayOrderGatewayImpl<br/>event/ RocketMqOrderEventPublisher"]
         I4["dao/ (auth|mall|order)/<br/>MyBatis Mapper + PO"]
         I5["config/shared/<br/>DomainServiceConfig"]
@@ -72,7 +72,7 @@ flowchart LR
     A5 --> A6["唤起支付宝<br/>AlipayGatewayImpl.generatePayUrl()"]
     A6 --> A7["支付回调<br/>AliPayController.payNotify()<br/>POST /pay-api/v1/alipay/alipay_notify_url"]
     A7 --> A8["RocketMQ 发送<br/>RocketMqOrderEventPublisher<br/>topic: order_paid"]
-    A8 --> A9["异步履约<br/>OrderPaidRocketListener<br/>→ 发货/通知/积分"]
+    A8 --> A9["异步履约<br/>OrderPaidRocketListener<br/>→ 订单状态推进 + 微信模板消息通知"]
     A7 -.->|延时消息| A10["超时关单<br/>OrderTimeoutCloseRocketListener<br/>topic: order-timeout-topic"]
 ```
 
