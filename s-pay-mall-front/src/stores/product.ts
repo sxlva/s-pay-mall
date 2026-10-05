@@ -4,8 +4,8 @@
  * DDD 分层：Application/Domain Layer（应用层/领域层）
  *
  * 架构原则：
- * - 不直接处理 HTTP 请求（委托给 productRepository）
- * - 不处理数据清洗（由 productRepository 完成）
+ * - 不直接处理 HTTP 请求（委托给 api/product）
+ * - 不处理数据清洗（由 api/product 完成）
  * - 只关注状态变化和用户交互逻辑
  *
  * @author 傅崇睿
@@ -13,7 +13,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { productRepository } from '@/repositories/productRepository'
+import { fetchCategories, fetchProducts } from '@/api/product'
 import type { ProductVO, CategoryVO, ProductQueryParams } from '@/types/domain/product'
 
 export const useProductStore = defineStore('product', () => {
@@ -34,12 +34,12 @@ export const useProductStore = defineStore('product', () => {
   
   /**
    * 加载分类列表
-   * - 调用仓储层获取数据
+   * - 调用 API 层获取数据
    * - 异常时兜底为空数组
    */
   const loadCategories = async () => {
     try {
-      categories.value = await productRepository.fetchCategories()
+      categories.value = await fetchCategories()
     } catch (error) {
       console.error('获取分类失败:', error)
       categories.value = [] // 异常时兜底为空数组
@@ -48,13 +48,13 @@ export const useProductStore = defineStore('product', () => {
 
   /**
    * 加载商品列表
-   * - 调用仓储层获取数据
+   * - 调用 API 层获取数据
    * - 异常时显示错误提示
    */
   const loadProducts = async () => {
     try {
       loading.value = true
-      products.value = await productRepository.fetchProducts(queryParams.value)
+      products.value = await fetchProducts(queryParams.value)
     } catch (error) {
       console.error('获取商品失败:', error)
       ElMessage.error('获取商品失败')

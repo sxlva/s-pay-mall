@@ -144,7 +144,9 @@ import {
   Connection
 } from '@element-plus/icons-vue'
 import { isSoldOut } from '@/utils/product'
-import { productRepository } from '@/repositories/productRepository'
+import { fetchCategories, fetchProducts as fetchProductList } from '@/api/product'
+import { addCartItem } from '@/api/cart'
+import type { CategoryVO } from '@/types/domain/product'
 
 const router = useRouter()
 
@@ -166,20 +168,13 @@ const getProductImage = (product: { id: number; name: string; image_url?: string
   return `https://via.placeholder.com/400x400/${color}/ffffff?text=${text}`
 }
 
-const fetchCategories = async () => {
+const loadCategories = async () => {
   try {
-    const token = localStorage.getItem('token')
-    const response = await fetch('/mall-api/v1/categories', {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-    })
-    const data = await response.json()
-    if (data.code === '0000') {
-      const fetchedCategories = data.data.map((cat: any) => ({
-        name: cat.name,
-        id: cat.id
-      }))
-      categories.value = [{ name: '全部', id: null }, ...fetchedCategories]
-    }
+    const list = await fetchCategories()
+    categories.value = [
+      { name: '全部', id: null },
+      ...list.map((cat: CategoryVO) => ({ name: cat.name, id: cat.id }))
+    ]
   } catch (error) {
     console.error('获取分类失败:', error)
   }
@@ -188,7 +183,7 @@ const fetchCategories = async () => {
 const fetchProducts = async (categoryId: number | null = null) => {
   try {
     loading.value = true
-    products.value = await productRepository.fetchProducts({
+    products.value = await fetchProductList({
       categoryId,
       keyword: '',
       minPrice: undefined,
@@ -218,20 +213,8 @@ const addToCart = async (product: { id: number; stock?: number | null }): Promis
     return
   }
   try {
-    const response = await fetch('/mall-api/v1/cart', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ productId: product.id, quantity: 1 })
-    })
-    const data = await response.json()
-    if (data.code === '0000') {
-      ElMessage.success('已添加到购物车')
-    } else {
-      ElMessage.error(data.info || '添加失败')
-    }
+    await addCartItem({ productId: product.id, quantity: 1 })
+    ElMessage.success('已添加到购物车')
   } catch (error) {
     ElMessage.error('添加失败，请登录后重试')
   }
@@ -244,7 +227,7 @@ const buyNow = async (product: { id: number; stock?: number | null }): Promise<v
 }
 
 onMounted(async () => {
-  await fetchCategories()
+  await loadCategories()
   fetchProducts()
 })
 </script>

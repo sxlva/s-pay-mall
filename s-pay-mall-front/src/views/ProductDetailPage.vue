@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * 商品详情页：展示商品信息、库存状态、加入购物车
  *
@@ -7,17 +7,16 @@
 
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { request } from '../utils/api'
-import { isSoldOut, normalizeProduct } from '../utils/product'
+import { fetchProduct } from '../api/product'
+import { isSoldOut } from '../utils/product'
+import type { ProductVO } from '../types/domain/product'
 
 const route = useRoute()
-const product = ref(null)
+const product = ref<ProductVO | null>(null)
 const pid = computed(() => Number(route.params.id))
 
 onMounted(async () => {
-  const list = await request('/mall-api/v1/products')
-  const matched = list.find((e) => e.id === pid.value)
-  product.value = matched ? normalizeProduct(matched) : null
+  product.value = await fetchProduct(pid.value)
 })
 </script>
 

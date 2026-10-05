@@ -4,8 +4,8 @@
  * DDD 分层：Application/Domain Layer（应用层/领域层）
  *
  * 架构原则：
- * - 不直接处理 HTTP 请求（委托给 cartRepository）
- * - 不处理数据清洗（由 cartRepository 完成）
+ * - 不直接处理 HTTP 请求（委托给 api/cart）
+ * - 不处理数据清洗（由 api/cart 完成）
  * - 只关注状态变化和用户交互逻辑
  *
  * @author 傅崇睿
@@ -13,7 +13,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { cartRepository } from '../repositories/cartRepository'
+import { fetchCartItems, addCartItem, updateCartItemQuantity, deleteCartItem, clearCartItems } from '../api/cart'
 import type { CartItem } from '../types/domain/cart'
 
 export const useCartStore = defineStore('cart', () => {
@@ -40,11 +40,11 @@ export const useCartStore = defineStore('cart', () => {
   })
 
   // ==================== 业务方法 ====================
-  
+
   /**
    * 加载购物车数据
    * - 未登录时清空购物车
-   * - 调用仓储层获取数据
+   * - 调用 API 层获取数据
    * - 异常时兜底为空数组
    */
   const loadCart = async (): Promise<void> => {
@@ -53,10 +53,10 @@ export const useCartStore = defineStore('cart', () => {
       items.value = []
       return
     }
-    
+
     try {
       loading.value = true
-      items.value = await cartRepository.fetchItems()
+      items.value = await fetchCartItems()
     } catch (error) {
       console.error('获取购物车失败:', error)
       items.value = [] // 异常时兜底为空数组，避免白屏
@@ -68,7 +68,7 @@ export const useCartStore = defineStore('cart', () => {
   /**
    * 添加商品到购物车
    * - 检查登录状态
-   * - 调用仓储层添加
+   * - 调用 API 层添加
    * - 成功后刷新购物车
    */
   const addToCart = async (productId: number, quantity: number = 1): Promise<boolean> => {
@@ -77,10 +77,10 @@ export const useCartStore = defineStore('cart', () => {
       ElMessage.warning('请先登录')
       return false
     }
-    
+
     try {
       loading.value = true
-      await cartRepository.add({ productId, quantity })
+      await addCartItem({ productId, quantity })
       ElMessage.success('商品已成功加入购物车')
       await loadCart()
       return true
@@ -96,23 +96,23 @@ export const useCartStore = defineStore('cart', () => {
    * 更新购物车商品数量
    * - 参数校验
    * - 防止重复更新
-   * - 调用仓储层更新
+   * - 调用 API 层更新
    */
   const updateQuantity = async (productId: number, quantity: number): Promise<void> => {
     const safeQuantity = Number(quantity)
     const token = localStorage.getItem('token')
-    
+
     if (!token || isNaN(safeQuantity) || safeQuantity < 1) {
       throw new Error('参数无效')
     }
-    
+
     if (updatingProductIds.value.has(productId)) {
       throw new Error('正在更新中，请稍后')
     }
-    
+
     updatingProductIds.value.add(productId)
     try {
-      await cartRepository.updateQuantity({ productId, quantity: safeQuantity })
+      await updateCartItemQuantity({ productId, quantity: safeQuantity })
       await loadCart()
     } catch (error) {
       throw error
@@ -123,16 +123,15 @@ export const useCartStore = defineStore('cart', () => {
 
   /**
    * 删除购物车项
-   * - 调用仓储层删除
+   * - 调用 API 层删除
    * - 成功后刷新购物车
    */
   const removeItem = async (cartItemId: number): Promise<void> => {
     const token = localStorage.getItem('token')
     if (!token) return
-    
+
     try {
-      console.log('【删除购物车项】itemId:', cartItemId)
-      await cartRepository.delete(cartItemId)
+      await deleteCartItem(cartItemId)
       ElMessage.success('删除成功')
       await loadCart()
     } catch (error) {
@@ -165,15 +164,15 @@ export const useCartStore = defineStore('cart', () => {
 
   /**
    * 清空购物车
-   * - 调用仓储层清空
+   * - 调用 API 层清空
    * - 成功后刷新购物车
    */
   const clearCart = async (): Promise<void> => {
     const token = localStorage.getItem('token')
     if (!token) return
-    
+
     try {
-      await cartRepository.clear()
+      await clearCartItems()
       ElMessage.success('购物车已清空')
       await loadCart()
     } catch (error) {
@@ -194,12 +193,12 @@ export const useCartStore = defineStore('cart', () => {
     // 状态
     items,
     loading,
-    
+
     // 计算属性
     totalAmount,
     totalCount,
     allSelected,
-    
+
     // 业务方法
     loadCart,
     addToCart,
