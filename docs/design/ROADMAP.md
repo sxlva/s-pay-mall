@@ -219,6 +219,7 @@ U-1 对账 Job（含 NoPayNotifyOrderJob 分布式锁）→ U-2 outbox → U-3 �
 | TD-6 | 重复回调重复发布 `order_paid` 事件 | 下游消费幂等（orderNo 幂等键）已兜底，仅产生冗余消息。事件链路优化时处理 |
 | TD-7 | `sendDelayCloseMessage` 内层 catch 吞异常 | 失败靠 NoPayNotifyOrderJob 补偿兜底。可靠性设计专题时处理 |
 | TD-8 | NoPayNotifyOrderJob 无分布式锁 | 多实例部署会重复执行。U-1 落地时一并加 Redisson `tryLock` |
+| TD-9 | `product-stock-change-topic` 仅有消费者、无生产者 | 2026-06-09 引入时起即无生产者（全分支历史零发送端，见 git 考证）；原设计用途（DB 库存变更反向同步 Redis）已被"Redis 预扣 + 状态机同步 DB"主链路取代。消费者保留作存量兼容与后续库存事件化接入点（`AdminUpdateHandler` 已就绪），无消息时零开销，**保留不动** |
 
 ### 3.5 暂缓/有意跳过项（结论沉淀）
 
