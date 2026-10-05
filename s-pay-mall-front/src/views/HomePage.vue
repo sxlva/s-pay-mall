@@ -158,14 +158,11 @@ const categories = ref<Array<{ name: string; id: number | null }>>([
 const activeCategory = ref<string>('全部')
 const activeCategoryId = ref<number | null>(null)
 
+/** 本地默认商品图片（无 image_url 时使用，不依赖外网） */
+const DEFAULT_PRODUCT_IMAGE = '/images/product-default.png'
+
 const getProductImage = (product: { id: number; name: string; image_url?: string }): string => {
-  if (product.image_url && product.image_url.startsWith('http')) {
-    return product.image_url
-  }
-  const colors = ['667eea', '764ba2', 'f093fb', '4facfe', '43e97b', 'fa709a', '30cfd0', 'a8edea']
-  const color = colors[product.id % colors.length]
-  const text = encodeURIComponent(product.name.substring(0, 6))
-  return `https://via.placeholder.com/400x400/${color}/ffffff?text=${text}`
+  return product.image_url || DEFAULT_PRODUCT_IMAGE
 }
 
 const loadCategories = async () => {

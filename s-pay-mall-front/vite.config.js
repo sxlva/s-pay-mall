@@ -33,6 +33,11 @@ export default defineConfig({
         target: 'http://localhost:8092',
         changeOrigin: true,
       },
+      // 将 /uploads 图片请求代理到后端静态资源
+      '/uploads': {
+        target: 'http://localhost:8092',
+        changeOrigin: true,
+      },
     }
   }
 })

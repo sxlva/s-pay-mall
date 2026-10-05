@@ -60,7 +60,8 @@ public class WeixinPortalController {
         try {
             log.info("微信公众号验签信息开始 [{}, {}, {}, {}]", signature, timestamp, nonce, echostr);
             if (StringUtils.isAnyBlank(signature, timestamp, nonce, echostr)) {
-                throw new IllegalArgumentException("请求参数非法，请核实!");
+                log.warn("微信公众号验签参数缺失 [signature={}, timestamp={}, nonce={}, echostr={}]", signature, timestamp, nonce, echostr);
+                return null;
             }
             boolean check = SignatureUtil.check(token, signature, timestamp, nonce);
             log.info("微信公众号验签信息完成 check：{}", check);

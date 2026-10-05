@@ -58,6 +58,7 @@ public class MallProductController extends BaseController {
             vo.setCategoryId(p.getCategoryId());
             vo.setName(p.getName());
             vo.setDescription(p.getDescription());
+            vo.setImageUrl(p.getImageUrl());
             vo.setPrice(p.getPrice());
             vo.setStock(p.getStock());
             vo.setCategory(p.getCategory());

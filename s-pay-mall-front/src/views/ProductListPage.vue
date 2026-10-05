@@ -21,18 +21,13 @@ onMounted(() => {
   loadData()
 })
 
+/**
+ * 商品图片：有 image_url 用商品图，否则用本地默认图片（完全不依赖外网）
+ * @param product 商品
+ * @returns 图片地址
+ */
 const getProductImage = (product: ProductVO) => {
-  const name = product.name || ''
-  if (name.includes('华为')) {
-    return 'https://img14.360buyimg.com/n1/jfs/t1/192230/37/42491/79929/65790479F630b925b/3b4d455d3e09cb9e.jpg'
-  }
-  if (name.includes('松鼠') || name.includes('坚果')) {
-    return 'https://img14.360buyimg.com/n1/jfs/t1/107937/17/30310/256950/63ff2f59F94a6fe04/30dfa428be6e355c.jpg'
-  }
-  if (name.includes('星巴克')) {
-    return 'https://img14.360buyimg.com/n1/jfs/t1/174404/24/36881/49845/64a66a19F95efba5f/8ee0731fa122ec00.jpg'
-  }
-  return 'https://via.placeholder.com/400x400.png?text=Product+Image'
+  return product.image_url || '/images/product-default.png'
 }
 
 const handleCategoryChange = (categoryId: number | null) => {

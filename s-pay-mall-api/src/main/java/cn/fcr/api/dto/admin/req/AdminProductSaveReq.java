@@ -39,6 +39,12 @@ public class AdminProductSaveReq {
     private String description;
 
     /**
+     * 商品图片访问路径（相对路径，如 /uploads/products/xxx.jpg），创建/更新均可选；
+     * 更新时不传表示保留原图片
+     */
+    private String imageUrl;
+
+    /**
      * 商品价格
      */
     @NotNull(message = "商品价格不能为空")

@@ -87,6 +87,7 @@ flowchart LR
 | [module-auth.md](module-auth.md) | 微信扫码登录鉴权 | Redis 缓存 access_token（Key=`wechat:access_token:{appid}`，TTL=110min）、前后端轮询、JWT 签发 |
 | [module-order-pay.md](module-order-pay.md) | 订单创建 + 支付宝支付回调 | 幂等三层防御、RSA2 验签、RocketMQ 异步解耦 (topic: `order_paid`)、延时关单 |
 | [module-stock.md](module-stock.md) | Redis 库存预扣减 | RAtomicLong 原子操作、双检查防超卖、SETNX 幂等、StockPreheatRunner 冷启动预热 |
+| [module-product-image.md](module-product-image.md) | 商品图片管理 + 孤儿文件清理 | 存储网关抽象（可迁移 OSS）、null 更新保护、双层路径穿越防护、24h 保护期清理任务、零外网依赖展示 |
 
 > **已合并**: 旧的 `pay.md` 和 `weixinLogin.md` 内容已合并进 `module-order-pay.md` 和 `module-auth.md`。
 
@@ -98,4 +99,6 @@ flowchart LR
 
 ---
 
-> 最新更新：2026-10-03（M2 领域重构：auth 拆 login/token/permission，mall 拆 product/cart/user/statistics，订单簇收编 order；同日 legacy sunset 完成：旧链包整体删除、守卫规则 5 防回潮，边界规则由 DomainArchitectureGuardTest 守卫规则 3/4/5 自动化守护）
+> 最新更新：2026-10-05（新增 [module-product-image.md](module-product-image.md)：商品图片管理全链路——本地存储网关抽象、上传/展示/清理闭环，含孤儿文件定时清理机制；P0 批次三项已按 10-05 核实结果关闭，见 [FUTURE_FEATURES.md](../design_wait/FUTURE_FEATURES.md)）
+>
+> 2026-10-03（M2 领域重构：auth 拆 login/token/permission，mall 拆 product/cart/user/statistics，订单簇收编 order；同日 legacy sunset 完成：旧链包整体删除、守卫规则 5 防回潮，边界规则由 DomainArchitectureGuardTest 守卫规则 3/4/5 自动化守护）

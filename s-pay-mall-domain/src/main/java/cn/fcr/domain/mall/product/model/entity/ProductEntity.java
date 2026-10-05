@@ -31,6 +31,9 @@ public class ProductEntity {
     /** 商品描述 */
     private String description;
 
+    /** 商品图片访问路径（相对路径，如 /uploads/products/xxx.jpg） */
+    private String imageUrl;
+
     /** 商品价格（元） */
     private BigDecimal price;
 

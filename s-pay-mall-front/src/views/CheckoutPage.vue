@@ -165,7 +165,7 @@ onUnmounted(() => {
               <template #default="scope">
                 <div class="product-cell">
                   <img
-                    :src="`https://picsum.photos/60?random=${scope.row.productId}`"
+                    src="/images/product-default.png"
                     :alt="scope.row.productName"
                     class="product-image"
                   />

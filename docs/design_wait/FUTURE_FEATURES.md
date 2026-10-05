@@ -1,17 +1,18 @@
 # 未来功能规划表
 
 > **创建日期**: 2026-07-02
+> **最近核对**: 2026-10-05（P0 批次三项已关闭，逐项附关闭说明；P1/P2 未动）
 > **说明**: 本文档记录待实现的功能需求、技术方案选型和风险点，供后续开发排期参考。
 
 ---
 
 ## 一、功能规划概览
 
-| 优先级 | 功能 | 模块 | 预估工时 | 依赖 |
-|-------|------|------|---------|------|
-| P0 | 统一异常处理 | 全栈 | 3d | — |
-| P0 | 枚举类规范重建 | 后端 Domain + Types | 2d | — |
-| P0 | 参数校验全覆盖 | 后端 Trigger + 前端 | 3d | P0 统一异常处理 |
+| 优先级 | 功能 | 模块 | 预估工时 | 依赖 | 状态 |
+|-------|------|------|---------|------|------|
+| P0 | 统一异常处理 | 全栈 | 3d | — | ✅ 已关闭（2026-10-05，见 2.1） |
+| P0 | 枚举类规范重建 | 后端 Domain + Types | 2d | — | ✅ 已关闭（2026-10-05，见 2.2） |
+| P0 | 参数校验全覆盖 | 后端 Trigger + 前端 | 3d | P0 统一异常处理 | ✅ 已关闭（2026-10-05，见 2.3） |
 | P1 | 图片存储方案 (公开/隐私) | 后端 + Nginx | 5d | — |
 | P1 | Nginx 反向代理图片请求 | 运维/部署 | 2d | P1 图片存储方案 |
 | P1 | 数据迁移风险点方案 | 后端 DBA | 3d | — |
@@ -21,7 +22,11 @@
 
 ## 二、P0 级功能详述
 
+> **状态：本批次三项 P0 已于 2026-10-05 正式关闭。** 关闭前逐一对照代码核实：三项的主体工作均已在 2026-10 初的技术债清理中完成或被更贴合现状的方案取代，原方案中属于过度设计的部分（五段式 `ErrorCode` 体系、`IEnum` + MyBatis 自动映射、Controller 返回 `{code, desc}` JSON 等）经评估后决定不做。以下保留原始方案存档，每项附关闭说明。
+
 ### 2.1 统一异常处理
+
+> **✅ 已关闭（2026-10-05）**：`GlobalExceptionHandler` 已覆盖 `AppException`、领域删除保护异常、`DataIntegrityViolationException`、`MethodArgumentNotValidException → 0002` 与通用兜底，响应统一为 `Response(code, info, null)`；前端 `utils/axios.ts` 响应拦截器已实现统一错误提示。错误码沿用 `Constants.ResponseCode`（0000/0001/0002/0003/0403），五段式 `ErrorCode` 体系对当前项目规模属于过度设计，不做。关闭当日收尾：`BaseController.currentUserId()` 未登录场景由 `IllegalArgumentException` 改为 `AppException(0003)`；`WeixinPortalController` 验签参数缺失的伪异常（本被本方法 catch 吞掉）改为 warn 日志 + 返回 null。
 
 **现状**: 项目已有 `GlobalExceptionHandler` (`@RestControllerAdvice`) 和 `BusinessException` / `AppException`，但使用不统一——部分 Controller 方法直接抛出 `IllegalArgumentException`，部分返回裸字符串。
 
@@ -54,6 +59,8 @@
 ---
 
 ### 2.2 枚举类规范重建
+
+> **✅ 已关闭（2026-10-05）**：两套订单状态枚举已合并为单个 `OrderState`（`domain/order/model/entity`，code + 中文描述 + DB 状态映射三元结构，`toDbStatus()`/`fromDbStatus()` 双向转换），优于原方案的 `code(int)+desc` 设计；`PayStatus` 已是 code+desc 枚举（2026-10-03 M2 重组后归 order 领域）。主代码已全部使用枚举，最后一处硬编码字面量（`OrderRepositoryImpl` 的 `.status("WAIT_PAY")`）于关闭当日改为 `PayStatus.WAIT_PAY.getCode()`。原方案中的 `IEnum` 接口、int code 改造、MyBatis 自动映射、`{code, desc}` JSON 化、前端同构枚举目录均属过度设计，不做。前端以 TypeScript 联合类型表达状态（`types/domain/order.ts`），简单直接。
 
 **现状**: 存在两套状态枚举体系，命名和值定义不一致:
 
@@ -95,6 +102,8 @@ public enum OrderStatus implements IEnum<Integer> {
 ---
 
 ### 2.3 参数校验全覆盖
+
+> **✅ 已关闭（2026-10-05）**：`@Valid` 全覆盖、`spring-boot-starter-validation` 依赖、`MethodArgumentNotValidException → 0002` 全局映射已于 2026-10-02 完成并逐端点实测（见 TECH_DEBT_ROADMAP P1-1）；下单 requestId 幂等 + order_paid 消费幂等已于 A.15 完成（有 `OrderCreateIdempotencyE2EIT` 固化）。剩余的自定义校验注解（`@Mobile` 等）、分组校验、部分前端表单 rules 属可选增强，不影响系统正确性，不再单列任务，后续与业务迭代顺手补齐。
 
 **现状**: ~~11 个 Controller 中仅 2 个方法使用了 `@Valid` 校验~~（已于 2026-10-02 完成：全部 9 个 `@RequestBody` DTO 端点补齐 `@Valid`，并补 `spring-boot-starter-validation` 实现依赖与 `MethodArgumentNotValidException → 0002` 全局映射，逐端点实测通过；自定义校验注解、分组校验未做）。所有状态变更 API 缺少 `requestId` 幂等键。
 
@@ -267,15 +276,14 @@ ALTER TABLE order_main ADD COLUMN express_code VARCHAR(16) COMMENT '快递公司
 ## 五、功能优先级排序
 
 ```
-优先实现（本次迭代）：
-├── P0: 统一异常处理 + 枚举规范 + 参数校验
-│   （这三个改造互相依赖，建议一起做）
+P0 批次（统一异常处理 + 枚举规范 + 参数校验）：
+└── ✅ 已于 2026-10-05 关闭，三项主体工作均已完成
 
-其次实现（下一迭代）：
+下一迭代：
 ├── P1: 图片存储 + Nginx 代理
 │   （运维依赖：需要 OSS 账号 + Nginx 配置权限）
 
-最后实现（排期待定）：
+排期待定：
 ├── P2: 快递鸟物流追踪
 │   （业务依赖：需要快递鸟商户账号）
 └── 数据迁移 SOP 可按需执行

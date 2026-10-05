@@ -2,6 +2,7 @@ package cn.fcr.trigger.http;
 
 import cn.fcr.api.response.Response;
 import cn.fcr.types.common.Constants;
+import cn.fcr.types.exception.AppException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,16 +56,17 @@ public class BaseController {
      * 从请求头解析当前用户ID
      *
      * <p>从Authorization头中提取JWT token，解析出用户ID。
-     * 如果token无效或不存在，抛出IllegalArgumentException。</p>
+     * 如果token无效或不存在，抛出AppException（错误码 0003 未登录），
+     * 由 GlobalExceptionHandler 统一返回未登录响应。</p>
      *
      * @param request HTTP请求对象
      * @return 当前用户ID
-     * @throws IllegalArgumentException token不存在或格式不正确
+     * @throws AppException token不存在或格式不正确（0003 未登录）
      */
     protected Long currentUserId(HttpServletRequest request) {
         String auth = request.getHeader("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("未登录");
+            throw new AppException(Constants.ResponseCode.NO_LOGIN.getCode(), Constants.ResponseCode.NO_LOGIN.getInfo());
         }
         Claims claims = Jwts.parser()
                 .setSigningKey(jwtSecret.getBytes())

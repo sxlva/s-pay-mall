@@ -16,6 +16,8 @@ export interface ProductVO {
   name: string
   /** 商品描述 */
   description: string
+  /** 商品图片访问路径（相对路径，后端下划线字段；为空时展示本地默认图片） */
+  image_url?: string
   /** 商品价格 */
   price: number
   /** 库存数量 */

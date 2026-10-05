@@ -14,16 +14,20 @@ import cn.fcr.domain.mall.product.model.command.ProductSaveCommand;
 import cn.fcr.domain.auth.permission.model.valobj.Role;
 import cn.fcr.domain.order.model.entity.OrderState;
 import cn.fcr.domain.mall.user.model.entity.UserEntity;
+import cn.fcr.domain.mall.product.gateway.IProductImageGateway;
 import cn.fcr.domain.mall.product.service.IMallProductService;
 import cn.fcr.domain.mall.statistics.service.IMallStatisticsService;
 import cn.fcr.domain.mall.user.service.IMallUserService;
 import cn.fcr.application.OrderApplicationService;
 import cn.fcr.trigger.http.BaseController;
+import cn.fcr.types.common.Constants;
 import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +62,10 @@ public class MallAdminController extends BaseController {
     /** 订单应用层服务 */
     @Resource
     private OrderApplicationService orderApplicationService;
+
+    /** 商品图片存储网关 */
+    @Resource
+    private IProductImageGateway productImageGateway;
 
     // ==================== 用户管理 ====================
 
@@ -210,6 +218,7 @@ public class MallAdminController extends BaseController {
             vo.setCategoryId(p.getCategoryId());
             vo.setName(p.getName());
             vo.setDescription(p.getDescription());
+            vo.setImageUrl(p.getImageUrl());
             vo.setPrice(p.getPrice());
             vo.setStock(p.getStock());
             vo.setCategory(p.getCategory());
@@ -235,6 +244,7 @@ public class MallAdminController extends BaseController {
                 .categoryId(request.getCategoryId())
                 .name(request.getName())
                 .description(request.getDescription())
+                .imageUrl(request.getImageUrl())
                 .price(request.getPrice())
                 .stock(request.getStock())
                 .status(request.getStatus())
@@ -254,6 +264,35 @@ public class MallAdminController extends BaseController {
         log.info("删除商品: id={}", productId);
         int result = mallProductService.deleteProduct(productId);
         return success(result);
+    }
+
+    /**
+     * 上传商品图片
+     *
+     * <p>管理员选择图片后先行上传，拿到访问路径再随商品保存接口提交。
+     * 仅支持 jpg/jpeg/png/webp/gif，大小限制见 spring.servlet.multipart 配置。</p>
+     *
+     * @param file 图片文件（multipart 表单字段名 file）
+     * @return 图片访问相对路径（如 /uploads/products/xxx.jpg）
+     */
+    @PostMapping("/files/product-image")
+    public Response<Map<String, String>> uploadProductImage(@RequestParam("file") MultipartFile file) {
+        log.info("上传商品图片: name={}, size={}", file.getOriginalFilename(), file.getSize());
+        if (file.isEmpty()) {
+            return Response.<Map<String, String>>builder()
+                    .code(Constants.ResponseCode.ILLEGAL_PARAMETER.getCode())
+                    .info("图片文件不能为空")
+                    .build();
+        }
+        byte[] data;
+        try {
+            data = file.getBytes();
+        } catch (IOException e) {
+            throw new IllegalStateException("读取图片文件失败: " + e.getMessage(), e);
+        }
+        String url = productImageGateway.saveProductImage(data, file.getOriginalFilename());
+        log.info("商品图片上传成功: url={}", url);
+        return success(Map.of("url", url));
     }
 
     // ==================== 订单管理 ====================

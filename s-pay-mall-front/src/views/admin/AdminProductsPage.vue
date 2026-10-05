@@ -14,6 +14,12 @@
     <el-card class="main-card" shadow="hover">
       <el-table :data="products" stripe border>
         <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column label="图片" width="90">
+          <template #default="scope">
+            <img v-if="scope.row.image_url" :src="scope.row.image_url" class="table-image" />
+            <span v-else class="no-image">无</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="商品名称" min-width="200" />
         <el-table-column prop="category_name" label="分类" width="120">
           <template #default="scope">
@@ -65,6 +71,17 @@
         <el-form-item label="商品描述">
           <el-input type="textarea" v-model="form.description" placeholder="请输入商品描述" :rows="3" />
         </el-form-item>
+        <el-form-item label="商品图片">
+          <div class="image-upload">
+            <img v-if="imagePreview || currentImageUrl" :src="imagePreview || currentImageUrl" class="image-preview" />
+            <div v-else class="image-empty">未设置图片</div>
+            <div class="image-actions">
+              <el-button size="small" @click="triggerFileSelect">{{ editMode ? '更换图片' : '选择图片' }}</el-button>
+              <div v-if="editMode && !imagePreview" class="image-tip">不选择新图片则保留原图片</div>
+            </div>
+            <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/webp,image/gif" style="display: none" @change="handleFileChange" />
+          </div>
+        </el-form-item>
         <el-form-item label="价格" prop="price">
           <el-input type="number" v-model.number="form.price" placeholder="请输入价格" step="0.01" />
         </el-form-item>
@@ -90,7 +107,7 @@
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { getAdminProducts, saveAdminProduct, deleteAdminProduct } from '../../api/admin/product'
+import { getAdminProducts, saveAdminProduct, deleteAdminProduct, uploadAdminProductImage } from '../../api/admin/product'
 import { getAdminCategories } from '../../api/admin/category'
 
 const products = ref([])
@@ -99,6 +116,13 @@ const showModal = ref(false)
 const editMode = ref(false)
 const editingId = ref(null)
 const formRef = ref(null)
+const fileInputRef = ref(null)
+/** 本次选择待上传的新图片文件（未选择为 null） */
+const imageFile = ref(null)
+/** 新图片的本地预览地址（ObjectURL） */
+const imagePreview = ref('')
+/** 编辑模式下原商品图片路径 */
+const currentImageUrl = ref('')
 const form = reactive({
   categoryId: '',
   name: '',
@@ -106,6 +130,35 @@ const form = reactive({
   price: '',
   stock: ''
 })
+
+/** 触发隐藏的文件选择框 */
+const triggerFileSelect = () => {
+  fileInputRef.value?.click()
+}
+
+/**
+ * 选择图片后生成本地预览
+ * @param event 文件选择事件
+ */
+const handleFileChange = (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  if (file.size > 5 * 1024 * 1024) {
+    ElMessage.warning('图片大小不能超过 5MB')
+    event.target.value = ''
+    return
+  }
+  imageFile.value = file
+  imagePreview.value = URL.createObjectURL(file)
+  event.target.value = ''
+}
+
+/** 重置图片相关状态 */
+const resetImageState = () => {
+  imageFile.value = null
+  imagePreview.value = ''
+  currentImageUrl.value = ''
+}
 
 const rules = {
   categoryId: [
@@ -167,6 +220,7 @@ const openAddModal = () => {
   form.description = ''
   form.price = ''
   form.stock = ''
+  resetImageState()
   showModal.value = true
   // 在 DOM 渲染完成后清除校验状态
   nextTick(() => {
@@ -184,6 +238,8 @@ const handleEdit = (row) => {
   form.description = row.description || ''
   form.price = row.price.toString()
   form.stock = row.stock.toString()
+  resetImageState()
+  currentImageUrl.value = row.image_url || ''
   showModal.value = true
 }
 
@@ -200,6 +256,7 @@ const closeModal = () => {
   form.description = ''
   form.price = ''
   form.stock = ''
+  resetImageState()
 }
 
 const handleSave = async () => {
@@ -215,6 +272,12 @@ const handleSave = async () => {
     }
     
     try {
+      // 选择了新图片则先上传拿到路径；未选择时编辑场景不传 imageUrl，后端保留原图
+      let uploadedImageUrl = ''
+      if (imageFile.value) {
+        const uploaded = await uploadAdminProductImage(imageFile.value)
+        uploadedImageUrl = uploaded.url
+      }
       const data = {
         categoryId: parseInt(form.categoryId),
         name: form.name,
@@ -222,6 +285,9 @@ const handleSave = async () => {
         price: parseFloat(form.price),
         stock: parseInt(form.stock),
         status: 1
+      }
+      if (uploadedImageUrl) {
+        data.imageUrl = uploadedImageUrl
       }
       if (editMode.value && editingId.value) {
         data.id = editingId.value
@@ -277,6 +343,55 @@ onMounted(loadProducts)
 .price {
   color: #409EFF;
   font-weight: 600;
+}
+
+.table-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.no-image {
+  color: #909399;
+  font-size: 12px;
+}
+
+.image-upload {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.image-preview {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+}
+
+.image-empty {
+  width: 100px;
+  height: 100px;
+  border-radius: 4px;
+  border: 1px dashed #dcdfe6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #909399;
+  font-size: 12px;
+}
+
+.image-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.image-tip {
+  color: #909399;
+  font-size: 12px;
 }
 
 .empty-state {

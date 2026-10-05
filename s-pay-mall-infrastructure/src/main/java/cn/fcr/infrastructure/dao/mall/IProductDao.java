@@ -96,4 +96,13 @@ public interface IProductDao extends BaseMapper<Product> {
      */
     @Select("SELECT stock FROM product WHERE id = #{productId} AND status = 1")
     Integer selectStockByProductId(@Param("productId") Long productId);
+
+    /**
+     * 查询全部被商品引用的图片路径
+     * 用于孤儿图片清理任务比对引用关系
+     *
+     * @return image_url 列表，无引用时返回空列表
+     */
+    @Select("SELECT image_url FROM product WHERE image_url IS NOT NULL")
+    List<String> selectAllImageUrls();
 }

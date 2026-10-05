@@ -70,6 +70,7 @@ public class MallProductServiceImpl implements IMallProductService {
                 .categoryId(command.getCategoryId())
                 .name(command.getName())
                 .description(command.getDescription())
+                .imageUrl(command.getImageUrl())
                 .price(command.getPrice())
                 .stock(command.getStock())
                 .status(command.getStatus())

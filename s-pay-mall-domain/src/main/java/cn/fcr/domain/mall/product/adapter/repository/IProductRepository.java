@@ -142,4 +142,12 @@ public interface IProductRepository {
      * @return 关联订单数量
      */
     long countOrderItemsByProductId(Long productId);
+
+    /**
+     * 查询全部被商品引用的图片路径
+     * 用于孤儿图片清理任务比对引用关系
+     *
+     * @return image_url 集合，无引用时返回空集合
+     */
+    java.util.Set<String> selectAllImageUrls();
 }

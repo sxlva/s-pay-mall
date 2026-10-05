@@ -33,6 +33,10 @@ public class ProductVO {
     /** 商品描述 */
     private String description;
 
+    /** 商品图片访问路径（相对路径，如 /uploads/products/xxx.jpg） */
+    @JsonProperty("image_url")
+    private String imageUrl;
+
     /** 商品价格 */
     private BigDecimal price;
 

@@ -5,6 +5,7 @@ import cn.fcr.domain.order.model.entity.OrderEntity;
 import cn.fcr.domain.order.model.entity.OrderItemEntity;
 import cn.fcr.domain.order.model.entity.OrderState;
 import cn.fcr.domain.order.model.valobj.OrderVO;
+import cn.fcr.domain.order.model.vo.PayStatus;
 import cn.fcr.infrastructure.dao.order.IOrderDao;
 import cn.fcr.infrastructure.dao.order.IOrderItemDao;
 import cn.fcr.infrastructure.dao.order.IOrderMainDao;
@@ -75,7 +76,7 @@ public class OrderRepositoryImpl implements IMallOrderQueryGateway {
                     .orderId(orderEntity.getOrderNo())
                     .orderTime(new Date())
                     .totalAmount(orderEntity.getTotalAmount())
-                    .status("WAIT_PAY")
+                    .status(PayStatus.WAIT_PAY.getCode())
                     .createTime(new Date())
                     .updateTime(new Date())
                     .build();

@@ -41,6 +41,8 @@ export interface SaveProductParams {
   name: string
   /** 商品描述 */
   description?: string
+  /** 商品图片访问路径（更新时不传表示保留原图片） */
+  imageUrl?: string
   /** 商品价格 */
   price: number
   /** 库存数量 */

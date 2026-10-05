@@ -30,6 +30,9 @@ public class Product {
     @TableField("description")
     private String description;
 
+    @TableField("image_url")
+    private String imageUrl;
+
     @TableField("price")
     private BigDecimal price;
 

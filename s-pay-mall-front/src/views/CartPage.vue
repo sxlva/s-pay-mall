@@ -28,9 +28,7 @@
           <div v-for="item in items" :key="item.id" class="cart-item">
             <el-checkbox v-model="item.selected" @change="() => toggleSelect(item.id)" />
             <div class="item-image">
-              <div class="image-placeholder">
-                <el-icon :size="32"><Picture /></el-icon>
-              </div>
+              <img src="/images/product-default.png" alt="商品图片" />
             </div>
             <div class="item-info">
               <!-- null 安全访问：兜底显示 -->

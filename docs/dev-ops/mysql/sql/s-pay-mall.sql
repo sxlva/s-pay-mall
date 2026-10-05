@@ -141,6 +141,7 @@ CREATE TABLE `product` (
 `category_id` bigint unsigned NOT NULL COMMENT '分类ID，关联category表',
 `name` varchar(128) NOT NULL COMMENT '商品名称',
 `description` varchar(512) DEFAULT NULL COMMENT '商品描述',
+`image_url` varchar(512) DEFAULT NULL COMMENT '商品图片访问路径（相对路径，如 /uploads/products/xxx.jpg），为空时前台展示本地默认图片',
 `price` decimal(10,2) NOT NULL COMMENT '商品价格',
 `stock` int NOT NULL DEFAULT 0 COMMENT '库存数量',
 `category` varchar(32) NOT NULL DEFAULT '数码产品' COMMENT '商品分类: 食品饮料/服装配饰/数码产品',

@@ -39,6 +39,11 @@ public class ProductSaveCommand {
     private String description;
 
     /**
+     * 商品图片访问路径（相对路径，如 /uploads/products/xxx.jpg），创建/更新均可选
+     */
+    private String imageUrl;
+
+    /**
      * 商品价格
      */
     private BigDecimal price;

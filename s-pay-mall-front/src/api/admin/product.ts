@@ -36,3 +36,16 @@ export const saveAdminProduct = (data: SaveProductParams): Promise<ProductAdminV
 export const deleteAdminProduct = (id: number): Promise<void> => {
   return adminInstance.delete(`/admin/products/${id}`)
 }
+
+/**
+ * 上传商品图片
+ * @param file 图片文件（jpg/jpeg/png/webp/gif，最大 5MB）
+ * @returns 图片访问相对路径（如 /uploads/products/xxx.jpg）
+ */
+export const uploadAdminProductImage = (file: File): Promise<{ url: string }> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return adminInstance.post('/admin/files/product-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}

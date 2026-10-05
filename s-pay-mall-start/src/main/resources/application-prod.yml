@@ -14,6 +14,12 @@ app:
     api-version: v1
     # 跨域，开发阶段可以设置为 * 不限制
     cross-origin: '*'
+    # 商品图片上传根目录（相对路径基于应用启动目录；部署时可用环境变量 APP_UPLOAD_DIR 覆盖）
+    upload-dir: ${APP_UPLOAD_DIR:./uploads}
+    # 商品图片孤儿文件清理任务
+    image-cleanup-enabled: true
+    image-cleanup-cron: "0 0 4 * * ?"
+    image-cleanup-protection-hours: 24
 
 # 线程池配置
 thread:
@@ -44,6 +50,11 @@ spring:
     connection-timeout: 30000 #数据库连接超时时间,默认30秒，即30000
     connection-test-query: SELECT 1
   type: com.zaxxer.hikari.HikariDataSource
+  # 文件上传限制
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
   # Redis - Spring Data Redis 配置（供 Redisson 使用）
   redis:
     host: 127.0.0.1

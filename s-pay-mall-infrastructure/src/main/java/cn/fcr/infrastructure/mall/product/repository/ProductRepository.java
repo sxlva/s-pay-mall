@@ -127,6 +127,10 @@ public class ProductRepository implements IProductRepository {
         updateWrapper.set(Product::getPrice, product.getPrice());
         updateWrapper.set(Product::getStock, product.getStock());
         updateWrapper.set(Product::getStatus, product.getStatus());
+        // 图片为 null 时不更新该列：编辑商品未更换图片时必须保留原图，防止误清
+        if (product.getImageUrl() != null && !product.getImageUrl().isBlank()) {
+            updateWrapper.set(Product::getImageUrl, product.getImageUrl());
+        }
         updateWrapper.set(Product::getUpdateTime, LocalDateTime.now());
         productDao.update(null, updateWrapper);
         return product;
@@ -178,6 +182,7 @@ public class ProductRepository implements IProductRepository {
                 .categoryId(product.getCategoryId())
                 .name(product.getName())
                 .description(product.getDescription())
+                .imageUrl(product.getImageUrl())
                 .price(product.getPrice())
                 .stock(product.getStock())
                 .status(product.getStatus())
@@ -193,6 +198,7 @@ public class ProductRepository implements IProductRepository {
         product.setCategoryId(entity.getCategoryId());
         product.setName(entity.getName());
         product.setDescription(entity.getDescription());
+        product.setImageUrl(entity.getImageUrl());
         product.setPrice(entity.getPrice());
         product.setStock(entity.getStock());
         product.setStatus(entity.getStatus());
@@ -205,5 +211,12 @@ public class ProductRepository implements IProductRepository {
         LambdaQueryWrapper<OrderItem> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(OrderItem::getProductId, productId);
         return orderItemDao.selectCount(queryWrapper);
+    }
+
+    @Override
+    public java.util.Set<String> selectAllImageUrls() {
+        return productDao.selectAllImageUrls().stream()
+                .filter(url -> url != null && !url.isBlank())
+                .collect(java.util.stream.Collectors.toSet());
     }
 }
