@@ -2,7 +2,7 @@
 
 > **合并自**: `ARCHITECTURE_DEBT.md` + `SYSTEM_ARCHITECTURE_ISSUES.md` + `SYSTEM_ISSUES_SUMMARY.md` + `audit-20260702.md` + `FRONTEND_API_LAYER_ISSUES.md` + `interface-contract-inconsistency.md`
 > **合并日期**: 2026-07-02
-> **状态**: 待处理
+> **状态**: 后端 P0/P1 已清零（2026-10-04）；前端 FP 全项已关闭（2026-10-05，分支 261005-frontend-debt）
 
 ---
 
@@ -36,10 +36,10 @@
 |----|------|------|---------|------|
 | P2-1 | createPayOrder 缺事务保护 | ~~`OrderApplicationService.createPayOrder()` 无 `@Transactional`~~（方法已删除） | 加注事务或委托给 `OrderTransactionService` | 已关闭（2026-10-03）：`createPayOrder` 为无调用方死端点，随 legacy 下线步骤 B 一并删除，条目失效 |
 | P2-2 | 缺死信队列配置 | 3 个 RocketMQ Listener 均未配置 DLQ | 为 `order_paid`, `order-timeout-topic`, `product-stock-change-topic` 配置 DLQ | 部分处理（2026-10-04）：三个 Listener 已显式配置 `maxReconsumeTimes=5`（重试耗尽自动进 `%DLQ%`）；DLQ 告警与重放流程属运维项，方案见 [UPGRADE_POINTS.md](UPGRADE_POINTS.md) U-5，暂不实现 |
-| P2-3 | WeixinGatewayImpl 缺超时配置 | `Retrofit2Config.java` 未显式配置 OkHttpClient 超时 | 设置 `connectTimeout=5s`, `readTimeout=10s` | 待处理 |
+| P2-3 | WeixinGatewayImpl 缺超时配置 | `Retrofit2Config.java` 未显式配置 OkHttpClient 超时 | 设置 `connectTimeout=5s`, `readTimeout=10s` | 已关闭（2026-10-04，`4fad289`：Retrofit2Config 显式配置 connect 5s / read 10s） |
 | P2-4 | ~~`pay-success-topic` 无消费者~~ | ~~`OrderEventGatewayImpl.sendPaySuccessMessage()` 发送消息但无消费者订阅~~ | ~~接入消费者或删除未使用的发送逻辑~~ | 已处理（2026-10-01，JV-003：删除 `IOrderEventGateway`/`OrderEventGatewayImpl`，topic 随之废弃） |
 | P2-5 | ~~支付成功消息通道重复~~ | ~~`order_paid` 和 `pay-success-topic` 两个 Topic 职责不清~~ | ~~明确职责或合并~~ | 已处理（2026-10-01，JV-003：保留 `order_paid`，删除 `pay-success-topic` 通道） |
-| P2-6 | `WeixinBindService` 方法未使用 | `tryAcquireRegisterLock()` / `releaseRegisterLock()` 定义但未调用 | 接入注册流程或移除 | 待处理 |
+| P2-6 | `WeixinBindService` 方法未使用 | `tryAcquireRegisterLock()` / `releaseRegisterLock()` 定义但未调用 | 接入注册流程或移除 | 已关闭（2026-10-04，`4fad289`：死代码随注册锁清理移除） |
 | P2-7 | 认证令牌双抽象命名冲突 | 账号密码链路用 `IAuthTokenGateway`/`AuthTokenGatewayImpl`（mall.gateway），微信链路用 `ITokenProvider`/`TokenProviderAdapter`（auth.gateway），两者均纯委托 `JwtTokenProvider.createToken`，同一概念两套接口、包位置与职责交叉 | 收敛为单一 `IAuthTokenGateway`（含 `createToken`/`encodePassword`/`matchesPassword`），移至 `domain.auth.gateway`；删除 `ITokenProvider`/`TokenProviderAdapter` | 已处理（2026-10-03：接口迁移 auth 域、`WeixinLoginService`/`DomainServiceConfig`/`MallUserServiceImpl` 改注入；编译通过、单测 6/6 通过、新增 `WeixinScanLoginMockE2ETest` 2/2 通过、真实应用注册→登录→profile E2E 验证通过；详见附录 A.11） |
 
 ---
@@ -50,27 +50,27 @@
 
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
-| FP0-1 | API 调用三层重叠 | `src/api/` + `src/repositories/` + `src/services/` 三层并存，职责重叠 | 合并为统一 `api/` 层 → 删除 `repositories/` 和 `services/` | 待处理 |
-| FP0-2 | admin.ts 过于臃肿 | 294 行包含 5 个独立业务模块（用户/分类/商品/订单/统计） | 拆分为 `api/admin/user.ts`, `category.ts`, `product.ts`, `order.ts`, `statistics.ts` | 待处理 |
-| FP0-3 | cartRepository 技术栈不一致 | 使用 bare `fetch`，其他层使用 Axios | 迁移为统一 Axios 实例 | 待处理 |
-| FP0-4 | 前后端字段不一致 | `CheckoutPage.vue` 创建订单后 `orderNo` 硬编码为空串，后端返回的 `orderId` 未被使用 | 修正字段映射：`OrderCreateRespDTO.orderId` → 前端 `OrderCreateResult.orderNo` | 待处理 |
+| FP0-1 | API 调用三层重叠 | `src/api/` + `src/repositories/` + `src/services/` 三层并存，职责重叠 | 合并为统一 `api/` 层 → 删除 `repositories/` 和 `services/` | **已关闭（2026-10-05，分支 261005-frontend-debt）**：`repositories/` 3 文件与 `services/` 1 文件全部并入 `api/`（cart/product/order 迁移 + admin 拆分），两层目录删除，数据出口唯一 |
+| FP0-2 | admin.ts 过于臃肿 | 294 行包含 5 个独立业务模块（用户/分类/商品/订单/统计） | 拆分为 `api/admin/user.ts`, `category.ts`, `product.ts`, `order.ts`, `statistics.ts` | **已关闭（2026-10-05）**：拆分为 `api/admin/{user,category,product,order,statistics}.ts` |
+| FP0-3 | cartRepository 技术栈不一致 | 使用 bare `fetch`，其他层使用 Axios | 迁移为统一 Axios 实例 | **已关闭（2026-10-05）**：cart/product/order 及 HomePage 两处裸 fetch 全部迁 `mallInstance`，token/解包/错误提示统一由拦截器处理 |
+| FP0-4 | 前后端字段不一致 | `CheckoutPage.vue` 创建订单后 `orderNo` 硬编码为空串，后端返回的 `orderId` 未被使用 | 修正字段映射：`OrderCreateRespDTO.orderId` → 前端 `OrderCreateResult.orderNo` | **已关闭（2026-10-05）**：`api/order.ts` `toCreateResult` 统一映射 `orderId`→`orderNo`；CheckoutPage 下单后 `initPayOrder`/`startPolling` 传真实订单号，修复支付轮询空 orderNo 永不命中问题 |
 
 ### 🟡 P1 (重要级)
 
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
-| FP1-1 | 类型与 API 函数混放 | `admin.ts` 中 7 个类型接口与 API 函数混合定义 | 类型提取到 `types/domain/admin.ts` | 待处理 |
-| FP1-2 | 统一 API 工具未使用 | `src/utils/api.ts` 提供了通用 request 工具但未被 `api/` 层使用 | 整合或删除 | 待处理 |
-| FP1-3 | 前端多余字段 | `StockCheckResult` 含后端未定义的 `stockStatus` 字段 | 删除多余字段 | 待处理 |
-| FP1-4 | 调试代码未清除 | `src/api/order.ts:26` 含 `console.log` | 删除调试语句 | 待处理 |
-| FP1-5 | 命名不一致 | 管理端类型 `OrderAdminVO` vs 商城端 `Order` 后缀不统一 | 统一：管理端 `AdminVO` 后缀，商城端 `VO` 后缀 | 待处理 |
+| FP1-1 | 类型与 API 函数混放 | `admin.ts` 中 7 个类型接口与 API 函数混合定义 | 类型提取到 `types/domain/admin.ts` | **已关闭（2026-10-05）**：7 个管理端类型抽入 `types/domain/admin.ts` |
+| FP1-2 | 统一 API 工具未使用 | `src/utils/api.ts` 提供了通用 request 工具但未被 `api/` 层使用 | 整合或删除 | **已关闭（2026-10-05）**：唯一调用方 ProductDetailPage 迁移后删除 `utils/api.ts` |
+| FP1-3 | 前端多余字段 | `StockCheckResult` 含后端未定义的 `stockStatus` 字段 | 删除多余字段 | **已关闭（2026-10-05）**：`stockStatus` 已删除 |
+| FP1-4 | 调试代码未清除 | `src/api/order.ts:26` 含 `console.log` | 删除调试语句 | **已关闭（2026-10-05）**：api/order.ts 与 OrderListPage 调试 log 已清除 |
+| FP1-5 | 命名不一致 | 管理端类型 `OrderAdminVO` vs 商城端 `Order` 后缀不统一 | 统一：管理端 `AdminVO` 后缀，商城端 `VO` 后缀 | **已关闭（2026-10-05）**：管理端统一 `AdminVO` 后缀（UserAdminVO/CategoryAdminVO/ProductAdminVO/OrderItemAdminVO/OrderAdminVO/SalesTrendAdminVO/CategoryRatioAdminVO），查询参数同步 `Admin` 后缀 |
 
 ### 🔵 P2 (优化级)
 
 | ID | 问题 | 描述 | 修复路径 | 状态 |
 |----|------|------|---------|------|
-| FP2-1 | 组件接口契约覆盖率低 | 20+ 页面/布局组件仅 3 个定义了 Props/Emits/Slots | 为关键组件添加类型化的 Props/Emits 定义 | 待处理 |
-| FP2-2 | localStorage 残留 | `checkout_products` 写入后从不清理 | 添加清理逻辑 | 待处理 |
+| FP2-1 | 组件接口契约覆盖率低 | 20+ 页面/布局组件仅 3 个定义了 Props/Emits/Slots | 为关键组件添加类型化的 Props/Emits 定义 | **已关闭（2026-10-05）**：以删除替代加类型——HelloWorld/TheWelcome/WelcomeItem 为 Vite 脚手架残留零引用组件，直接删除；关键组件 PaymentSubmitter 本就具备类型化 Props/Emits |
+| FP2-2 | localStorage 残留 | `checkout_products` 写入后从不清理 | 添加清理逻辑 | **已关闭（2026-10-05）**：`checkout_products` 全仓无读取方（结算页经 cart store 读购物车），删除 CartPage 残留写入 |
 
 ---
 

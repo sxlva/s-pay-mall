@@ -244,11 +244,11 @@
 |---------------|----------------------|-----------|------|
 | `ProductRes` (common/res) | `types/domain/product.ts ProductRes` | **`category_id` → `categoryId` 命名不一致** | 后端 `@JsonProperty` 输出snake_case，前端字段名需对齐 |
 | `CategoryRes` (common/res) | `types/domain/product.ts CategoryRes` | ✅ 一致 | — |
-| `AdminUserRes` (admin/res) | `types/domain/user.ts AdminUserRes` | **前端多了 `email`, `role` 字段** | 后端无对应字段，风险 |
+| `AdminUserRes` (admin/res) | `types/domain/admin.ts UserAdminVO` | **前端多了 `email`, `role` 字段** | 后端无对应字段，风险（2026-10-05 类型已迁 admin.ts，字段问题保留观察） |
 | `UserCartItemRes` (user/res) | `types/domain/cart.ts CartItem` | **`price` vs `productPrice` 命名不一致** | 运行时常一致（映射层中转） |
-| `UserOrderCreateRes` (user/res) | `types/domain/order.ts OrderCreateResult` | **`orderId` vs `orderNo` 命名不一致** | `CheckoutPage.vue` 硬编码空串 |
+| `UserOrderCreateRes` (user/res) | `types/domain/order.ts OrderCreateResult` | ~~**`orderId` vs `orderNo` 命名不一致**~~ ✅ 已对齐（2026-10-05：api/order.ts `toCreateResult` 统一映射，CheckoutPage 传真实订单号） | — |
 | `UserOrderRes` (user/res) | `types/domain/order.ts Order` | ✅ 基本一致 | — |
-| `UserOrderStockCheckRes` (user/res) | `api/order.ts StockCheckResult` | **前端多余 `stockStatus` 字段** | 后端无对应，需删除 |
+| `UserOrderStockCheckRes` (user/res) | `api/order.ts StockCheckResult` | ~~**前端多余 `stockStatus` 字段**~~ ✅ 已删除（2026-10-05） | — |
 | `LoginRes` (common/res) | （前端 `useUserStore` 消费） | ✅ 基本一致 | — |
 | `RegisterReq` (common/req) | 前端无独立类型 | — | 直接使用 Form 数据 |
 | `UserOrderCreateReq` (user/req) | 前端无独立类型 | — | 仅传 `address` |
