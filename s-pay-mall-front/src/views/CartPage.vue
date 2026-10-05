@@ -149,7 +149,8 @@ const handleCheckout = () => {
     ElMessage.warning('请选择要结算的商品')
     return
   }
-  localStorage.setItem('checkout_products', JSON.stringify(selectedItems))
+  // FP2-2：不再向 localStorage 写 checkout_products——结算页经 cart store 直接读取购物车，
+  // 该 key 全仓无读取方，属残留写入
   router.push('/checkout')
 }
 
