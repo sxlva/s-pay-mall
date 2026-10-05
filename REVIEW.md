@@ -45,7 +45,7 @@
 - ❌ 禁止: Infrastructure 依赖 Application 或 Trigger
 - ❌ 禁止: Application 依赖 Infrastructure
 
-> **现状说明**（见 [DDD_SPEC §1.1](DDD_ARCHITECTURE_SPEC.md)）: `s-pay-mall-application` 模块已于 2026-10-03 创建（TECH_DEBT P0-2），`OrderApplicationService`/`OrderTransactionService` 位于 `cn.fcr.application` 包，按 Application 层规则审查，不得放宽标准。
+> **现状说明**（见 [DDD_SPEC §1.1](DDD_ARCHITECTURE_SPEC.md)）: `s-pay-mall-application` 模块已于 2026-10-03 创建（ROADMAP §3.1 P0-2），`OrderApplicationService`/`OrderTransactionService` 位于 `cn.fcr.application` 包，按 Application 层规则审查，不得放宽标准。
 
 **Domain 层严禁出现的导入**（审查工具清单）:
 
@@ -75,7 +75,7 @@ import org.apache.ibatis.*;                // MyBatis
 
 **Infrastructure 层违规模式**:
 - ❌ 包含业务规则判断（如 `if (order.getStatus() == CREATED)` 修改业务状态）
-- ❌ 使用 `@Transactional`（已知违规见 [DDD_SPEC §2.4](DDD_ARCHITECTURE_SPEC.md)，已登记 TECH_DEBT P0-3）
+- ❌ 使用 `@Transactional`（已知违规见 [DDD_SPEC §2.4](DDD_ARCHITECTURE_SPEC.md)，已登记 ROADMAP §3.1 P0-3）
 
 ### 1.3 Infrastructure 模块对称性检查
 
@@ -96,7 +96,7 @@ import org.apache.ibatis.*;                // MyBatis
 
 - ✅ 后端命名是否符合 §1.1 规范表
 - ✅ 前端命名是否符合 §1.4 规范表
-- ❌ 禁止 `UserLoginRequest`（应为 `LoginReq`，见 API_NAMING_DECISION）
+- ❌ 禁止 `UserLoginRequest`（应为 `LoginReq`，命名规范见 DEVELOPMENT_GUIDE.md §1）
 - ❌ 禁止 `Map<String, Object>` 返回
 - ❌ 禁止新增出线类使用 `@JsonProperty` snake_case（admin/res 历史类除外，见「零」）
 

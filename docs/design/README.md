@@ -99,6 +99,6 @@ flowchart LR
 
 ---
 
-> 最新更新：2026-10-05（新增 [module-product-image.md](module-product-image.md)：商品图片管理全链路——本地存储网关抽象、上传/展示/清理闭环，含孤儿文件定时清理机制；P0 批次三项已按 10-05 核实结果关闭，见 [FUTURE_FEATURES.md](../design_wait/FUTURE_FEATURES.md)）
+> 最新更新：2026-10-05（新增 [module-product-image.md](module-product-image.md)：商品图片管理全链路——本地存储网关抽象、上传/展示/清理闭环，含孤儿文件定时清理机制；新增 [ROADMAP.md](ROADMAP.md)：演进路线——未来功能、升级点设计、技术债关闭记录与未处理项；P0 批次三项已按 10-05 核实结果关闭，见 ROADMAP §1.4）
 >
 > 2026-10-03（M2 领域重构：auth 拆 login/token/permission，mall 拆 product/cart/user/statistics，订单簇收编 order；同日 legacy sunset 完成：旧链包整体删除、守卫规则 5 防回潮，边界规则由 DomainArchitectureGuardTest 守卫规则 3/4/5 自动化守护）

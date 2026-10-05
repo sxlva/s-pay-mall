@@ -26,13 +26,13 @@ DDD 分层不仅要求逻辑依赖单向，还要求**物理模块独立**。各
 | 层 | Maven 模块 | 当前状态 |
 |----|-----------|---------|
 | Trigger | `s-pay-mall-trigger` | ✅ 存在 |
-| Application | `s-pay-mall-application` | ✅ 存在（2026-10-03 创建，详见 TECH_DEBT P0-2 / 附录 A.12） |
+| Application | `s-pay-mall-application` | ✅ 存在（2026-10-03 创建，详见 ROADMAP §3.1 P0-2 / §3.2 A.12） |
 | Domain | `s-pay-mall-domain` | ✅ 存在 |
 | Infrastructure | `s-pay-mall-infrastructure` | ✅ 存在 |
 
 **规则**: Application 层**必须**独立为 `s-pay-mall-application` 模块，与 Trigger 层物理分离。Trigger 层通过依赖 `s-pay-mall-application` 模块调用 Application 服务，禁止将 Application 服务放在 Trigger 模块内。
 
-> **执行记录（2026-10-03，原 DOCUMENT_CODE_MISMATCH 已消除）**: `OrderApplicationService` + `OrderTransactionService` 已按 TECH_DEBT P0-2 迁入 `s-pay-mall-application` 模块的 `cn.fcr.application` 包，两服务**一起移出**，未产生循环依赖（执行前分析与注意事项见 TECH_DEBT 附录 C.2）。原启动模块 `s-pay-mall-app` 同步更名 `s-pay-mall-start`，定位明确为装配/启动模块、不含业务代码。
+> **执行记录（2026-10-03，原 DOCUMENT_CODE_MISMATCH 已消除）**: `OrderApplicationService` + `OrderTransactionService` 已按 ROADMAP §3.1 P0-2 迁入 `s-pay-mall-application` 模块的 `cn.fcr.application` 包，两服务**一起移出**，未产生循环依赖（执行前分析结论已沉淀至 ROADMAP §3.2 A.12）。原启动模块 `s-pay-mall-app` 同步更名 `s-pay-mall-start`，定位明确为装配/启动模块、不含业务代码。
 
 ### 1.2 模块依赖事实（pom.xml 验证）
 
@@ -97,7 +97,7 @@ import org.apache.ibatis.*;                // MyBatis
 | Redis / RocketMQ 操作 | 修改业务状态 |
 | 外部 HTTP 调用 | 跨领域模块直接耦合 |
 
-> **已修复（2026-10-04，详见 TECH_DEBT P0-3 / 附录 A.13）**: ~~`WeixinLoginGatewayImpl#createWechatUserAndBind` 标注了 `@Transactional`~~。事务边界已上移至 `AuthApplicationService.handleWechatScanLogin`，Infrastructure 层事务注解已摘除，全仓 `@Transactional` 仅存于 Application 层。
+> **已修复（2026-10-04，详见 ROADMAP §3.1 P0-3 / §3.2 A.13）**: ~~`WeixinLoginGatewayImpl#createWechatUserAndBind` 标注了 `@Transactional`~~。事务边界已上移至 `AuthApplicationService.handleWechatScanLogin`，Infrastructure 层事务注解已摘除，全仓 `@Transactional` 仅存于 Application 层。
 
 ---
 
@@ -179,7 +179,7 @@ domain
 | RocketMQ | `@RocketMQMessageListener`、`MQProducer` |
 | MyBatis | `@Mapper`、`SqlSession` |
 
-> **已知债（已登记 TECH_DEBT P1-5）**: `s-pay-mall-domain/pom.xml` 当前包含 `spring-context`、`spring-tx`、`alipay-sdk-java`、`jjwt`、`fastjson` 技术依赖。虽未在 Domain 代码中直接使用，但存在误用风险，待清理。
+> **已修复（2026-10-04，对应 ROADMAP §3.1 P1-5）**: ~~`s-pay-mall-domain/pom.xml` 包含 `spring-context`、`spring-tx`、`alipay-sdk-java`、`jjwt`、`fastjson` 技术依赖~~，已移除（`alipay-sdk-java` 改由 infrastructure 显式声明）。Domain 层仅剩纯领域依赖。
 
 ---
 
@@ -283,16 +283,16 @@ public class OrderApplicationService {
 
 ## 7. 已知违规与已知债索引
 
-本节汇总与 DDD 架构相关的已知问题，详细修复方案见 [TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md)。
+本节汇总与 DDD 架构相关的已知问题，详细修复方案见 [ROADMAP.md](docs/design/ROADMAP.md) §3。
 
-| TECH_DEBT ID | 问题 | 本规范条款 | 状态 |
+| 债务 ID（ROADMAP §3） | 问题 | 本规范条款 | 状态 |
 |-------------|------|----------|------|
-| P0-2 | ~~`s-pay-mall-application` 模块不存在，Application Service 在 trigger 包~~（2026-10-03 已修复，详见 TECH_DEBT 附录 A.12） | §1.1 模块物理归属规则 | 已处理（2026-10-03） |
-| P0-3 | ~~`WeixinLoginGatewayImpl` 有 `@Transactional`~~（2026-10-04 已修复，详见 TECH_DEBT 附录 A.13） | §2.4 / §6.1 | 已处理（2026-10-04） |
+| P0-2 | ~~`s-pay-mall-application` 模块不存在，Application Service 在 trigger 包~~（2026-10-03 已修复，详见 ROADMAP §3.2 A.12） | §1.1 模块物理归属规则 | 已处理（2026-10-03） |
+| P0-3 | ~~`WeixinLoginGatewayImpl` 有 `@Transactional`~~（2026-10-04 已修复，详见 ROADMAP §3.2 A.13） | §2.4 / §6.1 | 已处理（2026-10-04） |
 | P0-5 | Domain 层跨领域反向依赖（PayOrderService import mall.gateway） | §2.3 / §4.2 | 已处理（2026-10-03 M2-5：IPayGateway 收编进 order，PayOrderService 同域，依赖自然消除） |
-| P1-5 | Domain pom.xml 含技术依赖 | §3.4 | 待处理 |
+| P1-5 | Domain pom.xml 含技术依赖 | §3.4 | 已处理（2026-10-04） |
 
-> 修改相关代码时，必须先阅读 TECH_DEBT_ROADMAP.md 对应条目，不得擅自修改业务代码绕过问题。
+> 修改相关代码时，必须先阅读 ROADMAP.md 对应条目，不得擅自修改业务代码绕过问题。
 
 ---
 
@@ -302,4 +302,4 @@ public class OrderApplicationService {
 |------|------|------|
 | v1.2 | 2026-10-04 | P0-3 修复：Infrastructure 层事务注解摘除，事务边界上移至 `AuthApplicationService`；§2.4 已知违规消除，§7 P0-3 标记已处理 |
 | v1.1 | 2026-10-03 | P0-2 修复：`s-pay-mall-application` 模块创建，两服务迁入 `cn.fcr.application`；`s-pay-mall-app` 更名 `s-pay-mall-start`。§1.1 DOCUMENT_CODE_MISMATCH 消除，§1.2 依赖事实更新，§7 P0-2 标记已处理 |
-| v1.0 | 2026-08-23 | 初始版本：从 .trae/rules + DEVELOPMENT_GUIDE §2 + REVIEW §1 收敛 DDD 架构规则。@Bean 数量不再写死，引用代码。标注已知违规指向 TECH_DEBT |
+| v1.0 | 2026-08-23 | 初始版本：从 .trae/rules + DEVELOPMENT_GUIDE §2 + REVIEW §1 收敛 DDD 架构规则。@Bean 数量不再写死，引用代码。标注已知违规指向 TECH_DEBT（现合并为 ROADMAP §3） |

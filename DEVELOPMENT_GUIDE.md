@@ -21,7 +21,7 @@
 | 出线请求类 | `{端前缀}{业务名}Req` | `UserCartAddReq`, `AdminUserSaveReq` | `UserCartAddRequestDTO` | `s-pay-mall-api/dto/{admin,user,common}/req/` |
 | 出线响应类 | `{端前缀}{业务名}Res` | `UserOrderRes`, `AdminOrderRes` | `OrderListRespDTO`, `AdminOrderVO` | `s-pay-mall-api/dto/{admin,user,common}/res/` |
 | 共用出线类 | 无前缀（登录、注册、双端共用） | `LoginReq`, `LoginRes`, `ProductRes` | `CommonProductRes` | `s-pay-mall-api/dto/common/` |
-> 决策依据与旧→新映射见 [API_NAMING_DECISION.md](docs/API_NAMING_DECISION.md)；`Response<T>` 统一包装类保留原名。
+> 决策依据与旧→新映射已固化于本表（原 API_NAMING_DECISION 过程文档已归档删除）；`Response<T>` 统一包装类保留原名。
 | 领域实体 | `{Name}Entity` | `OrderEntity`, `UserEntity` | `Order` | `s-pay-mall-domain` |
 | 值对象 | `{Name}VO` | `OrderCreateVO`, `CartItemVO` | — | `s-pay-mall-domain` |
 | 领域服务接口 | `I{Domain}Service` | `IOrderService`, `IMallOrderService` | — | `s-pay-mall-domain` |
@@ -145,7 +145,7 @@ src/
 | 库存变更 | `mall:stock:msg:processed:{messageId}` | 24h |
 | 通用幂等 | `{businessType}:event:{businessNo}` | 24h |
 
-> **注意**: 幂等 key 的实际格式以代码实现为准（见 `IdempotentGatewayImpl`），文档与代码的差异已登记 TECH_DEBT。
+> **注意**: 幂等 key 的实际格式以代码实现为准（见 `IdempotentGatewayImpl`），文档与代码的差异已登记 ROADMAP。
 
 ---
 
@@ -167,7 +167,7 @@ src/
 - 前缀标识业务领域: `wechat:`, `mall:`, `stock:`, `lock:`
 - 变量部分用 `{variable}` 表示
 
-> **注意**: 上表以代码实际值为准（验证来源: `StockGatewayImpl`、`IdempotentGatewayImpl`、`RedisDistributedLock`）。若发现文档与代码不符，以代码为准并登记 TECH_DEBT。
+> **注意**: 上表以代码实际值为准（验证来源: `StockGatewayImpl`、`IdempotentGatewayImpl`、`RedisDistributedLock`）。若发现文档与代码不符，以代码为准并登记 ROADMAP。
 
 ---
 
@@ -182,7 +182,7 @@ src/
 | 日志级别 | 业务异常 WARN，系统异常 ERROR |
 | 禁止透传原始异常 message | 避免信息泄漏（如 JWT 过期时间、NPE 栈顶） |
 
-> 错误码定义见 [API_CONTRACT.md](API_CONTRACT.md) §六。统一异常处理的改造规划见 [FUTURE_FEATURES.md](docs/design_wait/FUTURE_FEATURES.md) §2.1。
+> 错误码定义见 [API_CONTRACT.md](API_CONTRACT.md) §六。统一异常处理已于 2026-10-05 关闭，见 [ROADMAP.md](docs/design/ROADMAP.md) §1.4。
 
 ---
 

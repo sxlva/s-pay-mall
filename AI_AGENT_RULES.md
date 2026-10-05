@@ -16,7 +16,7 @@
 - 命名/跨切面规范 → 见 [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)
 - 审查方法 → 见 [REVIEW.md](REVIEW.md)
 - 安全缺陷 → 见 [SECURITY_ISSUES.md](SECURITY_ISSUES.md)
-- 技术债 → 见 [docs/design_wait/TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md)
+- 技术债/演进路线 → 见 [docs/design/ROADMAP.md](docs/design/ROADMAP.md)
 
 ---
 
@@ -32,7 +32,7 @@
 | 4 | [DDD_ARCHITECTURE_SPEC.md](DDD_ARCHITECTURE_SPEC.md) — DDD 架构 | 涉及架构/新增类时必读 |
 | 5 | [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) — 命名+跨切面规范 | 涉及编码时必读 |
 | 6 | [SECURITY_ISSUES.md](SECURITY_ISSUES.md) — 安全缺陷 | 涉及鉴权/支付时必读 |
-| 7 | [docs/design_wait/TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) — 技术债 | 涉及重构时必读 |
+| 7 | [docs/design/ROADMAP.md](docs/design/ROADMAP.md) — 演进路线（技术债/升级点） | 涉及重构时必读 |
 | 8 | [docs/design/README.md](docs/design/README.md) — 架构知识集 | 涉及业务链路时必读 |
 
 ---
@@ -48,7 +48,7 @@
 4. DEVELOPMENT_GUIDE.md             ← 命名+跨切面规范 SSOT
 5. AI_AGENT_RULES.md（本文件）       ← AI 行为 SSOT
 6. SECURITY_ISSUES.md               ← 安全 SSOT
-7. TECH_DEBT_ROADMAP.md             ← 技术债 SSOT
+7. ROADMAP.md                        ← 演进路线 SSOT（技术债/升级点）
 8. REVIEW.md                        ← 审查方法 SSOT
 9. AGENTS.md / docs/design/*        ← 上下文，非规则
 ```
@@ -57,7 +57,7 @@
 
 | 情况 | 处理方式 |
 |------|---------|
-| 文档与代码不符 | 标注 `DOCUMENT_CODE_MISMATCH` 并报告，**不擅自改代码掩盖问题**。若该不一致已登记在 TECH_DEBT，引用其 ID |
+| 文档与代码不符 | 标注 `DOCUMENT_CODE_MISMATCH` 并报告，**不擅自改代码掩盖问题**。若该不一致已登记在 ROADMAP，引用其 ID |
 | 同级 SSOT 之间冲突 | **不得自行裁决**。报告冲突，在用户确认前不进行可能改变架构语义的修改 |
 | SSOT 与非 SSOT 冲突 | 以 SSOT 为准 |
 | 非 SSOT 文档间冲突 | 以更接近代码事实的为准 |
@@ -75,8 +75,7 @@
 | AI Agent 行为/阅读顺序/冲突处理 | AI_AGENT_RULES.md（本文件） | Agent 行为流程 |
 | 审查 checklist/检查方法/报告格式 | REVIEW.md | 审查方法论 |
 | 安全缺陷清单 | SECURITY_ISSUES.md | 安全问题专项 |
-| 技术债追踪 | TECH_DEBT_ROADMAP.md | 已知问题与修复计划 |
-| 功能规划 | FUTURE_FEATURES.md | 待实现功能 |
+| 技术债/功能规划/升级点追踪 | docs/design/ROADMAP.md | 已知问题、演进路线与关闭记录 |
 | 项目概述/技术栈/模块结构 | AGENTS.md | 项目上下文 |
 
 ---
@@ -92,7 +91,7 @@
 3. 涉及架构/新增类 → 核对 DDD_ARCHITECTURE_SPEC.md 分层依赖
 4. 涉及命名 → 核对 DEVELOPMENT_GUIDE.md §1 命名规范
 5. 涉及鉴权/支付 → 核对 SECURITY_ISSUES.md 是否有未修复缺陷
-6. 涉及重构 → 核对 TECH_DEBT_ROADMAP.md 是否已登记
+6. 涉及重构 → 核对 docs/design/ROADMAP.md 是否已登记
 ```
 
 ### 4.2 确认代码事实

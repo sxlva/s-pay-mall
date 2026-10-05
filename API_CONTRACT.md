@@ -215,7 +215,7 @@
 
 ### 4.2 ~~AdminApiController（/pay-api/v1/admin）~~（已删除）
 
-~~功能与 MallAdminController **重复**，加 `@PreAuthorize("hasRole('ADMIN')")` 权限注解。详见 [TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) §一 P0-1。~~
+~~功能与 MallAdminController **重复**，加 `@PreAuthorize("hasRole('ADMIN')")` 权限注解。详见 [ROADMAP.md](docs/design/ROADMAP.md) §3.1 P0-1。~~
 
 > **2026-10-01 变更**：`AdminApiController` 已删除（JV-003 第二批）。该前缀下 16 个管理端端点原本就是 `MallAdminController`（`/mall-api/v1/admin`）的镜像，前端与历史分支均无调用方；SecurityConfig 中 `/pay-api/v1/admin/**` 规则同步移除。管理后台唯一入口为 §4.1。
 
@@ -278,7 +278,7 @@
 | `S0xxx` | 系统错误 | 未实现 |
 | `T0xxx` | 第三方错误 | 未实现 |
 
-> **注意**: 项目计划按 6 位扩展错误码重构（参见 FUTURE_FEATURES.md §2.1），目前仅使用上述 5 个基础码。
+> **注意**: 五段式扩展错误码（A/B/C/S/T 前缀）已于 2026-10-05 评估关闭——对当前项目规模属过度设计，目前仅使用上述 5 个基础码（见 [ROADMAP.md](docs/design/ROADMAP.md) §1.4）。
 
 ---
 

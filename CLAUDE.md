@@ -17,5 +17,5 @@
 | 命名/跨切面规范 | [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) |
 | 代码审查 | [REVIEW.md](REVIEW.md) |
 | 安全缺陷 | [SECURITY_ISSUES.md](SECURITY_ISSUES.md) |
-| 技术债 | [docs/design_wait/TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) |
+| 演进路线 | [docs/design/ROADMAP.md](docs/design/ROADMAP.md) |
 | 项目概述 | [AGENTS.md](AGENTS.md) |

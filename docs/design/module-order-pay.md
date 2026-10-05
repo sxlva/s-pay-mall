@@ -186,7 +186,7 @@ flowchart LR
 | `order-timeout-topic` | `OrderPaymentGatewayImpl` | `OrderTimeoutCloseRocketListener` | `String (orderNo)` | 延时关单 |
 | `product-stock-change-topic` | —（仅有消费者） | `ProductStockChangeRocketListener` | `StockChangeMsgDTO` | 库存变更幂等消费 |
 
-> 2026-10-01 变更：`IOrderEventGateway`/`OrderEventGatewayImpl` 及 `pay-success-topic` 已删除（JV-003 第一批，见 docs/JV-002_重复接口识别调用矩阵.md）。
+> 2026-10-01 变更：`IOrderEventGateway`/`OrderEventGatewayImpl` 及 `pay-success-topic` 已删除（JV-003 第一批重复接口清理）。
 
 ---
 

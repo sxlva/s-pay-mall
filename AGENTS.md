@@ -74,8 +74,7 @@ cd s-pay-mall-front && npm install && npm run dev
 | 命名/跨切面规范 | [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) | 命名、MQ、Redis、异常、Git、注释 |
 | 代码审查 | [REVIEW.md](REVIEW.md) | checklist、检查方法、报告格式 |
 | 安全缺陷 | [SECURITY_ISSUES.md](SECURITY_ISSUES.md) | S-01~S-05 安全问题清单 |
-| 技术债 | [docs/design_wait/TECH_DEBT_ROADMAP.md](docs/design_wait/TECH_DEBT_ROADMAP.md) | 已知问题与修复计划 |
-| 功能规划 | [docs/design_wait/FUTURE_FEATURES.md](docs/design_wait/FUTURE_FEATURES.md) | 待实现功能清单 |
+| 演进路线 | [docs/design/ROADMAP.md](docs/design/ROADMAP.md) | 未来功能、升级点设计、技术债关闭记录与未处理项 |
 | 架构知识集 | [docs/design/README.md](docs/design/README.md) | 业务链路图、模块文档导航 |
 | 路由入口 | [CLAUDE.md](CLAUDE.md) | Claude Code 自动加载，路由到 AI_AGENT_RULES.md |
 
