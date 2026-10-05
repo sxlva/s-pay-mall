@@ -70,7 +70,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Folder } from '@element-plus/icons-vue'
-import { getAdminCategories, saveAdminCategory, deleteAdminCategory } from '../../api/admin'
+import { getAdminCategories, saveAdminCategory, deleteAdminCategory } from '../../api/admin/category'
 
 const categories = ref([])
 const showModal = ref(false)

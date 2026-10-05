@@ -79,14 +79,11 @@ import {
   Folder
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import { 
-  getAdminUsers, 
-  getAdminProducts, 
-  getAdminOrders, 
-  getAdminCategories,
-  getSalesTrend,
-  getCategoryRatio
-} from '../../api/admin'
+import { getAdminUsers } from '../../api/admin/user'
+import { getAdminProducts } from '../../api/admin/product'
+import { getAdminOrders } from '../../api/admin/order'
+import { getAdminCategories } from '../../api/admin/category'
+import { getSalesTrend, getCategoryRatio } from '../../api/admin/statistics'
 
 const stats = reactive({
   users: 0,

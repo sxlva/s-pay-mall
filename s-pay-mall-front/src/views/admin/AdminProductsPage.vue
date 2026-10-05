@@ -90,7 +90,8 @@
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { getAdminProducts, getAdminCategories, saveAdminProduct, deleteAdminProduct } from '../../api/admin'
+import { getAdminProducts, saveAdminProduct, deleteAdminProduct } from '../../api/admin/product'
+import { getAdminCategories } from '../../api/admin/category'
 
 const products = ref([])
 const categories = ref([])

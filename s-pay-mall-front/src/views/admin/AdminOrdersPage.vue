@@ -84,7 +84,7 @@
 
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAdminOrders, deliverOrder, cancelOrder } from '../../api/admin'
+import { getAdminOrders, deliverOrder, cancelOrder } from '../../api/admin/order'
 
 const orders = ref([])
 const loading = ref(false)

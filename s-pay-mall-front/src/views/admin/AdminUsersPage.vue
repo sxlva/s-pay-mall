@@ -71,33 +71,21 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User } from '@element-plus/icons-vue'
-import { AdminUserService } from '../../services/adminUserService'
+import { getAdminUsers, updateAdminUserStatus, deleteAdminUser } from '../../api/admin/user'
+import type { UserAdminVO } from '../../types/domain/admin'
 
-interface UserVO {
-  id: number
-  username: string
-  email: string
-  role: string
-  roleCode: string
-  status: number
-  createTime: string
-  create_time: string
-  updateTime: string
-  update_time: string
-}
-
-const users = ref<UserVO[]>([])
+const users = ref<UserAdminVO[]>([])
 
 const load = async () => {
   try {
-    users.value = await AdminUserService.listUsers()
+    users.value = await getAdminUsers()
   } catch (error) {
     console.error('获取用户列表失败:', error)
   }
 }
 
-const handleToggleStatus = async (row: UserVO) => {
-  const action = AdminUserService.getToggleActionText(row.status)
+const handleToggleStatus = async (row: UserAdminVO) => {
+  const action = getToggleActionText(row.status)
   try {
     await ElMessageBox.confirm(
       `确定要${action}该用户吗？`,
@@ -105,7 +93,7 @@ const handleToggleStatus = async (row: UserVO) => {
       { type: 'warning' }
     )
 
-    await AdminUserService.toggleUserStatus(row.id, row.status)
+    await updateAdminUserStatus(row.id, row.status === 1 ? 0 : 1)
     ElMessage.success(`${action}成功`)
     await load()
   } catch (error) {
@@ -115,7 +103,7 @@ const handleToggleStatus = async (row: UserVO) => {
   }
 }
 
-const handleDelete = async (row: UserVO) => {
+const handleDelete = async (row: UserAdminVO) => {
   try {
     await ElMessageBox.confirm(
       '确定要删除该用户吗？此操作不可恢复！',
@@ -123,7 +111,7 @@ const handleDelete = async (row: UserVO) => {
       { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
     )
 
-    await AdminUserService.removeUser(row.id)
+    await deleteAdminUser(row.id)
     ElMessage.success('删除成功')
     await load()
   } catch (error) {
@@ -133,24 +121,33 @@ const handleDelete = async (row: UserVO) => {
   }
 }
 
+/** 状态显示文本：1-正常 其他-禁用 */
 const getStatusText = (status: number): string => {
-  return AdminUserService.getStatusText(status)
+  return status === 1 ? '正常' : '禁用'
 }
 
+/** 角色显示文本映射（展示规则随页面内聚） */
 const getRoleText = (roleCode: string): string => {
-  return AdminUserService.getRoleText(roleCode)
+  const roleMap: Record<string, string> = {
+    ADMIN: '管理员',
+    MEMBER: '普通会员'
+  }
+  return roleMap[roleCode] || roleCode
 }
 
+/** 状态标签类型 */
 const getStatusTagType = (status: number): string => {
-  return AdminUserService.getStatusTagType(status)
+  return status === 1 ? 'success' : 'warning'
 }
 
+/** 角色标签类型 */
 const getRoleTagType = (roleCode: string): string => {
-  return AdminUserService.getRoleTagType(roleCode)
+  return roleCode === 'ADMIN' ? 'danger' : 'success'
 }
 
+/** 操作文本：封禁/解封 */
 const getToggleActionText = (status: number): string => {
-  return AdminUserService.getToggleActionText(status)
+  return status === 1 ? '封禁' : '解封'
 }
 
 onMounted(() => {
