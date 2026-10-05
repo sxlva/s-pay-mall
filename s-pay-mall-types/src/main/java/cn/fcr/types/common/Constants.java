@@ -18,8 +18,6 @@ public class Constants {
     public static final String REDIS_WECHAT_BIND_TICKET_PREFIX = "wechat:bind:ticket:";
     /** Redis Key 前缀：微信 Access Token */
     public static final String REDIS_WECHAT_ACCESS_TOKEN_PREFIX = "wechat:access_token:";
-    /** Redis Key 前缀：用户注册锁 */
-    public static final String REDIS_USER_REGISTER_LOCK_PREFIX = "user:register:lock:";
     /** 绑定状态：等待绑定 */
     public static final String REDIS_BIND_STATUS_PENDING = "BINDING_PENDING";
 

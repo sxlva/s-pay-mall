@@ -50,17 +50,4 @@ public class WeChatTokenRepository implements IWeChatTokenRepository {
         String key = Constants.REDIS_WECHAT_BIND_TICKET_PREFIX + uuid;
         return stringRedisTemplate.opsForValue().get(key);
     }
-
-    @Override
-    public boolean tryAcquireRegisterLock(String username) {
-        String key = Constants.REDIS_USER_REGISTER_LOCK_PREFIX + username;
-        Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", 5, TimeUnit.SECONDS);
-        return Boolean.TRUE.equals(result);
-    }
-
-    @Override
-    public void releaseRegisterLock(String username) {
-        String key = Constants.REDIS_USER_REGISTER_LOCK_PREFIX + username;
-        stringRedisTemplate.delete(key);
-    }
 }

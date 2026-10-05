@@ -59,23 +59,4 @@ public class WeixinBindService {
     public String getBindStatusRaw(String ticket) {
         return weChatTokenRepository.getBindStatusRaw(ticket);
     }
-
-    /**
-     * 注册防重入锁
-     *
-     * @param username 用户名
-     * @return true 表示获取锁成功，false 表示已存在锁
-     */
-    public boolean tryAcquireRegisterLock(String username) {
-        return weChatTokenRepository.tryAcquireRegisterLock(username);
-    }
-
-    /**
-     * 释放注册锁
-     *
-     * @param username 用户名
-     */
-    public void releaseRegisterLock(String username) {
-        weChatTokenRepository.releaseRegisterLock(username);
-    }
 }

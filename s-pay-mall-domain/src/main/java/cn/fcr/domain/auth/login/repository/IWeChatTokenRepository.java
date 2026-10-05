@@ -37,19 +37,4 @@ public interface IWeChatTokenRepository {
      * @return 状态值
      */
     String getBindStatusRaw(String uuid);
-    
-    /**
-     * 获取注册防重入锁
-     * 
-     * @param username 用户名
-     * @return true 表示获取锁成功，false 表示已存在锁
-     */
-    boolean tryAcquireRegisterLock(String username);
-    
-    /**
-     * 释放注册锁
-     * 
-     * @param username 用户名
-     */
-    void releaseRegisterLock(String username);
 }

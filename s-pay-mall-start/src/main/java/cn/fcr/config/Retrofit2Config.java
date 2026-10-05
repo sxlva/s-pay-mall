@@ -2,10 +2,13 @@ package cn.fcr.config;
 
 import cn.fcr.infrastructure.auth.login.gateway.IWeixinApiService;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Retrofit2 HTTP 客户端配置
@@ -22,14 +25,30 @@ public class Retrofit2Config {
     private static final String BASE_URL = "https://api.weixin.qq.com/";
 
     /**
+     * 创建 OkHttpClient 实例（显式超时：微信 API 挂起时快速失败，不占业务线程）
+     *
+     * @return OkHttpClient 实例
+     */
+    @Bean
+    public OkHttpClient okHttpClient() {
+        return new OkHttpClient.Builder()
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .build();
+    }
+
+    /**
      * 创建 Retrofit 实例
      *
+     * @param okHttpClient OkHttpClient 实例
      * @return Retrofit 实例，使用 Jackson 序列化
      */
     @Bean
-    public Retrofit retrofit() {
+    public Retrofit retrofit(OkHttpClient okHttpClient) {
         return new Retrofit.Builder()
                 .baseUrl(BASE_URL)
+                .client(okHttpClient)
                 .addConverterFactory(JacksonConverterFactory.create()).build();
     }
 
