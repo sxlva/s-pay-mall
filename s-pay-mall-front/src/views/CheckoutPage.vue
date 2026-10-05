@@ -70,19 +70,23 @@ const submitOrder = async () => {
   resetPayment();
 
   try {
-    const payUrlResult = await createNewOrder(address.value);
+    const createResult = await createNewOrder(address.value);
 
-    if (payUrlResult) {
+    if (createResult) {
+      // FP0-4：orderNo 为后端 orderId 经 API 层映射后的真实订单号，
+      // 支付轮询依赖它匹配订单状态，不得再传空串
+      const payHtml = createResult.payUrl || createResult.html || '';
+
       initPayOrder({
-        orderNo: '',
-        totalAmount: totalAmount.value,
+        orderNo: createResult.orderNo,
+        totalAmount: createResult.totalAmount,
         status: 'PAYING',
-        payUrl: payUrlResult
+        payUrl: payHtml
       });
 
       ElMessage.success('正在跳转至支付宝沙箱安全支付页面...');
-      redirectToPay(payUrlResult);
-      startPolling('', 180);
+      redirectToPay(payHtml);
+      startPolling(createResult.orderNo, 180);
     } else {
       ElMessage.success('订单提交成功');
       router.push('/orders');

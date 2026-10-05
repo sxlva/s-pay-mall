@@ -9,7 +9,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { PayOrder, PollingState, PayResult } from '../types/domain/payment';
-import { orderRepository } from '../repositories/orderRepository';
+import { getOrderList } from '../api/order';
 import type { Order } from '../types/domain/order';
 
 /** 轮询间隔（毫秒） */
@@ -90,7 +90,7 @@ export const usePaymentStore = defineStore('payment', () => {
         return;
       }
 
-      const orders = await orderRepository.getOrderList();
+      const orders = await getOrderList();
       const paidOrder = orders.find(
         (o: Order) => o.orderNo === orderNo && o.status === 'PAID'
       );

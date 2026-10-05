@@ -51,7 +51,7 @@ export interface Order {
 
 /** 订单创建结果 */
 export interface OrderCreateResult {
-  /** 订单编号 */
+  /** 订单编号（由后端 orderId 字段映射，见 api/order.ts toCreateResult） */
   orderNo: string;
   /** 订单总金额 */
   totalAmount: number;
@@ -60,8 +60,6 @@ export interface OrderCreateResult {
   /** 支付链接（可能为 HTML 表单） */
   payUrl: string | null;
   /** 支付表单 HTML（后端下划线字段） */
-  _html?: string;
-  /** 支付表单 HTML（后端驼峰字段） */
   html?: string;
 }
 

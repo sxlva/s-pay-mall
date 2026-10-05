@@ -4,8 +4,8 @@
  * DDD 分层：Application/Domain Layer（应用层/领域层）
  *
  * 架构原则：
- * - 不直接处理 HTTP 请求（委托给 orderRepository）
- * - 不处理数据清洗（由 orderRepository 完成）
+ * - 不直接处理 HTTP 请求（委托给 api/order）
+ * - 不处理后端字段映射（由 api/order 完成）
  * - 只关注状态变化和用户交互逻辑
  *
  * @author 傅崇睿
@@ -13,7 +13,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { orderRepository } from '@/repositories/orderRepository'
+import { getOrderList, createOrder } from '@/api/order'
 import type { Order, OrderCreateResult, OrderListParams } from '@/types/domain/order'
 
 export const useOrderStore = defineStore('order', () => {
@@ -39,13 +39,13 @@ export const useOrderStore = defineStore('order', () => {
   
   /**
    * 加载订单列表
-   * - 调用仓储层获取数据
+   * - 调用 API 层获取数据
    * - 异常时抛出错误
    */
   const loadOrders = async (params?: OrderListParams): Promise<void> => {
     loading.value = true
     try {
-      orders.value = await orderRepository.fetchOrders(params)
+      orders.value = await getOrderList(params)
     } catch (error) {
       console.error('加载订单列表失败:', error)
       ElMessage.error('加载订单列表失败')
@@ -57,22 +57,21 @@ export const useOrderStore = defineStore('order', () => {
 
   /**
    * 创建新订单
-   * - 调用仓储层创建订单
-   * - 处理支付表单 HTML 返回
-   * - 成功后刷新订单列表
-   * @returns 支付表单 HTML 字符串（如需立即支付）或 null
+   * - 调用 API 层创建订单（orderNo 由 API 层从后端 orderId 映射）
+   * - 返回包含真实订单号与支付表单的创建结果；无需立即支付时刷新列表并返回 null
+   * @returns 创建结果（含 orderNo 与支付表单 HTML），或 null
    */
-  const createNewOrder = async (address: string): Promise<string | null> => {
+  const createNewOrder = async (address: string): Promise<OrderCreateResult | null> => {
     loading.value = true
     try {
-      const result = await orderRepository.create(address)
-      
+      const result = await createOrder(address)
+
       // 检查是否需要立即支付（返回支付表单 HTML）
-      const payUrl = result.payUrl || result._html || result.html
-      if (typeof payUrl === 'string' && payUrl.includes('<form')) {
-        return payUrl
+      const payHtml = result.payUrl || result.html
+      if (typeof payHtml === 'string' && payHtml.includes('<form')) {
+        return result
       }
-      
+
       // 无需立即支付，刷新订单列表
       await loadOrders()
       return null

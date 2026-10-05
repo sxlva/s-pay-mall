@@ -91,8 +91,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Box, Ticket } from '@element-plus/icons-vue';
 import { useOrder } from '../hooks/useOrder';
 import { usePayment } from '../hooks/usePayment';
-import { orderRepository } from '../repositories/orderRepository';
-import { checkStock, type StockCheckResult } from '../api/order';
+import { checkStock, continuePay, type StockCheckResult } from '../api/order';
 import PaymentSubmitter from '../components/PaymentSubmitter.vue';
 import type { OrderStatus } from '../types/domain/order';
 import type { Order } from '../types/domain/order';
@@ -158,9 +157,6 @@ const handleContinuePay = async (order: Order) => {
   payingOrderId.value = order.id;
 
   try {
-    console.log('【继续支付】order 对象:', order);
-    console.log('【继续支付】orderNo:', order.orderNo);
-
     if (!order.orderNo) {
       ElMessage.error('订单号无效，无法继续支付');
       return;
@@ -182,9 +178,9 @@ const handleContinuePay = async (order: Order) => {
       return;
     }
 
-    const result = await orderRepository.continuePay(order.orderNo);
+    const result = await continuePay(order.orderNo);
 
-    const payHtml = result.payUrl || result._html || result.html;
+    const payHtml = result.payUrl || result.html;
 
     if (payHtml && payHtml.includes('<form')) {
       initPayOrder({
