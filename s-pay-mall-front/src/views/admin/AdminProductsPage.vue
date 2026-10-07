@@ -16,14 +16,14 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="图片" width="90">
           <template #default="scope">
-            <img v-if="scope.row.image_url" :src="scope.row.image_url" class="table-image" />
+            <img v-if="scope.row.imageUrl" :src="scope.row.imageUrl" class="table-image" />
             <span v-else class="no-image">无</span>
           </template>
         </el-table-column>
         <el-table-column prop="name" label="商品名称" min-width="200" />
-        <el-table-column prop="category_name" label="分类" width="120">
+        <el-table-column prop="categoryName" label="分类" width="120">
           <template #default="scope">
-            <el-tag type="info">{{ scope.row.category_name || '未分类' }}</el-tag>
+            <el-tag type="info">{{ scope.row.categoryName || '未分类' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="price" label="价格" width="120">
@@ -33,7 +33,7 @@
         </el-table-column>
         <el-table-column prop="stock" label="库存" width="100" />
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="create_time" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="180">
           <template #default="scope">
             <el-button 
@@ -233,13 +233,13 @@ const openAddModal = () => {
 const handleEdit = (row) => {
   editMode.value = true
   editingId.value = row.id
-  form.categoryId = row.category_id ? row.category_id.toString() : ''
+  form.categoryId = row.categoryId ? row.categoryId.toString() : ''
   form.name = row.name
   form.description = row.description || ''
   form.price = row.price.toString()
   form.stock = row.stock.toString()
   resetImageState()
-  currentImageUrl.value = row.image_url || ''
+  currentImageUrl.value = row.imageUrl || ''
   showModal.value = true
 }
 

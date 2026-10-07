@@ -48,6 +48,13 @@ public interface IUserBindingDao extends BaseMapper<UserBinding> {
     @Select("SELECT * FROM user_binding WHERE user_id = #{userId} AND identity_type = #{identityType} LIMIT 1")
     UserBinding findByUserIdAndIdentityType(@Param("userId") Long userId, @Param("identityType") String identityType);
 
+    /**
+     * 根据用户ID删除全部绑定关系记录
+     * 在删除用户时级联调用，避免遗留无效绑定
+     *
+     * @param userId 用户ID
+     * @return 影响行数
+     */
     @Delete("DELETE FROM user_binding WHERE user_id = #{userId}")
     int deleteByUserId(@Param("userId") Long userId);
 }

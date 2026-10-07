@@ -105,11 +105,12 @@ sequenceDiagram
         C-->>Ali: "false"
     else 受理成功
         PS-->>S: true
+        Note over S: 【TD-5 金额一致性】回调 total_amount 与本地订单<br/>totalAmount BigDecimal.compareTo 比对，不一致/格式非法<br/>拒绝履约返回 false（支付宝重试，防错账）
         Note over S: 【B2 晚到支付守卫】订单已 CANCELED 仍收成功通知：<br/>error 日志标记人工核实（退款/补履约），<br/>不履约、不发布事件；仍回 success 终止支付宝重试
         S->>TX: changeOrderPaySuccessInTransaction(orderNo)
         Note over TX: 状态机统一处理（天然幂等）：order_main → PAID<br/>pay_order → PAID + 同步扣减 MySQL 库存
-        TX-->>S: void
-        Note over S: 事务提交后发布事件（失败仅告警）
+        TX-->>S: boolean（本次是否实际完成状态流转）
+        Note over S: 【TD-6】仅当实际流转时才发布事件：<br/>重复回调/订单不存在返回 false，跳过事件发布
         S->>MQ: publishPaySuccess(tradeNo, orderNo)
         MQ->>MQ: convertAndSend("order_paid", PaySuccessMessage)
         C-->>Ali: "success"
@@ -151,8 +152,10 @@ stateDiagram-v2
 ```
 
 > 状态值来源：`cn.fcr.domain.order.model.entity.OrderState` — INIT / PAID / SHIPPED / DONE / CANCELED。
-> **状态口径**：领域与接口层统一用 code；DB 存储为混合口径（INIT 存 CREATED、DONE 存 COMPLETED、CANCELED 存 CANCELLED，
-> 历史实现固化不可单方面改动），读取统一经 `OrderState.fromDbStatus()` 双向兼容。
+> **状态口径**（2026-10-07 TD-4 统一后）：领域与接口层统一用 code；DB 存储仅 INIT 例外存 `CREATED`
+> （历史实现固化），其余状态按 code 原样存储；状态机写库目标值统一经 `toDbStatus()`。
+> 读取统一经 `OrderState.fromDbStatus()`，并显式兼容存量旧值 `COMPLETED`（历史 DONE）、`CANCELLED`（历史 CANCELED）。
+> pay_order 侧状态（WAIT_PAY / PAYING / PAID / TRADE_DONE / CLOSED）由 `PayStatus` 承载，与 order_main 口径独立。
 
 **状态流转保护（OrderStateMachineServiceImpl）：**
 
@@ -184,10 +187,12 @@ flowchart LR
 | Topic | 发送方 | 消费者 | 消息类型 | 说明 |
 |-------|--------|--------|----------|------|
 | `order_paid` | `RocketMqOrderEventPublisher` | `OrderPaidRocketListener` | `PaySuccessMessage` | 支付成功异步履约 |
-| `order-timeout-topic` | `OrderPaymentGatewayImpl` | `OrderTimeoutCloseRocketListener` | `String (orderNo)` | 延时关单 |
-| `product-stock-change-topic` | —（仅有消费者） | `ProductStockChangeRocketListener` | `StockChangeMsgDTO` | 库存变更幂等消费 |
+| `order-timeout-topic` | `OrderPaymentGatewayImpl` | `OrderTimeoutCloseRocketListener` | `String (orderNo)` | 延时关单（delayLevel=9，30min） |
+| `product-stock-change-topic` | —（仅有消费者，TD-9 考证为有意保留） | `ProductStockChangeRocketListener` | `StockChangeMsgDTO` | 库存变更幂等消费（接入点保留） |
+| `%DLQ%{consumerGroup}` | RocketMQ broker（重试耗尽自动转入） | `DlqAlertListeners`（TD-2，2026-10-07） | 同原消息 | 死信告警：ERROR 日志 + 消息体留痕，供人工重放；覆盖 order-paid / timeout 两个有生产者的组 |
 
 > 2026-10-01 变更：`IOrderEventGateway`/`OrderEventGatewayImpl` 及 `pay-success-topic` 已删除（JV-003 第一批重复接口清理）。
+> 三个业务消费组均显式 `maxReconsumeTimes=5`（P2-2）；死信由 DLQ 告警监听器值守，不再静默丢失。
 
 ---
 
@@ -238,31 +243,49 @@ sequenceDiagram
 
 | 维度 | 考点 | 标准答案 |
 |------|------|----------|
-| **幂等性** | 支付回调如何防止重复处理？ | 三层防御：业务层前置查询未支付订单 + 数据库 order_no 唯一索引 + MQ SETNX 幂等键（24h TTL） |
+| **幂等性** | 支付回调如何防止重复处理？ | 四层防御：验签 + 金额一致性比对（TD-5）→ 状态机条件更新（源状态守卫，影响行数 0 即跳过副作用）→ 事件仅在实际流转时发布（TD-6）→ MQ 消费端 SETNX 幂等键（24h TTL） |
 | **回调验签** | 为什么必须验签？ | 防止伪造回调攻击，未验签等于将订单状态暴露给攻击者；使用支付宝公钥 RSA2 验证 |
+| **金额校验** | 验签过了为什么还要比对金额？（TD-5） | 验签只保证"确实是支付宝发的"，不保证"金额对"（异常单/重复通知场景）；回调 total_amount 与本地订单 BigDecimal.compareTo 不一致即拒绝履约 |
+| **事件不重复** | 重复回调会重复发 order_paid 吗？（TD-6） | 不会。状态机返回"是否实际流转"，只有实际流转才发布事件；E2E 断言重放 3 次事件计数恰为 1 |
 | **MQ 解耦** | 为什么不直接在回调里发货？ | 回调需快速返回 "success"（否则支付宝重试），发货/通知失败不应影响支付主链路 |
-| **延时消息** | 订单超时关闭如何实现？ | RocketMQ 延时消息 (syncSend) + 状态机二次校验（已支付则跳过） |
+| **延时消息** | 订单超时关闭如何实现？ | RocketMQ 延时消息 (delayLevel=9，30min) + 关单前二次确认（查支付宝）+ Job 40 分钟兜底关单（TD-7，防延时消息丢失） |
 | **回 "success"** | 不回或返回错误会怎样？ | 触发支付宝 24h 内 7 次重试，要求后端处理完全幂等 |
 | **RSA2** | 签名算法演进？ | RSA1 (SHA1) 已不安全，支付宝强制升级 RSA2 (SHA256WithRSA) |
 | **事务边界** | 为什么事件发布在事务外？ | 避免 MQ 发送在事务内导致事务 hold 时间过长，事务提交后再发消息 |
+| **死信处理** | 消费重试耗尽后怎么办？（TD-2） | 进 `%DLQ%` 主题后由 DLQ 告警监听器打 ERROR 日志（消息体留痕），人工经控制台重放；告警监听消费成功不再投递 |
 
 ---
 
-## 八、兜底定时任务
+## 八、兜底定时任务（NoPayNotifyOrderJob）
 
-`NoPayNotifyOrderJob` — `@Scheduled(cron = "0/30 * * * * ?")` 每 30 秒执行：查询 `pay_order` 中
-创建超过 5 分钟且状态仍为 `WAIT_PAY` 的订单（`IPayOrderGateway.queryNoPayNotifyOrder()`），
+`@Scheduled(cron = "0/30 * * * * ?")` 每 30 秒执行，两个职责：
+
+### 8.1 分布式锁（TD-8，2026-10-07）
+
+多实例部署防重：全程包裹 Redisson `tryLock(0 等待, 60s 租约)`（key=`lock:job:no-pay-notify`，新建 key 不影响既有 key 语义），
+拿不到锁的实例直接跳过本轮。锁在 finally 中按 `isHeldByCurrentThread` 释放。
+
+### 8.2 补单补偿（原有职责）
+
+查询 `pay_order` 中创建超过 **5 分钟**且状态仍为 `WAIT_PAY` 的订单（`queryNoPayNotifyOrder()`），
 逐个调用 `IAlipayQueryGateway.queryTradeSuccess()` 主动向支付宝核实交易状态
 （`code=10000 && tradeStatus=TRADE_SUCCESS` 双重校验），确认支付成功的订单执行补单
-（`changeOrderPaySuccess(orderNo, null)`——补单路径无支付宝交易号，tradeNo 传 null），
-作为支付回调丢失场景的兜底保障。补偿路径与 MQ 消费路径都汇聚到状态机 `paySuccess`，
-条件更新守卫保证并发安全。
+（`changeOrderPaySuccess(orderNo, null)`——补单路径无支付宝交易号，tradeNo 传 null）。
 
-调用链：`NoPayNotifyOrderJob → OrderApplicationService.queryNoPayNotifyOrder →
-IPayOrderGateway（PayOrderGatewayImpl）→ MyBatis Mapper`；核实与补单在 Job 内直接完成。
+### 8.3 兜底关单补偿（TD-7，2026-10-07）
 
-> 多实例部署时该 Job 为裸 `@Scheduled` 会重复执行（幂等守卫保证无害但产生冗余查询），
-> 分布式锁方案见 [ROADMAP](ROADMAP.md) U-1。
+查询 `pay_order` 中创建超过 **40 分钟**仍未关闭的 `WAIT_PAY` 订单（`queryStaleWaitPayOrders()`，新查询）——
+正常关单由下单时的 30 分钟延时消息触发，40 分钟为界留出 10 分钟余量，仅兜住延时消息丢失/消费失败的漏网订单，
+不与正常关单链路竞争。逐个走 `handleTimeoutCloseOrder(orderNo)` 既有路径：支付宝二次确认已支付则转履约、
+未支付则关单并恢复 Redis 预扣库存；状态机条件更新守卫保证幂等，单条失败隔离（记日志继续后续）。
+
+### 8.4 调用链
+
+`NoPayNotifyOrderJob（锁）→ OrderApplicationService.queryNoPayNotifyOrder / queryStaleWaitPayOrders →
+IPayOrderGateway（PayOrderGatewayImpl）→ MyBatis Mapper`；核实与补单/关单在 Job 内编排，最终都汇聚到
+状态机 `paySuccess` / `cancel`，条件更新守卫保证并发安全。
+
+> 2026-10-07 前该 Job 为裸 `@Scheduled`（U-1 登记项），现已落地分布式锁与关单兜底，U-1 对应段可视为已覆盖。
 
 ---
 
@@ -278,4 +301,6 @@ IPayOrderGateway（PayOrderGatewayImpl）→ MyBatis Mapper`；核实与补单�
 > - 延时关单消息：`s-pay-mall-infrastructure/.../infrastructure/order/gateway/OrderPaymentGatewayImpl.java`（`sendDelayCloseMessage()`，delayLevel=9）
 > - 支付成功消费：`s-pay-mall-trigger/.../trigger/listener/OrderPaidRocketListener.java`（消费幂等守门）
 > - 超时关单消费：`s-pay-mall-trigger/.../trigger/listener/OrderTimeoutCloseRocketListener.java`
-> - 回调补偿 Job：`s-pay-mall-trigger/.../trigger/job/NoPayNotifyOrderJob.java`
+> - 回调补偿 Job：`s-pay-mall-trigger/.../trigger/job/NoPayNotifyOrderJob.java`（分布式锁 TD-8 + 补单 + 兜底关单 TD-7）
+> - 兜底关单查询：`s-pay-mall-infrastructure/.../infrastructure/dao/order/IOrderDao.java`（`queryNoPayNotifyOrder()` 5min / `queryStaleWaitPayOrders()` 40min）
+> - DLQ 告警监听：`s-pay-mall-trigger/.../trigger/listener/DlqAlertListeners.java`（TD-2）

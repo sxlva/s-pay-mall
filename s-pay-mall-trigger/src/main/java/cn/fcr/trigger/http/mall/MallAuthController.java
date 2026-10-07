@@ -2,6 +2,8 @@ package cn.fcr.trigger.http.mall;
 
 import cn.fcr.api.dto.common.req.LoginReq;
 import cn.fcr.api.dto.common.req.RegisterReq;
+import cn.fcr.api.dto.user.req.UserBindConfirmReq;
+import cn.fcr.api.dto.user.req.UserPasswordSetReq;
 import cn.fcr.api.response.Response;
 import cn.fcr.api.dto.user.res.UserBindStatusRes;
 import cn.fcr.api.dto.common.res.LoginRes;
@@ -162,5 +164,51 @@ public class MallAuthController extends BaseController {
             }
         }
         return success(result);
+    }
+
+    /**
+     * 确认微信绑定（账密登录用户绑定微信）
+     *
+     * <p>【TD-10 收尾】前端扫码轮询到 BIND_SUCCESS 后调用本端点完成落库：
+     * userId 取自 JWT，openId 由服务端按 ticket 从缓存解析（不回传前端），
+     * 绑定成功后销毁票据防止重复使用。绑定后该账户微信扫码/账密均可登录。</p>
+     *
+     * @param request     绑定确认请求，包含二维码票据
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 绑定结果
+     */
+    @PostMapping("/bind/confirm")
+    public Response<String> confirmBind(@RequestBody @Valid UserBindConfirmReq request,
+                                        HttpServletRequest httpRequest) {
+        Long userId = currentUserId(httpRequest);
+        String openId = weixinBindService.checkBindStatus(request.getTicket());
+        if (openId == null) {
+            return fail("二维码已过期或尚未完成扫码，请刷新二维码重试");
+        }
+
+        mallUserService.bindWeChat(userId, openId);
+        // 绑定成功后销毁票据，防止重复使用
+        weixinBindService.clearBindStatus(request.getTicket());
+        log.info("微信绑定确认成功: userId={}", userId);
+        return success("微信绑定成功");
+    }
+
+    /**
+     * 设置/修改账户密码（微信扫码注册用户补设密码）
+     *
+     * <p>微信扫码自动注册的用户无账密，通过本端点设置密码后，
+     * 该账户同时支持微信扫码与账密两种登录方式（状态转为正常）。</p>
+     *
+     * @param request     密码设置请求，包含新密码
+     * @param httpRequest HTTP请求（用于提取JWT中的userId）
+     * @return 设置结果
+     */
+    @PostMapping("/password")
+    public Response<String> setPassword(@RequestBody @Valid UserPasswordSetReq request,
+                                        HttpServletRequest httpRequest) {
+        Long userId = currentUserId(httpRequest);
+        mallUserService.setPassword(userId, request.getPassword());
+        log.info("用户设置密码成功: userId={}", userId);
+        return success("密码设置成功");
     }
 }

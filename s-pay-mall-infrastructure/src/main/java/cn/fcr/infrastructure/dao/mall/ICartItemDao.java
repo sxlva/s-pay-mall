@@ -14,6 +14,13 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface ICartItemDao extends BaseMapper<CartItem> {
 
+    /**
+     * 根据用户ID清空购物车
+     * 在用户下单成功或删除用户时级联调用
+     *
+     * @param userId 用户ID
+     * @return 影响行数
+     */
     @Delete("DELETE FROM cart_item WHERE user_id = #{userId}")
     int deleteByUserId(@Param("userId") Long userId);
 }

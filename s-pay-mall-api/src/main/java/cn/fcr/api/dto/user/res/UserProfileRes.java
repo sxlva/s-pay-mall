@@ -37,4 +37,7 @@ public class UserProfileRes {
 
     /** 更新时间 */
     private LocalDateTime updateTime;
+
+    /** 是否已绑定微信（user_binding 表存在 WECHAT_MP 绑定记录） */
+    private Boolean wechatBound;
 }

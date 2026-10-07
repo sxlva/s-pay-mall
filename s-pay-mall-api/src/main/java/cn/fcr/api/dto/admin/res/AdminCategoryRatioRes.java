@@ -1,6 +1,5 @@
 package cn.fcr.api.dto.admin.res;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -14,14 +13,11 @@ import java.math.BigDecimal;
 public class AdminCategoryRatioRes {
 
     /** 分类名称 */
-    @JsonProperty("category_name")
     private String categoryName;
 
     /** 商品数量 */
-    @JsonProperty("product_count")
     private Integer productCount;
 
     /** 销售额 */
-    @JsonProperty("sales_amount")
     private BigDecimal salesAmount;
 }

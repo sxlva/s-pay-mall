@@ -37,4 +37,11 @@ public interface IWeChatTokenRepository {
      * @return 状态值
      */
     String getBindStatusRaw(String uuid);
+
+    /**
+     * 清除绑定票据（确认绑定成功后销毁，防止票据被重复使用）
+     *
+     * @param uuid 唯一标识
+     */
+    void clearBindStatus(String uuid);
 }

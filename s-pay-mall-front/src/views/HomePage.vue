@@ -4,7 +4,7 @@
     <div class="hero-section">
       <div class="hero-bg"></div>
       <div class="hero-content">
-        <h1 class="hero-title">S-Pay Mall 聚合支付商城</h1>
+        <h1 class="hero-title">小型支付商城 聚合支付商城</h1>
         <p class="hero-subtitle">安全、便捷、高效的一站式购物体验，让支付更简单</p>
         <div class="hero-buttons">
           <el-button type="primary" size="large" @click="$router.push('/products')">
@@ -78,8 +78,8 @@
           <el-card class="product-card" shadow="hover" :body-style="{ padding: '0px' }">
             <div class="product-image">
               <img :src="getProductImage(product)" :alt="product.name" />
-              <el-tag v-if="product.category_name" class="category-tag" type="primary">
-                {{ product.category_name }}
+              <el-tag v-if="product.categoryName" class="category-tag" type="primary">
+                {{ product.categoryName }}
               </el-tag>
             </div>
             <div class="product-info">
@@ -161,8 +161,8 @@ const activeCategoryId = ref<number | null>(null)
 /** 本地默认商品图片（无 image_url 时使用，不依赖外网） */
 const DEFAULT_PRODUCT_IMAGE = '/images/product-default.png'
 
-const getProductImage = (product: { id: number; name: string; image_url?: string }): string => {
-  return product.image_url || DEFAULT_PRODUCT_IMAGE
+const getProductImage = (product: { id: number; name: string; imageUrl?: string }): string => {
+  return product.imageUrl || DEFAULT_PRODUCT_IMAGE
 }
 
 const loadCategories = async () => {

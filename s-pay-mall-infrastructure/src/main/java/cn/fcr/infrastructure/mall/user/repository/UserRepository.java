@@ -78,6 +78,15 @@ public class UserRepository implements IUserRepository {
     }
 
     @Override
+    public int updatePassword(Long userId, String password) {
+        LambdaUpdateWrapper<MallUser> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(MallUser::getId, userId);
+        updateWrapper.set(MallUser::getPassword, password);
+        updateWrapper.set(MallUser::getUpdateTime, LocalDateTime.now());
+        return mallUserDao.update(null, updateWrapper);
+    }
+
+    @Override
     public int updateUser(UserEntity user) {
         MallUser mallUser = toMallUser(user);
         LambdaUpdateWrapper<MallUser> updateWrapper = new LambdaUpdateWrapper<>();

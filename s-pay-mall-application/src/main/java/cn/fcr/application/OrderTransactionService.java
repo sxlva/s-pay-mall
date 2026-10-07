@@ -97,17 +97,18 @@ class OrderTransactionService {
      * order_main 不存在的订单记 warn 日志并忽略（legacy 旧链已整体下线，步骤 B）。</p>
      *
      * @param orderId 订单ID
+     * @return 本次是否实际完成状态流转（false = 订单不存在或重复回调，调用方不应再发事件）
      */
     @Transactional(rollbackFor = Exception.class)
-    public void changeOrderPaySuccessInTransaction(String orderId) {
+    public boolean changeOrderPaySuccessInTransaction(String orderId) {
         OrderEntity mallOrder = mallOrderQueryGateway.findByOrderNo(orderId);
         if (mallOrder != null) {
             // 新链订单：状态机统一处理 order_main + pay_order + DB库存，天然幂等（重复回调返回 false）
-            mallOrderService.paySuccess(orderId);
-        } else {
-            // order_main 不存在：legacy 旧链已下线，记日志由人工巡检兜底，不回抛异常（支付宝回调仍返回 success）
-            log.warn("支付成功回调：order_main 不存在，忽略状态更新: orderNo={}", orderId);
+            return mallOrderService.paySuccess(orderId);
         }
+        // order_main 不存在：legacy 旧链已下线，记日志由人工巡检兜底，不回抛异常（支付宝回调仍返回 success）
+        log.warn("支付成功回调：order_main 不存在，忽略状态更新: orderNo={}", orderId);
+        return false;
     }
 
     /**

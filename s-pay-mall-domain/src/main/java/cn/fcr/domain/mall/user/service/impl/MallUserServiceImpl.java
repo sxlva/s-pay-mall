@@ -227,6 +227,52 @@ public class MallUserServiceImpl implements IMallUserService {
                 .roleCode(roleCode)
                 .createTime(user.getCreateTime())
                 .updateTime(user.getUpdateTime())
+                .wechatBound(userBindingGateway.getWeChatOpenIdByUserId(userId) != null)
                 .build();
+    }
+
+    @Override
+    public void bindWeChat(Long userId, String openId) {
+        if (openId == null || openId.isBlank()) {
+            // S-03：面向用户的业务拒绝统一走 AppException（0001 + 固定文案），不再借 IllegalArgumentException 透传
+            throw new AppException(Constants.ResponseCode.UN_ERROR.getCode(), "微信绑定凭证无效，请重新扫码");
+        }
+        if (userRepository.findById(userId) == null) {
+            throw new AppException(Constants.ResponseCode.UN_ERROR.getCode(), "用户不存在");
+        }
+
+        // 幂等：本用户已绑定同一微信时直接返回
+        String boundOpenId = userBindingGateway.getWeChatOpenIdByUserId(userId);
+        if (openId.equals(boundOpenId)) {
+            log.info("微信绑定幂等命中，跳过重复绑定: userId={}, openId={}", userId, openId);
+            return;
+        }
+
+        // 冲突：该微信已被其他用户绑定（user_binding 唯一键 uk_type_identifier 兜底）
+        if (userBindingGateway.isWeChatOpenIdBound(openId)) {
+            throw new AppException(Constants.ResponseCode.UN_ERROR.getCode(), "该微信账号已被其他用户绑定");
+        }
+
+        userBindingGateway.bindWeChatOpenId(userId, openId);
+        log.info("账号绑定微信成功: userId={}, openId={}", userId, openId);
+    }
+
+    @Override
+    public void setPassword(Long userId, String rawPassword) {
+        if (rawPassword == null || rawPassword.length() < 6 || rawPassword.length() > 64) {
+            // S-03：面向用户的业务拒绝统一走 AppException（0001 + 固定文案）
+            throw new AppException(Constants.ResponseCode.UN_ERROR.getCode(), "密码长度需在 6~64 位之间");
+        }
+        UserEntity user = userRepository.findById(userId);
+        if (user == null) {
+            throw new AppException(Constants.ResponseCode.UN_ERROR.getCode(), "用户不存在");
+        }
+
+        userRepository.updatePassword(userId, authTokenGateway.encodePassword(rawPassword));
+        // 微信扫码注册用户补设密码后转为正常状态，账密登录正式可用
+        if (Constants.USER_STATUS_WECHAT.equals(user.getStatus())) {
+            userRepository.updateStatus(userId, Constants.USER_STATUS_ACTIVE);
+        }
+        log.info("用户设置密码成功: userId={}, 原状态={}", userId, user.getStatus());
     }
 }

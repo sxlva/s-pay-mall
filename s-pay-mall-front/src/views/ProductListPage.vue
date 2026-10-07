@@ -27,7 +27,7 @@ onMounted(() => {
  * @returns 图片地址
  */
 const getProductImage = (product: ProductVO) => {
-  return product.image_url || '/images/product-default.png'
+  return product.imageUrl || '/images/product-default.png'
 }
 
 const handleCategoryChange = (categoryId: number | null) => {
@@ -105,8 +105,8 @@ const handleAddToCart = async (product: ProductVO) => {
           >
             <div class="product-image">
               <img :src="getProductImage(product)" :alt="product.name" style="width: 100%; height: 100%; object-fit: cover;" />
-              <el-tag v-if="product.category_name" type="primary" class="category-tag">
-                {{ product.category_name }}
+              <el-tag v-if="product.categoryName" type="primary" class="category-tag">
+                {{ product.categoryName }}
               </el-tag>
             </div>
             <div class="product-info">

@@ -64,13 +64,23 @@ public interface IOrderDao {
     List<String> queryNoPayNotifyOrder();
 
     /**
+     * 查询等待支付超过40分钟仍未关闭的订单（pay_order.status = WAIT_PAY），用于 Job 兜底关单补偿。
+     * 正常链路由下单时发送的 30 分钟延时消息关单（TD-7），本查询以 40 分钟为界，
+     * 仅兜住延时消息丢失/消费失败的漏网订单，不与正常关单链路竞争。
+     *
+     * @return 需要兜底关单的订单号列表
+     */
+    @Select("select order_id from pay_order where status = 'WAIT_PAY' and create_time < DATE_SUB(NOW(), INTERVAL 40 MINUTE)")
+    List<String> queryStaleWaitPayOrders();
+
+    /**
      * 关闭订单
-     * 将订单状态修改为 CLOSE，并记录关闭时间
-     * 用于超时自动关闭或用户主动取消
+     * 将订单状态修改为 CLOSED，更新更新时间
+     * 用于超时自动关闭或用户主动取消；pay_time 仅在支付成功时写入，关闭订单不回写
      *
      * @param orderId 订单ID
      */
-    @Update("update pay_order set status = 'CLOSED', pay_time = now(), update_time = now() where order_id = #{orderId}")
+    @Update("update pay_order set status = 'CLOSED', update_time = now() where order_id = #{orderId}")
     void changeOrderClose(@Param("orderId") String orderId);
 
     /**

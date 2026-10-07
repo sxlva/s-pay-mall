@@ -13,14 +13,48 @@ import java.util.List;
  */
 public interface IMallOrderQueryGateway {
 
+    /**
+     * 保存订单实体
+     * 新增或整单更新订单主记录
+     *
+     * @param orderEntity 订单实体
+     */
     void saveOrder(OrderEntity orderEntity);
 
+    /**
+     * 条件查询订单列表
+     * 用户端仅按 userId 过滤，管理端可组合状态与时间范围
+     *
+     * @param userId 用户ID
+     * @param status 订单状态（可选）
+     * @param start  下单时间起（可选，格式 YYYY-MM-DD）
+     * @param end    下单时间止（可选，格式 YYYY-MM-DD）
+     * @return 订单 VO 列表
+     */
     List<OrderVO> findOrders(Long userId, String status, String start, String end);
 
+    /**
+     * 根据订单ID查询订单
+     *
+     * @param id 订单ID
+     * @return 订单实体，不存在时返回 null
+     */
     OrderEntity findById(Long id);
 
+    /**
+     * 根据订单号查询订单
+     *
+     * @param orderNo 订单号
+     * @return 订单实体，不存在时返回 null
+     */
     OrderEntity findByOrderNo(String orderNo);
 
+    /**
+     * 根据订单ID删除订单记录
+     *
+     * @param id 订单ID
+     * @return 影响行数
+     */
     int deleteById(Long id);
 
     /**

@@ -27,6 +27,7 @@ public class UserProfileAssembler {
                 .roleCode(profile.getRoleCode())
                 .createTime(profile.getCreateTime())
                 .updateTime(profile.getUpdateTime())
+                .wechatBound(profile.getWechatBound())
                 .build();
     }
 }

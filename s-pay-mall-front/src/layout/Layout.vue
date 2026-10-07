@@ -10,7 +10,7 @@
       >
         <div class="logo">
           <el-icon class="logo-icon"><Shop /></el-icon>
-          <span class="logo-text">S-Pay Mall</span>
+          <span class="logo-text">小型支付商城</span>
         </div>
 
         <div class="flex-grow"></div>

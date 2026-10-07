@@ -22,4 +22,5 @@ public class UserProfile {
     private final String roleCode;
     private final LocalDateTime createTime;
     private final LocalDateTime updateTime;
+    private final Boolean wechatBound;
 }

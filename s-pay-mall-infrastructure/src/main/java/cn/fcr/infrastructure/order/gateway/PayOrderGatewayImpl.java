@@ -73,4 +73,9 @@ public class PayOrderGatewayImpl implements IPayOrderGateway {
     public List<String> queryNoPayNotifyOrder() {
         return orderDao.queryNoPayNotifyOrder();
     }
+
+    @Override
+    public List<String> queryStaleWaitPayOrders() {
+        return orderDao.queryStaleWaitPayOrders();
+    }
 }

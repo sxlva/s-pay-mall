@@ -17,6 +17,7 @@ import CartPage from '../views/CartPage.vue'
 import CheckoutPage from '../views/CheckoutPage.vue'
 import OrderListPage from '../views/OrderListPage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
+import AccountSettingsPage from '../views/AccountSettingsPage.vue'
 import AdminLayout from '../layout/AdminLayout.vue'
 import AdminDashboardPage from '../views/admin/AdminDashboardPage.vue'
 import AdminUsersPage from '../views/admin/AdminUsersPage.vue'
@@ -48,7 +49,8 @@ const routes: RouteRecordRaw[] = [
       { path: 'cart', component: CartPage, meta: { requiresAuth: true } as unknown as CustomRouteMeta },
       { path: 'checkout', component: CheckoutPage, meta: { requiresAuth: true } as unknown as CustomRouteMeta },
       { path: 'orders', component: OrderListPage, meta: { requiresAuth: true } as unknown as CustomRouteMeta },
-      { path: 'profile', component: ProfilePage, meta: { requiresAuth: true } as unknown as CustomRouteMeta }
+      { path: 'profile', component: ProfilePage, meta: { requiresAuth: true } as unknown as CustomRouteMeta },
+      { path: 'account/settings', component: AccountSettingsPage, meta: { requiresAuth: true } as unknown as CustomRouteMeta }
     ]
   },
   

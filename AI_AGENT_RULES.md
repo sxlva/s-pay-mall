@@ -112,7 +112,7 @@
 | H4 | 禁止前端使用 `any` 类型 | [API_CONTRACT §七](API_CONTRACT.md) |
 | H5 | 禁止前端组件直接消费 `Response<T>` 包装 | [API_CONTRACT §七](API_CONTRACT.md) |
 | H6 | 禁止前端声明 API_CONTRACT.md 中不存在的字段 | [API_CONTRACT §七](API_CONTRACT.md) |
-| H7 | 禁止前端 `api/vo` 包新增 `@JsonProperty` snake_case | [API_CONTRACT §七](API_CONTRACT.md) |
+| H7 | 禁止出线 JSON 使用 snake_case（`@JsonProperty`）；全端统一 camelCase | [API_CONTRACT §七](API_CONTRACT.md) |
 | H8 | 禁止跨领域模块直接耦合 | [DDD_SPEC §对称性](DDD_ARCHITECTURE_SPEC.md) |
 | H9 | 禁止删除既有注释；代码变更时同步更新注释而非删除 | 本文件 |
 | H10 | 禁止在未读取 SSOT 的情况下生成涉及接口/架构的代码 | 本文件 |

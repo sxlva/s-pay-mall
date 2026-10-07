@@ -49,7 +49,7 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
 
         // 更新 order_main 状态为 PAID（条件更新作并发守卫：影响行数 0 = 并发/重复回调，跳过后续副作用）
         int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
-                OrderState.INIT.toDbStatus(), OrderState.PAID.getCode());
+                OrderState.INIT.toDbStatus(), OrderState.PAID.toDbStatus());
         if (orderUpdated == 0) {
             log.warn("【状态机】订单状态已被并发事务流转，拒绝重复支付处理，orderNo=" + orderNo);
             return false;
@@ -113,7 +113,7 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
 
         // 更新 order_main 状态为 SHIPPED（条件更新作并发守卫）
         int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
-                OrderState.PAID.toDbStatus(), OrderState.SHIPPED.getCode());
+                OrderState.PAID.toDbStatus(), OrderState.SHIPPED.toDbStatus());
         if (orderUpdated == 0) {
             log.warn("【状态机】订单状态已被并发事务流转，拒绝重复发货处理，orderNo=" + orderNo);
             return false;
@@ -142,7 +142,7 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
         }
 
         int updated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
-                OrderState.SHIPPED.toDbStatus(), OrderState.DONE.getCode());
+                OrderState.SHIPPED.toDbStatus(), OrderState.DONE.toDbStatus());
         log.info("【状态机】订单完成状态更新完成，orderNo=" + orderNo);
         return updated > 0;
     }
@@ -164,7 +164,7 @@ public class OrderStateMachineServiceImpl implements IOrderStateMachineService {
 
         // 更新 order_main 状态为 CANCELED（条件更新作并发守卫：影响行数 0 = 状态已被并发流转，跳过关闭支付单与库存恢复）
         int orderUpdated = mallOrderQueryGateway.updateOrderStatusByOrderNo(orderNo,
-                OrderState.INIT.toDbStatus(), OrderState.CANCELED.getCode());
+                OrderState.INIT.toDbStatus(), OrderState.CANCELED.toDbStatus());
         if (orderUpdated == 0) {
             log.warn("【状态机】订单状态已被并发事务流转，拒绝重复取消处理，orderNo=" + orderNo);
             return false;

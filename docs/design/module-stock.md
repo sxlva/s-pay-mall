@@ -15,7 +15,7 @@
 |------|------|------------|------|
 | Redis（Redisson RAtomicLong） | 库存事实来源（高频读写） | 最终一致 | `StockGatewayImpl` |
 | MySQL（product.stock） | 库存持久层（低频最终落库） | 强一致 | `IProductRepository.decreaseStock()` 乐观锁 |
-| RocketMQ | 库存变更事件总线 | 至少一次 | `product-stock-change-topic` |
+| RocketMQ | 库存变更事件总线 | 至少一次 | `product-stock-change-topic`（当前无生产者，TD-9 考证为有意保留的接入点，见 §三） |
 
 **为什么不在 DB 直接扣减？**
 - DB 单行更新在 1k QPS 量级已是极限，难以承载高并发场景
@@ -258,7 +258,7 @@ flowchart LR
 | 场景 | 现象 | 降级策略 |
 |------|------|----------|
 | Redis 不可用 | `getAtomicLong()` 失败 | 拒绝下单（保护资金安全，不允许穿透 DB） |
-| MQ 消费失败 | 库存未同步到 DB | RocketMQ 自动重试（`maxReconsumeTimes=5`，显式配置），耗尽进入 `%DLQ%` 死信队列（告警与重放方案见 [ROADMAP](ROADMAP.md) U-5） |
+| MQ 消费失败 | 库存未同步到 DB | RocketMQ 自动重试（`maxReconsumeTimes=5`，显式配置），耗尽进入 `%DLQ%` 死信队列（DLQ 告警监听器已落地，见 [ROADMAP](ROADMAP.md) TD-2 / U-5） |
 | DB 扣减失败 | `affectedRows = 0` | Redis 已预扣不改，DB 失败仅记日志（最终一致性） |
 | 批量预热异常 | 单个商品同步失败 | catch 后继续处理其他商品，不影响整体预热 |
 

@@ -22,7 +22,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="180">
           <template #default="scope">
             <el-button 

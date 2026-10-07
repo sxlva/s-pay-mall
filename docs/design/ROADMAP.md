@@ -70,7 +70,7 @@
 
 > 每一项均已形成完整设计方案，因毕设范围、部署规模（单实例演示）所限**暂不实现**。答辩被追问"消息丢了怎么办 / 系统还能怎么改进"时可引用对应设计说明演进路径。
 
-**已实现的可靠性现状**：事务内状态推进 → 事务提交后发送 `order_paid` → 消费端 Redis SETNX 幂等 → RocketMQ 延时关单（delayLevel=9，30 分钟窗口）→ 关单前二次确认（查支付宝交易状态）→ 消费失败重试（`maxReconsumeTimes=5`）→ 死信队列（`%DLQ%` + consumerGroup）→ 晚到支付显式异常路径（error 日志 + 人工核实标记）。
+**已实现的可靠性现状**：事务内状态推进 → 事务提交后发送 `order_paid` → 消费端 Redis SETNX 幂等 → RocketMQ 延时关单（delayLevel=9，30 分钟窗口）→ 关单前二次确认（查支付宝交易状态）→ 消费失败重试（`maxReconsumeTimes=5`）→ 死信队列（`%DLQ%` + consumerGroup，DLQ 告警监听器值守）→ 晚到支付显式异常路径（error 日志 + 人工核实标记）。
 
 ### U-1 对账补偿 Job（消息丢失的最后一道保险）
 
@@ -79,10 +79,15 @@
 **设计**：
 - **支付补偿**：定时扫描 `pay_order = PAID` 但商城主单未推进、且超过 5~10 分钟的订单，直接调用 `paySuccess` 补偿（状态机重复推进仅 warn，补偿与 MQ 消费并发安全）；
 - **超时关单兜底**：扫 2 倍延时（约 60 分钟）仍未关闭的待支付订单，调用 `handleTimeoutCloseOrder`；
-- **多实例防重**：Job 加 Redisson `tryLock`，抢不到锁直接跳过本轮（现有 `NoPayNotifyOrderJob` 为裸 `@Scheduled`，多实例下会重复执行，落地时一并修复）；
+- **多实例防重**：Job 加 Redisson `tryLock`，抢不到锁直接跳过本轮（~~现有 `NoPayNotifyOrderJob` 为裸 `@Scheduled`，多实例下会重复执行，落地时一并修复~~ **已于 2026-10-07 TD-8 落地**，key=`lock:job:no-pay-notify`）；
 - **落点**：不新建组件，扩展 `NoPayNotifyOrderJob` 增加两个检查分支。
 
-**暂不实现**：单实例演示 MQ 丢失概率极低；成本约 1~2 天。
+**部分落地（2026-10-07）**：多实例防重（Redisson tryLock）与超时关单兜底已在 TD-7/8 落地
+（`NoPayNotifyOrderJob` 扩展，40 分钟阈值，走 `handleTimeoutCloseOrder` 既有路径）；
+"pay_order=PAID 但主单未推进"的补偿分支未实现——现状支付履约在回调事务内同步完成，
+主单未推进场景由晚到支付异常路径（error 日志 + 人工介入）覆盖，登记为二期。
+
+**暂不实现（剩余部分）**：单实例演示下该残余窗口概率极低；约 1 天。
 
 ### U-2 发送端 Outbox（本地消息表，治"发出时丢"的根因）
 
@@ -127,7 +132,12 @@
 - RocketMQ 控制台自带消息查询与重新发送，手工重放先以操作手册形式固化，自动化重放工具列为二期；
 - 重放仍失败的转人工工单（order_paid 类人工核实后手动触发 paySuccess）。
 
-**暂不实现**：U-1~U-3 落地后进入 DLQ 的消息量趋近于零；告警与重放属低频运维流程，演示环境可用控制台手工操作。
+**已落地（2026-10-07，TD-2 最简实现）**：新增 `DlqAlertListeners`（trigger/listener），
+为 `s-pay-mall-order-paid-consumer`、`s-pay-mall-timeout-group` 两个有生产者的消费组各注册一个
+DLQ 告警监听器（独立 consumer group 订阅 `%DLQ%{group}`）：死信到达即以 ERROR 日志高调告警，
+消息体完整落日志作为人工重放素材（控制台"消息查询→重新发送"即可重放），消费成功返回保证只告警一次。
+stock-change 组无生产者（TD-9），不配告警。E2E 全量回归通过（Spring 上下文真实启动验证）。
+外部通知渠道（邮件/钉钉）与自动化重放工具仍属生产化二期，维持上述设计。
 
 ### 演进顺序建议
 
@@ -141,7 +151,7 @@ U-1 对账 Job（含 NoPayNotifyOrderJob 分布式锁）→ U-2 outbox → U-3 �
 |---------|---------|
 | "消息发出时就丢了怎么办？" | U-1（兜底）+ U-2（根因） |
 | "重复消费会不会重复扣库存/发货？" | U-3 + 已实现下单/消费幂等（见 三.2 A.15） |
-| "死信队列谁处理？" | U-5 + 已实现 maxReconsumeTimes 显式配置 |
+| "死信队列谁处理？" | U-5（ERROR 日志告警已落地，TD-2）+ 已实现 maxReconsumeTimes 显式配置 |
 | "定时任务多实例会不会重复执行？" | U-1 多实例防重段 |
 | "为什么不用 RocketMQ 事务消息？" | U-2 备选方案取舍段 |
 
@@ -168,7 +178,7 @@ U-1 对账 Job（含 NoPayNotifyOrderJob 分布式锁）→ U-2 outbox → U-3 �
 | P1-4 | MQ 消息发送缺超时参数 | `convertAndSend` 增加 3000ms 超时 | 2026-10-04 |
 | P1-5 | Domain 层 POM 非必要技术依赖 | 移除 spring-context/spring-tx/alipay-sdk/jjwt/fastjson/guava 等，alipay-sdk 改由 infrastructure 显式声明 | 2026-10-04 |
 | P2-1 | createPayOrder 缺事务保护 | 死端点随 legacy 下线删除，条目失效 | 2026-10-03 |
-| P2-2 | 缺死信队列配置 | 三个 Listener 显式 `maxReconsumeTimes=5`（耗尽自动进 `%DLQ%`）；告警与重放见 U-5 | 2026-10-04 |
+| P2-2 | 缺死信队列配置 | 三个 Listener 显式 `maxReconsumeTimes=5`（耗尽自动进 `%DLQ%`）；DLQ 告警监听器已落地（TD-2），外部通知与自动化重放见 U-5 | 2026-10-07 |
 | P2-3 | WeixinGatewayImpl 缺超时配置 | Retrofit2Config 显式 connect 5s / read 10s | 2026-10-04 |
 | P2-4 | pay-success-topic 无消费者 | 删除 `IOrderEventGateway`/`OrderEventGatewayImpl`，topic 废弃 | 2026-10-01 |
 | P2-5 | 支付成功消息通道重复 | 保留 `order_paid`，删除 `pay-success-topic` 通道 | 2026-10-01 |
@@ -207,20 +217,24 @@ U-1 对账 Job（含 NoPayNotifyOrderJob 分布式锁）→ U-2 outbox → U-3 �
 | FP2-1 | 组件接口契约覆盖率低 | 以删除替代加类型（脚手架残留零引用组件直接删除） |
 | FP2-2 | localStorage 残留 | `checkout_products` 无读取方，删除残留写入 |
 
-### 3.4 未处理技术债（登记在案）
+### 3.4 技术债登记（处理记录）
+
+> 2026-10-07 批次处理：TD-1/2/3/4/5/6/7/8/12 已代码修复并经全量 E2E 回归；TD-9（stock-change topic 无生产者）经考证为有意保留，结论沉淀登记在案。
 
 | ID | 问题 | 现状与建议 |
 |----|------|-----------|
-| TD-1 | JSON 命名策略不一致 | `api/dto/` 无 `@JsonProperty`（camelCase）与 `api/vo/` 全量 `@JsonProperty`（snake_case）并存，前端同时消费两种风格。建议统一为 camelCase（前端 TypeScript 惯例），逐步废弃蛇形命名——**低风险低收益，业务迭代时顺手做** |
-| TD-2 | 死信队列告警与重放 | `maxReconsumeTimes=5` 已配置，但 DLQ 无人值守（消息进入 `%DLQ%` 后需人工处理）。方案完整设计见 U-5，生产化时优先落地 |
-| TD-3 | 关单写 `pay_time=now()` 语义污染 | `changeOrderClose` 关单时写支付时间，未支付订单有支付时间属字段语义污染，读取端不受影响。支付链路审计时一并处理 |
-| TD-4 | `OrderState.DONE` 存储口径不一致 | `toDbStatus()` 输出 COMPLETED 而状态机写 DONE，读取端 `fromDbStatus` 双兼容已兜住。订单状态口径统一时处理 |
-| TD-5 | 支付回调未校验金额一致 | 验签已保证参数真实性，属支付安全增强（需 BigDecimal 比较）。支付安全加固批次处理 |
-| TD-6 | 重复回调重复发布 `order_paid` 事件 | 下游消费幂等（orderNo 幂等键）已兜底，仅产生冗余消息。事件链路优化时处理 |
-| TD-7 | `sendDelayCloseMessage` 内层 catch 吞异常 | 失败靠 NoPayNotifyOrderJob 补偿兜底。可靠性设计专题时处理 |
-| TD-8 | NoPayNotifyOrderJob 无分布式锁 | 多实例部署会重复执行。U-1 落地时一并加 Redisson `tryLock` |
-| TD-9 | `product-stock-change-topic` 仅有消费者、无生产者 | 2026-06-09 引入时起即无生产者（全分支历史零发送端，见 git 考证）；原设计用途（DB 库存变更反向同步 Redis）已被"Redis 预扣 + 状态机同步 DB"主链路取代。消费者保留作存量兼容与后续库存事件化接入点（`AdminUpdateHandler` 已就绪），无消息时零开销，**保留不动** |
-| TD-10 | 微信扫码绑定链路（`/auth/bind/qrcode` + `/auth/bind/status`）dormant | **前端零调用**（无绑定页面，SCAN 分流"先绑定"分支实际永不触发，全部走登录分支）；且链路断尾——`/bind/status` 把 openId 返回给前端后，**没有任何端点把 openId 落库到当前登录用户**（`bindWeChatOpenId` 仅在注册流程中调用），即使前端接入也完不成绑定。附带观察：`/bind/status` 向持票者返回原始 openId（有 JWT 门槛，泄露面有限）。结论：整条链路为无害死代码，**保留不动**；如需启用须补"确认绑定"端点（userId 从 JWT 取，openId 服务端按 ticket 查，不回传前端） |
+| TD-1 | JSON 命名策略不一致 | ~~`api/dto/` 无 `@JsonProperty`（camelCase）与 `api/vo/` 全量 `@JsonProperty`（snake_case）并存，前端同时消费两种风格。~~ **已处理（2026-10-07）**：出线 8 个 Res 类摘除 `@JsonProperty` 统一 camelCase（`LoginRes`/`UserBindStatusRes`/`ProductRes`/`CategoryRes`/`AdminUserRes`/`AdminOrderRes`/`AdminSalesTrendRes`/`AdminCategoryRatioRes`）；前端 `types/domain` 与全部消费视图同步改 camelCase；`AuthBindMockE2EIT` 断言同步更新。**E2E 全量回归通过** |
+| TD-2 | 死信队列告警与重放 | ~~`maxReconsumeTimes=5` 已配置，但 DLQ 无人值守（消息进入 `%DLQ%` 后需人工处理）~~ **已处理（2026-10-07，最简实现）**：新增 `DlqAlertListeners`，为两个有生产者的消费组（order-paid / timeout-close）注册 DLQ 告警监听器（订阅 `%DLQ%{group}`），死信到达即 ERROR 日志告警并完整落消息体作为人工重放素材；stock-change 组无生产者不配。外部通知渠道与自动化重放工具属生产化二期（设计见 U-5）。**E2E 全量回归通过** |
+| TD-3 | 关单写 `pay_time=now()` 语义污染 | ~~`changeOrderClose` 关单时写支付时间，未支付订单有支付时间属字段语义污染~~ **已处理（2026-10-07）**：删除关单 SQL 中的 `pay_time = now()`，`pay_time` 仅在支付成功时由 `changeOrderPaySuccess` 写入；`AlipayNotifyE2EIT` 支付成功断言 pay_time 已写入、关单场景无读取方不受影响。**E2E 全量回归通过** |
+| TD-4 | `OrderState.DONE` 存储口径不一致 | ~~`toDbStatus()` 输出 COMPLETED 而状态机写 DONE~~ **已处理（2026-10-07）**：枚举 `DONE.dbStatus` 改 `"DONE"`、`CANCELED.dbStatus` 改 `"CANCELED"`（历史写入均按 code，枚举 dbStatus 为错误登记值），状态机目标值统一改用 `toDbStatus()`（行为不变）；`fromDbStatus` 显式兼容存量 COMPLETED/CANCELLED 旧值。**E2E 全量回归通过** |
+| TD-5 | 支付回调未校验金额一致 | ~~验签已保证参数真实性，属支付安全增强~~ **已处理（2026-10-07）**：`handleAlipayCallback` 验签通过后、履约前以 `BigDecimal.compareTo` 校验回调 `total_amount` 与本地订单金额一致，不一致或格式非法时拒绝履约并返回 false（支付宝重试）。**E2E 全量回归通过** |
+| TD-6 | 重复回调重复发布 `order_paid` 事件 | ~~下游消费幂等（orderNo 幂等键）已兜底，仅产生冗余消息~~ **已处理（2026-10-07）**：`IMallOrderService.paySuccess` → `changeOrderPaySuccessInTransaction` 改返回 boolean（状态机条件更新结果为流转是否实际发生），`changeOrderPaySuccess` 仅在实际流转时发布事件；`AlipayNotifyE2EIT` 场景 2 断言强化为"重放后事件计数恰为 1"。**E2E 全量回归通过** |
+| TD-7 | `sendDelayCloseMessage` 内层 catch 吞异常 | ~~失败靠 NoPayNotifyOrderJob 补偿兜底~~ **已处理（2026-10-07）**：兜底说法成真——Job 新增关单补偿：查询 WAIT_PAY 且创建超 40 分钟订单（30 分钟延时消息漏网之鱼，留 10 分钟余量避免竞争），走 `handleTimeoutCloseOrder` 既有路径（支付宝二次确认 → 关单/转履约 + 库存恢复）；`sendDelayCloseMessage` catch 保留不重抛（事务成功后调用，重抛会造成下单已成功的 500），语义以注释固化。**E2E 全量回归通过** |
+| TD-8 | NoPayNotifyOrderJob 无分布式锁 | ~~多实例部署会重复执行~~ **已处理（2026-10-07）**：Job 全程包裹 Redisson `tryLock(0, 60s)`（`lock:job:no-pay-notify`，新建 key），拿不到锁直接跳过本轮。**E2E 全量回归通过** |
+| TD-9 | `product-stock-change-topic` 仅有消费者、无生产者 | 2026-06-09 引入时起即无生产者（全分支历史零发送端，见 git 考证）；原设计用途（DB 库存变更反向同步 Redis）已被"Redis 预扣 + 状态机同步 DB"主链路取代。消费者保留作存量兼容与后续库存事件化接入点（`AdminUpdateHandler` 已就绪），无消息时零开销。**结论沉淀（2026-10-07）**：经 git 考证属"有意保留的结论"而非缺陷，维持保留不动 |
+| TD-10 | 微信扫码绑定链路（`/auth/bind/qrcode` + `/auth/bind/status`）dormant | ~~**前端零调用**（无绑定页面，SCAN 分流"先绑定"分支实际永不触发，全部走登录分支）；且链路断尾——`/bind/status` 把 openId 返回给前端后，**没有任何端点把 openId 落库到当前登录用户**（`bindWeChatOpenId` 仅在注册流程中调用），即使前端接入也完不成绑定。~~ **已处理（2026-10-07）**：按原建议补"确认绑定"端点 `POST /auth/bind/confirm`（userId 取自 JWT，openId 服务端按 ticket 解析不落前端，绑定成功后销毁票据）+ 配套 `POST /auth/password`（微信用户补设密码，状态 WECHAT→ACTIVE）+ `UserProfileRes.wechatBound` 字段；前端"我的-账号设置"页（`AccountSettingsPage`）接入整条链路。**E2E 已验收**：新增 `AuthBindMockE2EIT`（3 场景 17 步断言，真实 MySQL/Redis + MockMvc 全过滤链，唯一 Mock 为微信外部 HTTP 网关）+ 真实应用 HTTP 冒烟（8092 端口实测注册/设密/登录/资料/无效票据拒绝；`/bind/qrcode` 真实调用 api.weixin.qq.com 成功返回 ticket）。附带观察：`/bind/status` 向持票者返回原始 openId（有 JWT 门槛，泄露面有限）——现状保留，前端已不消费该字段 |
+| TD-11 | `permission` / `role_permission` 表零代码引用（2026-10-07 调查） | 全仓检索确认：无 DAO/Mapper/SQL 引用这两张表，仅存在于 `docs/dev-ops/mysql/sql/s-pay-mall.sql` 的 DDL 与种子数据。实际鉴权链：登录时 `IMallUserDao`/`IUserRoleDao` 读 `role`+`user_role` 定角色 → Spring Security URL 规则（`/mall-api/v1/admin/**` hasRole("ADMIN")）控管理端；`@EnableMethodSecurity` 启用但零 `@PreAuthorize`（S-05）。细粒度 RBAC 未落地。**决议（2026-10-07，dawnFu 确认不折腾该功能）**：两张表与 `@EnableMethodSecurity` 均保留不动——零引用零开销零风险，`role_permission` 有外键关联删表反破坏种子数据一致性；答辩口径：预留细粒度 RBAC 扩展点，当前按项目规模用 URL 规则做粗粒度控制（S-05 状态同步更新为"保留不动"） |
+| TD-12 | `LoginRes.userId` 实际 JSON 输出为 `user_id` | ~~`LoginRes` 历史遗留 `@JsonProperty("user_id")`，与 API_CONTRACT §3.1 登记的 `userId` 不一致；前端读 `data.data.userId` 恒为 `undefined`~~ **已处理（2026-10-07，与 TD-1 合并修复）**：`LoginRes` 摘除 `@JsonProperty` 改 camelCase 输出，前端 `api/auth.ts` 改 `userId`，`AuthBindMockE2EIT` 断言同步。**E2E 全量回归通过** |
 
 ### 3.5 暂缓/有意跳过项（结论沉淀）
 

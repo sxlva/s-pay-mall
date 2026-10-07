@@ -43,10 +43,33 @@ public interface IMallOrderService {
      */
     void restoreDeductedStock(List<CartItemVO> deductedItems);
 
+    /**
+     * 查询订单列表
+     * 用户端按用户过滤，管理端可组合状态与时间范围筛选
+     *
+     * @param userId 用户ID
+     * @param status 订单状态（可选）
+     * @param start  下单时间起（可选，格式 YYYY-MM-DD）
+     * @param end    下单时间止（可选，格式 YYYY-MM-DD）
+     * @return 订单 VO 列表
+     */
     List<OrderVO> listOrders(Long userId, String status, String start, String end);
 
+    /**
+     * 根据订单ID删除订单（管理后台）
+     *
+     * @param id 订单ID
+     * @return 影响行数
+     */
     int deleteOrder(Long id);
 
+    /**
+     * 订单发货（管理后台）
+     * 由订单状态机执行 PAID → SHIPPED 流转，订单不存在或状态不允许时返回 0
+     *
+     * @param orderId 订单ID
+     * @return 1=发货成功，0=失败（订单不存在或状态不允许）
+     */
     int deliverOrder(Long orderId);
 
     /**
@@ -57,8 +80,21 @@ public interface IMallOrderService {
      */
     String cancelOrder(Long orderId);
 
-    void paySuccess(String orderNo);
+    /**
+     * 处理订单支付成功（状态流转 + DB 库存扣减），状态机天然幂等
+     *
+     * @param orderNo 订单号
+     * @return 本次是否实际完成状态流转；重复回调/状态不允许时返回 false
+     */
+    boolean paySuccess(String orderNo);
 
+    /**
+     * 根据订单号查询订单详情
+     * 状态统一输出领域 code 口径，存储值无法识别时兜底 INIT
+     *
+     * @param orderNo 订单号
+     * @return 订单 VO，不存在时返回 null
+     */
     OrderVO getOrderByNo(String orderNo);
 
     /**

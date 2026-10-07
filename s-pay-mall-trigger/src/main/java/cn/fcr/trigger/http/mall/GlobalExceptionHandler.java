@@ -111,7 +111,30 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * JWT 异常处理（S-03：恢复认证语义）
+     *
+     * <p>token 过期、签名错误、格式非法等统一归 0003 未登录并返回固定文案，
+     * 不再落入兜底 Exception 处理器被归为 0001，也不向前端透传 JWT 内部细节
+     * （如过期时间戳）。正常路径 token 已在 JwtAuthenticationFilter 校验，
+     * 此处为 Controller 内 currentUserId 二次解析的兜底。</p>
+     *
+     * @param e JWT 异常
+     * @return 错误码 0003，固定提示文案
+     */
+    @ExceptionHandler(io.jsonwebtoken.JwtException.class)
+    public Response<String> onJwtException(io.jsonwebtoken.JwtException e) {
+        log.warn("JWT 解析异常: {}", e.getMessage());
+        return Response.<String>builder()
+                .code(Constants.ResponseCode.NO_LOGIN.getCode())
+                .info("登录状态无效或已过期，请重新登录")
+                .build();
+    }
+
+    /**
      * 未知异常兜底处理
+     *
+     * <p>S-03：禁止向客户端透传原始异常 message（可能包含 NPE 栈顶、SQL、
+     * JWT 内部字段等实现细节），统一返回固定文案，原始异常仅落服务端日志。</p>
      *
      * @param e 异常
      * @return 错误响应
@@ -121,7 +144,7 @@ public class GlobalExceptionHandler {
         log.error("请求失败", e);
         return Response.<String>builder()
                 .code(Constants.ResponseCode.UN_ERROR.getCode())
-                .info(e.getMessage() == null ? Constants.ResponseCode.UN_ERROR.getInfo() : e.getMessage())
+                .info(Constants.ResponseCode.UN_ERROR.getInfo())
                 .build();
     }
 }

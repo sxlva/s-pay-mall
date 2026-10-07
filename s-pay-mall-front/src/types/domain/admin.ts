@@ -2,33 +2,30 @@
  * 管理端领域类型定义
  *
  * <p>FP1-1：由 api/admin.ts 抽入，类型与 API 函数不再混放；
- * FP1-5：管理端类型统一 AdminVO 后缀（商城端为 VO 后缀）。</p>
+ * FP1-5：管理端类型统一 AdminVO 后缀（商城端为 VO 后缀）。
+ * TD-1（2026-10-07）：与后端 Admin*Res 全量对齐 camelCase，
+ * 移除 create_time/order_no/role_code/image_url 等 snake_case 字段，
+ * 并删除后端不存在的历史冗余字段（email/role/双写时间字段）。</p>
  *
  * @author 傅崇睿
  */
 
-/** 用户值对象（后台管理） */
+/** 用户值对象（后台管理，与后端 AdminUserRes 字段一一对应） */
 export interface UserAdminVO {
   /** 用户 ID */
   id: number
   /** 用户名 */
   username: string
-  /** 邮箱 */
-  email: string
-  /** 角色名称 */
-  role: string
-  /** 角色编码：ADMIN-管理员 MEMBER-普通会员 VIP-VIP会员 GUEST-普通用户 */
-  roleCode: string
   /** 状态：1-正常 0-禁用 */
   status: number
-  /** 创建时间（驼峰字段） */
+  /** 角色编码：ADMIN-管理员 MEMBER-普通会员 */
+  roleCode: string
+  /** 角色名称 */
+  roleName: string
+  /** 创建时间 */
   createTime: string
-  /** 创建时间（下划线字段） */
-  create_time: string
-  /** 更新时间（驼峰字段） */
+  /** 更新时间 */
   updateTime: string
-  /** 更新时间（下划线字段） */
-  update_time: string
 }
 
 /** 用户查询参数（后台管理） */
@@ -41,7 +38,7 @@ export interface UserAdminQueryParams {
   roleCode?: string
 }
 
-/** 分类值对象（后台管理） */
+/** 分类值对象（后台管理，与后端 CategoryRes 字段一一对应） */
 export interface CategoryAdminVO {
   /** 分类 ID */
   id: number
@@ -51,11 +48,9 @@ export interface CategoryAdminVO {
   status: number
   /** 创建时间 */
   createTime: string
-  /** 更新时间 */
-  updateTime: string
 }
 
-/** 商品值对象（后台管理） */
+/** 商品值对象（后台管理，与后端 ProductRes 字段一一对应） */
 export interface ProductAdminVO {
   /** 商品 ID */
   id: number
@@ -68,7 +63,7 @@ export interface ProductAdminVO {
   /** 商品描述 */
   description: string
   /** 商品图片访问路径（相对路径；为空时展示本地默认图片） */
-  image_url?: string
+  imageUrl?: string
   /** 商品价格 */
   price: number
   /** 库存数量 */
@@ -77,8 +72,6 @@ export interface ProductAdminVO {
   status: number
   /** 创建时间 */
   createTime: string
-  /** 更新时间 */
-  updateTime: string
 }
 
 /** 订单商品项（后台管理） */
@@ -97,7 +90,7 @@ export interface OrderItemAdminVO {
   itemAmount: number
 }
 
-/** 订单值对象（后台管理） */
+/** 订单值对象（后台管理，与后端 AdminOrderRes 字段一一对应） */
 export interface OrderAdminVO {
   /** 订单 ID */
   id: number
@@ -115,8 +108,6 @@ export interface OrderAdminVO {
   statusDesc: string
   /** 创建时间 */
   createTime: string
-  /** 更新时间 */
-  updateTime: string
   /** 商品总数量 */
   totalCount: number
   /** 订单商品列表 */
@@ -137,24 +128,22 @@ export interface OrderAdminQueryParams {
   size?: number
 }
 
-/** 销售额走势数据（后台管理） */
+/** 销售额走势数据（后台管理，与后端 AdminSalesTrendRes 字段一一对应） */
 export interface SalesTrendAdminVO {
   /** 日期 */
   date: string
   /** 销售额 */
-  amount: number
+  salesAmount: number
   /** 订单数 */
-  count: number
+  orderCount: number
 }
 
-/** 分类销售占比数据（后台管理） */
+/** 分类销售占比数据（后台管理，与后端 AdminCategoryRatioRes 字段一一对应） */
 export interface CategoryRatioAdminVO {
-  /** 分类 ID */
-  categoryId: number
   /** 分类名称 */
   categoryName: string
+  /** 商品数量 */
+  productCount: number
   /** 销售额 */
-  amount: number
-  /** 占比 */
-  ratio: number
+  salesAmount: number
 }

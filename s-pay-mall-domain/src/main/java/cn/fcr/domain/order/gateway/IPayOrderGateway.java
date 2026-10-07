@@ -50,4 +50,13 @@ public interface IPayOrderGateway {
      * @return 需要主动补单的订单号列表
      */
     List<String> queryNoPayNotifyOrder();
+
+    /**
+     * 查询等待支付超过40分钟仍未关闭的订单号（pay_order 表 WAIT_PAY 行）
+     * 用于 NoPayNotifyOrderJob 兜底关单补偿（TD-7）：仅兜住 30 分钟延时关单消息
+     * 丢失/消费失败的漏网订单，以 40 分钟为界避免与正常关单链路竞争
+     *
+     * @return 需要兜底关单的订单号列表
+     */
+    List<String> queryStaleWaitPayOrders();
 }

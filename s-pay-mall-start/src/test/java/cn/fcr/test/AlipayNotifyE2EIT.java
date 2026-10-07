@@ -17,7 +17,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -35,28 +34,11 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.Signature;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -133,8 +115,8 @@ public class AlipayNotifyE2EIT {
     /** 事件验证消费者：独立 consumer group 订阅 order_paid，收集收到的 orderNo */
     private DefaultMQPushConsumer eventVerifierConsumer;
 
-    /** 事件验证消费者收到的 orderNo 集合 */
-    private final Set<String> receivedOrderNos = new CopyOnWriteArraySet<>();
+    /** 事件验证消费者收到的 orderNo 计数（TD-6：重复回调不得重复发事件，需按次数断言） */
+    private final Map<String, AtomicInteger> receivedOrderCounts = new ConcurrentHashMap<>();
 
     /** 本测试类创建的订单号与商品ID，用于 @After 物理清理 */
     private final List<String> testOrderNos = new ArrayList<>();
@@ -172,14 +154,14 @@ public class AlipayNotifyE2EIT {
                 log.info("【测试事件验证】收到 order_paid 消息: {}", body);
                 for (String orderNo : new HashSet<>(testOrderNos)) {
                     if (body.contains(orderNo)) {
-                        receivedOrderNos.add(orderNo);
+                        receivedOrderCounts.computeIfAbsent(orderNo, k -> new AtomicInteger()).incrementAndGet();
                     }
                 }
             }
             return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
         });
         eventVerifierConsumer.start();
-        receivedOrderNos.clear();
+        receivedOrderCounts.clear();
         awaitRouteReady(10000);
     }
 
@@ -333,8 +315,13 @@ public class AlipayNotifyE2EIT {
         long redisStockAfter = redissonClient.getAtomicLong(STOCK_KEY_PREFIX + productId).get();
         assertEquals("Redis 库存不得因重复回调变化", redisStockBefore, redisStockAfter);
 
-        // 每次重放都会再发一条 order_paid（已知现象，监听器幂等拦截），至少应收到一条
+        // 【TD-6】重复回调不再重复发布 order_paid：仅首次通知应收到 1 条事件，
+        // 后两次重放不得再发（由 changeOrderPaySuccess 按状态机返回值决定是否发布）
         assertTrue("应收到 order_paid 事件, orderNo=" + orderNo, awaitEvent(orderNo, 15000));
+        Thread.sleep(3000);
+        AtomicInteger eventCounter = receivedOrderCounts.get(orderNo);
+        assertNotNull("应收到 order_paid 事件, orderNo=" + orderNo, eventCounter);
+        assertEquals("重复回调不得重复发布 order_paid 事件（TD-6）", 1, eventCounter.get());
     }
 
     /**
@@ -642,12 +629,12 @@ public class AlipayNotifyE2EIT {
     private boolean awaitEvent(String orderNo, long timeoutMs) throws InterruptedException {
         long deadline = System.currentTimeMillis() + timeoutMs;
         while (System.currentTimeMillis() < deadline) {
-            if (receivedOrderNos.contains(orderNo)) {
+            if (receivedOrderCounts.containsKey(orderNo)) {
                 return true;
             }
             Thread.sleep(200);
         }
-        return receivedOrderNos.contains(orderNo);
+        return receivedOrderCounts.containsKey(orderNo);
     }
 
     /**

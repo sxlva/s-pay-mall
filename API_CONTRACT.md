@@ -70,6 +70,10 @@
 | 9 | GET | `/auth/profile` | JWT Header | `Response<UserProfileRes>` | 获取用户资料（2026-10-02 起 userId 取自 JWT，不再接受 query 参数，修复 IDOR 越权） |
 | 10 | GET | `/auth/bind/qrcode` | — | `Response<String>` | 获取微信绑定二维码ticket |
 | 11 | GET | `/auth/bind/status` | `ticket` (query) | `Response<UserBindStatusRes>` | 轮询微信绑定状态 |
+| 39 | POST | `/auth/bind/confirm` | `UserBindConfirmReq` + JWT Header | `Response<String>` | 确认微信绑定（账密用户绑定微信；userId 取自 JWT，openId 服务端按 ticket 解析，成功后销毁票据；2026-10-07 启用，关闭 TD-10） |
+| 40 | POST | `/auth/password` | `UserPasswordSetReq` + JWT Header | `Response<String>` | 设置/修改账户密码（微信扫码注册用户补设密码，状态 WECHAT→ACTIVE；2026-10-07 新增） |
+
+> #39/#40 编号顺延自 §4.1 之后，避免重排既有条目编号。
 
 **RegisterReq**:
 | 字段 | 类型 | 必填 | 说明 |
@@ -84,12 +88,22 @@
 | username | String | ✅ | 用户名 |
 | password | String | ✅ | 密码 |
 
+**UserBindConfirmReq**:
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| ticket | String | ✅ | 绑定二维码票据（/auth/bind/qrcode 返回） |
+
+**UserPasswordSetReq**:
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| password | String | ✅ | 明文密码，6~64 位（服务端 BCrypt 加密存储） |
+
 **ResponseDTO 说明**:
 
 | DTO | 字段 |
 |-----|------|
 | LoginRes | `token: String, userId: Long, username: String, role: String` |
-| UserProfileRes | `id: Long, username: String, status: Integer, roleCode: String, createTime: LocalDateTime, updateTime: LocalDateTime` |
+| UserProfileRes | `id: Long, username: String, status: Integer, roleCode: String, createTime: LocalDateTime, updateTime: LocalDateTime, wechatBound: Boolean`（wechatBound 2026-10-07 新增：是否已绑定微信） |
 | UserBindStatusRes | `status: String (BIND_SUCCESS/BINDING_PENDING/INVALID_CODE), openId: String` |
 
 ### 3.2 个人信息
@@ -109,15 +123,15 @@
 | 字段 | 类型 | JSON输出 | 说明 |
 |------|------|---------|------|
 | id | Long | `id` | 商品ID |
-| categoryId | Long | `category_id` | 分类ID（snake_case输出） |
+| categoryId | Long | `categoryId` | 分类ID（2026-10-07 TD-1 修复后统一 camelCase） |
 | name | String | `name` | 商品名称 |
 | description | String | `description` | 商品描述 |
 | price | BigDecimal | `price` | 商品价格 |
 | stock | Integer | `stock` | 库存量 |
 | category | String | `category` | 分类对象 |
-| categoryName | String | `category_name` | 分类名称 |
+| categoryName | String | `categoryName` | 分类名称（2026-10-07 TD-1 修复后统一 camelCase） |
 | status | Integer | `status` | 1-上架 0-下架 |
-| createTime | LocalDateTime | `create_time` | 创建时间 |
+| createTime | LocalDateTime | `createTime` | 创建时间（2026-10-07 TD-1 修复后统一 camelCase） |
 
 **CategoryRes 字段**: `id: Long, name: String, status: Integer, createTime: LocalDateTime`
 
@@ -242,14 +256,16 @@
 
 | 后端类（Java） | 前端类型（TypeScript） | 字段一致性 | 备注 |
 |---------------|----------------------|-----------|------|
-| `ProductRes` (common/res) | `types/domain/product.ts ProductRes` | **`category_id` → `categoryId` 命名不一致** | 后端 `@JsonProperty` 输出snake_case，前端字段名需对齐 |
+| `ProductRes` (common/res) | `types/domain/product.ts ProductRes` | ✅ 一致（2026-10-07 TD-1：后端摘 `@JsonProperty` 统一 camelCase，前端类型同步） | — |
 | `CategoryRes` (common/res) | `types/domain/product.ts CategoryRes` | ✅ 一致 | — |
-| `AdminUserRes` (admin/res) | `types/domain/admin.ts UserAdminVO` | **前端多了 `email`, `role` 字段** | 后端无对应字段，风险（2026-10-05 类型已迁 admin.ts，字段问题保留观察） |
+| `AdminUserRes` (admin/res) | `types/domain/admin.ts UserAdminVO` | ✅ 一致（2026-10-07 TD-1：双端 camelCase；前端删去后端没有的 `email`/`role`/`role_code`/`create_time`/`update_time` 字段） | — |
 | `UserCartItemRes` (user/res) | `types/domain/cart.ts CartItem` | **`price` vs `productPrice` 命名不一致** | 运行时常一致（映射层中转） |
 | `UserOrderCreateRes` (user/res) | `types/domain/order.ts OrderCreateResult` | ~~**`orderId` vs `orderNo` 命名不一致**~~ ✅ 已对齐（2026-10-05：api/order.ts `toCreateResult` 统一映射，CheckoutPage 传真实订单号） | — |
 | `UserOrderRes` (user/res) | `types/domain/order.ts Order` | ✅ 基本一致 | — |
 | `UserOrderStockCheckRes` (user/res) | `api/order.ts StockCheckResult` | ~~**前端多余 `stockStatus` 字段**~~ ✅ 已删除（2026-10-05） | — |
 | `LoginRes` (common/res) | （前端 `useUserStore` 消费） | ✅ 基本一致 | — |
+| `UserProfileRes` (user/res) | `api/auth.ts UserProfile` | ✅ 一致（含 2026-10-07 新增 `wechatBound`） | — |
+| `UserBindConfirmReq` / `UserPasswordSetReq` (user/req) | `api/auth.ts` 请求参数 | ✅ 一致 | — |
 | `RegisterReq` (common/req) | 前端无独立类型 | — | 直接使用 Form 数据 |
 | `UserOrderCreateReq` (user/req) | 前端无独立类型 | — | 仅传 `address` |
 | `UserCartAddReq` (user/req) | `types/domain/cart.ts CartAddParams` | ✅ 一致 | — |
@@ -285,7 +301,7 @@
 ## 七、约束规则
 
 1. **Single Source of Truth**: 后端 DTO/VO 是接口定义的唯一来源，前端类型字段不得超出后端定义。
-2. **字段命名一致**: 后端 `@JsonProperty` 输出 snake_case 时，前端类型字段名必须一致使用该 snake_case 名。
+2. **字段命名一致**: 全端 JSON 统一 camelCase（2026-10-07 TD-1/12 修复后所有出线 Res/DTO 均无 `@JsonProperty` snake_case 输出），前端类型字段名与后端保持一致。
 3. **禁止 `any` 类型**: 所有前端接口调用必须有明确的 TypeScript 类型定义。
 4. **`api/` 层解构**: 组件层不得消费 `Response<T>` 包装，必须在 `api/` 层解构 `res.data`。
 5. **修改同步**: 修改任何端点、DTO、VO 后，必须同步更新本文档和对应的前端类型定义。

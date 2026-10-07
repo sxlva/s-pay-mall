@@ -5,7 +5,8 @@ package cn.fcr.domain.order.model.entity;
  *
  * <p>【状态口径】领域与接口层统一使用 {@link #code}（INIT/PAID/SHIPPED/DONE/CANCELED）；
  * DB 存储为混合口径（历史实现与 E2E 验收固化，不可单方面改动）：INIT 存 CREATED（{@link #toDbStatus()}），
- * 其余状态按 code 原样存储；读取统一经 {@link #fromDbStatus(String)}（内含 code 兜底）双向兼容。</p>
+ * 其余状态按 code 原样存储；读取统一经 {@link #fromDbStatus(String)}（内含 code 兜底）双向兼容。
+ * 存量 DONE 订单中可能存在历史写入的 COMPLETED 值，fromDbStatus 显式兼容该旧值。</p>
  *
  * @author 傅崇睿
  */
@@ -18,9 +19,9 @@ public enum OrderState {
     /** 已发货 */
     SHIPPED("SHIPPED", "已发货", "SHIPPED"),
     /** 已完成 */
-    DONE("DONE", "已完成", "COMPLETED"),
+    DONE("DONE", "已完成", "DONE"),
     /** 已取消 */
-    CANCELED("CANCELED", "已取消", "CANCELLED");
+    CANCELED("CANCELED", "已取消", "CANCELED");
 
     private final String code;
     private final String description;
@@ -83,6 +84,13 @@ public enum OrderState {
     public static OrderState fromDbStatus(String dbStatus) {
         if (dbStatus == null) {
             return null;
+        }
+        // 兼容存量数据：历史版本 DONE 曾写入 COMPLETED、CANCELED 曾写入 CANCELLED（TD-4 修复后新数据统一写 code）
+        if ("COMPLETED".equals(dbStatus)) {
+            return DONE;
+        }
+        if ("CANCELLED".equals(dbStatus)) {
+            return CANCELED;
         }
         for (OrderState state : values()) {
             if (state.dbStatus.equals(dbStatus)) {

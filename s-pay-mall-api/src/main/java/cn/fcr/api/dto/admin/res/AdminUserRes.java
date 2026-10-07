@@ -1,6 +1,5 @@
 package cn.fcr.api.dto.admin.res;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -23,18 +22,14 @@ public class AdminUserRes {
     private Integer status;
 
     /** 角色编码 */
-    @JsonProperty("role_code")
     private String roleCode;
 
     /** 角色名称 */
-    @JsonProperty("role_name")
     private String roleName;
 
     /** 创建时间 */
-    @JsonProperty("create_time")
     private LocalDateTime createTime;
 
     /** 更新时间 */
-    @JsonProperty("update_time")
     private LocalDateTime updateTime;
 }

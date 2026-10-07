@@ -1,6 +1,5 @@
 package cn.fcr.api.dto.common.res;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -18,7 +17,6 @@ public class ProductRes {
     private Long id;
 
     /** 分类ID */
-    @JsonProperty("category_id")
     private Long categoryId;
 
     /** 商品名称 */
@@ -28,7 +26,6 @@ public class ProductRes {
     private String description;
 
     /** 商品图片访问路径（相对路径） */
-    @JsonProperty("image_url")
     private String imageUrl;
 
     /** 商品价格 */
@@ -41,13 +38,11 @@ public class ProductRes {
     private String category;
 
     /** 分类名称 */
-    @JsonProperty("category_name")
     private String categoryName;
 
     /** 商品状态：0-下架，1-上架 */
     private Integer status;
 
     /** 创建时间 */
-    @JsonProperty("create_time")
     private LocalDateTime createTime;
 }

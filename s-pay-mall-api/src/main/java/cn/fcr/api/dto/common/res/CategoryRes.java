@@ -1,6 +1,5 @@
 package cn.fcr.api.dto.common.res;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -23,6 +22,5 @@ public class CategoryRes {
     private Integer status;
 
     /** 创建时间 */
-    @JsonProperty("create_time")
     private LocalDateTime createTime;
 }

@@ -59,4 +59,13 @@ public class WeixinBindService {
     public String getBindStatusRaw(String ticket) {
         return weChatTokenRepository.getBindStatusRaw(ticket);
     }
+
+    /**
+     * 清除绑定票据（确认绑定成功后销毁，防止重复使用）
+     *
+     * @param ticket 绑定票据
+     */
+    public void clearBindStatus(String ticket) {
+        weChatTokenRepository.clearBindStatus(ticket);
+    }
 }

@@ -18,10 +18,10 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="role_code" label="角色" width="120">
+        <el-table-column prop="roleCode" label="角色" width="120">
           <template #default="scope">
-            <el-tag :type="getRoleTagType(scope.row.role_code)">
-              {{ getRoleText(scope.row.role_code) }}
+            <el-tag :type="getRoleTagType(scope.row.roleCode)">
+              {{ getRoleText(scope.row.roleCode) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -32,7 +32,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button

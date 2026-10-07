@@ -77,6 +77,13 @@ public class UserEntity {
      */
     @FunctionalInterface
     public interface PasswordMatcher {
+        /**
+         * 校验明文密码与密文是否匹配
+         *
+         * @param rawPassword     明文密码
+         * @param encodedPassword 已加密的密码密文
+         * @return true=匹配，false=不匹配
+         */
         boolean matches(String rawPassword, String encodedPassword);
     }
 }

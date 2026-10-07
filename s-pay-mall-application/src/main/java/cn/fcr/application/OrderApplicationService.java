@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -335,6 +336,24 @@ public class OrderApplicationService {
         log.info("支付回调，验签通过，交易名称: {}, 商户订单号: {}, 支付宝交易号: {}, 交易金额: {}",
                 params.get("subject"), orderNo, alipayTradeNo, params.get("total_amount"));
 
+        // 【TD-5 金额一致性校验】回调金额必须与本地订单金额一致，防止异常/伪造回调造成错账；
+        // 订单不存在时维持现状交由下游处理（changeOrderPaySuccess 内记 warn）
+        OrderVO callbackOrder = mallOrderService.getOrderByNo(orderNo);
+        if (callbackOrder != null) {
+            try {
+                BigDecimal callbackAmount = new BigDecimal(params.get("total_amount"));
+                if (callbackOrder.getTotalAmount() == null
+                        || callbackOrder.getTotalAmount().compareTo(callbackAmount) != 0) {
+                    log.error("支付回调，金额不一致拒绝履约: orderNo={}, 回调金额={}, 订单金额={}",
+                            orderNo, params.get("total_amount"), callbackOrder.getTotalAmount());
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                log.error("支付回调，金额格式非法拒绝履约: orderNo={}, total_amount={}", orderNo, params.get("total_amount"));
+                return false;
+            }
+        }
+
         changeOrderPaySuccess(orderNo, alipayTradeNo);
         return true;
     }
@@ -357,8 +376,12 @@ public class OrderApplicationService {
             return;
         }
 
-        // 事务内完成 DB 状态更新
-        orderTransactionService.changeOrderPaySuccessInTransaction(orderNo);
+        // 事务内完成 DB 状态更新；仅当本次实际完成状态流转时才发布事件（TD-6：重复回调不再重复发事件）
+        boolean transitioned = orderTransactionService.changeOrderPaySuccessInTransaction(orderNo);
+        if (!transitioned) {
+            log.info("支付成功处理未发生状态流转（重复回调或订单不存在），跳过事件发布, orderNo={}", orderNo);
+            return;
+        }
 
         // 事务提交后发布支付成功事件（失败不影响主流程）
         try {
@@ -414,6 +437,19 @@ public class OrderApplicationService {
      */
     public List<String> queryNoPayNotifyOrder() {
         return payOrderGateway.queryNoPayNotifyOrder();
+    }
+
+    /**
+     * 查询等待支付超过40分钟仍未关闭的订单（兜底关单补偿，TD-7）
+     *
+     * <p>正常关单由下单时发送的 30 分钟延时消息触发；本查询仅兜住延时消息
+     * 丢失/消费失败的漏网订单，供 NoPayNotifyOrderJob 走 handleTimeoutCloseOrder
+     * 既有路径（支付宝二次确认 → 关单/转履约 + 库存恢复）补偿处理。</p>
+     *
+     * @return 订单号列表
+     */
+    public List<String> queryStaleWaitPayOrders() {
+        return payOrderGateway.queryStaleWaitPayOrders();
     }
 
     /**

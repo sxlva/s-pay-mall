@@ -50,4 +50,11 @@ public class WeChatTokenRepository implements IWeChatTokenRepository {
         String key = Constants.REDIS_WECHAT_BIND_TICKET_PREFIX + uuid;
         return stringRedisTemplate.opsForValue().get(key);
     }
+
+    @Override
+    public void clearBindStatus(String uuid) {
+        String key = Constants.REDIS_WECHAT_BIND_TICKET_PREFIX + uuid;
+        stringRedisTemplate.delete(key);
+        log.info("清除微信绑定票据 uuid:{}", uuid);
+    }
 }

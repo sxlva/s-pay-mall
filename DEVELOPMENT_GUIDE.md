@@ -52,15 +52,14 @@
 
 - **Java PO 字段**: Java 属性使用 `camelCase`，通过 MyBatis-Plus `@TableField` 映射到数据库 `snake_case` 列
 - **Domain Entity 字段**: 与 DB 列语义对应，命名使用 `camelCase`
-- **JSON 输出字段**: `api/dto/{user,common}/` 下出线类使用 `camelCase`（无 `@JsonProperty`）；`api/dto/admin/res/` 中 `AdminUserRes`、`AdminOrderRes` 为历史遗留 `snake_case`（有 `@JsonProperty`），禁止在其上扩展字段
+- **JSON 输出字段**: 所有出线类（含 admin/res）自 2026-10-07（TD-1/12 修复）起统一 `camelCase`（无 `@JsonProperty`），历史遗留 snake_case 已全部清除
 
 | 层级 | Java 字段 | @JsonProperty | JSON 实际输出 |
 |------|----------|---------------|-------------|
-| `api/dto/{user,common}/res/`（如 UserOrderRes） | `orderId` | **无** | `"orderId"` (camelCase) |
-| `api/dto/admin/res/` (AdminUserRes/AdminOrderRes) | `order_no` | **有**（历史遗留，禁止扩展） | `"order_no"` (snake_case) |
+| `api/dto/` 全部出线类（含 AdminUserRes/AdminOrderRes 等） | `orderId` | **无** | `"orderId"` (camelCase) |
 | PO (MyBatis 映射) | `orderNo` | 不适用 | 数据库 `order_no` |
 
-> **决议**: 全局统一为 camelCase。admin/res 两个历史类的 `@JsonProperty` snake_case 视为技术债，禁止在其基础上扩展字段；新增出线类一律 camelCase，不加 `@JsonProperty`。
+> **决议**: 全局统一为 camelCase（2026-10-07 已落地）：所有出线 Res/DTO 摘除 `@JsonProperty`，JSON 输出与 Java 字段名一致；前端类型字段名与后端保持一致。新增出线类一律 camelCase，不加 `@JsonProperty`。
 
 ### 1.4 前端命名规范（强制）
 

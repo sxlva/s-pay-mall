@@ -141,8 +141,8 @@ const initSalesChart = (data) => {
   salesChart = echarts.init(salesChartRef.value)
 
   const dates = data.map(item => item.date || item.dayOfWeek)
-  const salesAmounts = data.map(item => item.sales_amount || 0)
-  const orderCounts = data.map(item => item.order_count || 0)
+  const salesAmounts = data.map(item => item.salesAmount || 0)
+  const orderCounts = data.map(item => item.orderCount || 0)
 
   const maxSales = Math.max(...salesAmounts, 1000)
   const maxOrders = Math.max(...orderCounts, 10)
@@ -237,8 +237,8 @@ const initCategoryChart = (data) => {
   
   const chartData = data.length > 0 
     ? data.map((item, index) => ({
-        value: item.product_count || 0,
-        name: item.category_name || '未知',
+        value: item.productCount || 0,
+        name: item.categoryName || '未知',
         itemStyle: { color: colors[index % colors.length] }
       }))
     : [

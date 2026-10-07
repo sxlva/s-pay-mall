@@ -113,13 +113,14 @@ public class MallOrderServiceImpl implements IMallOrderService {
     }
 
     @Override
-    public void paySuccess(String orderNo) {
+    public boolean paySuccess(String orderNo) {
         boolean success = orderStateMachineService.paySuccess(orderNo);
         if (success) {
             log.info("订单支付成功，orderNo=" + orderNo);
         } else {
             log.warn("订单状态不允许更新或订单不存在，orderNo=" + orderNo + "，可能是重复回调");
         }
+        return success;
     }
 
     @Override

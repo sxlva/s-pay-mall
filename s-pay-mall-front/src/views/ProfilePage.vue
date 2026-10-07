@@ -19,7 +19,7 @@ const loading = ref(true)
 const menuItems = [
   { icon: ShoppingBag, label: '我的订单', path: '/orders' },
   { icon: Star, label: '我的收藏', path: null },
-  { icon: Setting, label: '账号设置', path: null }
+  { icon: Setting, label: '账号设置', path: '/account/settings' }
 ]
 
 const handleMenuClick = (item) => {

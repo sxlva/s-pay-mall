@@ -96,6 +96,7 @@ class OrderApplicationServiceTest {
                 .thenReturn(orderWithStatus(orderNo, "INIT"))
                 .thenReturn(orderWithStatus(orderNo, "INIT"));
         when(alipayQueryGateway.queryTradeSuccess(orderNo)).thenReturn(true);
+        when(orderTransactionService.changeOrderPaySuccessInTransaction(orderNo)).thenReturn(true);
 
         assertTrue(orderApplicationService.handleTimeoutCloseOrder(orderNo));
 

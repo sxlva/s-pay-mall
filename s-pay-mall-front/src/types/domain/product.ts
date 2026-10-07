@@ -1,36 +1,39 @@
 /**
  * 商品类型定义
  *
+ * <p>TD-1（2026-10-07）：与后端 ProductRes/CategoryRes 全量对齐 camelCase，
+ * 移除 category_id/category_name/image_url/create_time/update_time 等 snake_case 字段。</p>
+ *
  * @author 傅崇睿
  */
 
-/** 商品值对象 */
+/** 商品值对象（与后端 ProductRes 字段一一对应） */
 export interface ProductVO {
   /** 商品 ID */
   id: number
-  /** 分类 ID（后端下划线字段） */
-  category_id: number
-  /** 分类名称（后端下划线字段） */
-  category_name: string
+  /** 分类 ID */
+  categoryId: number
   /** 商品名称 */
   name: string
   /** 商品描述 */
   description: string
-  /** 商品图片访问路径（相对路径，后端下划线字段；为空时展示本地默认图片） */
-  image_url?: string
+  /** 商品图片访问路径（相对路径；为空时展示本地默认图片） */
+  imageUrl?: string
   /** 商品价格 */
   price: number
   /** 库存数量 */
   stock: number
+  /** 分类标识 */
+  category: string
+  /** 分类名称 */
+  categoryName: string
   /** 状态：1-上架 0-下架 */
   status: number
-  /** 创建时间（后端下划线字段） */
-  create_time: string
-  /** 更新时间（后端下划线字段） */
-  update_time: string
+  /** 创建时间 */
+  createTime: string
 }
 
-/** 分类值对象 */
+/** 分类值对象（与后端 CategoryRes 字段一一对应） */
 export interface CategoryVO {
   /** 分类 ID */
   id: number
@@ -38,10 +41,8 @@ export interface CategoryVO {
   name: string
   /** 状态：1-启用 0-禁用 */
   status: number
-  /** 创建时间（后端下划线字段） */
-  create_time: string
-  /** 更新时间（后端下划线字段） */
-  update_time: string
+  /** 创建时间 */
+  createTime: string
 }
 
 /** 商品查询参数 */

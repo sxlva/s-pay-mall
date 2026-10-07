@@ -1,6 +1,5 @@
 package cn.fcr.api.dto.common.res;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 /**
@@ -14,8 +13,7 @@ public class LoginRes {
     /** JWT Token */
     private String token;
 
-    /** 用户ID */
-    @JsonProperty("user_id")
+    /** 用户ID（2026-10-07 起 camelCase 输出，移除历史遗留 @JsonProperty("user_id")，关闭 TD-12） */
     private Long userId;
 
     /** 用户名 */

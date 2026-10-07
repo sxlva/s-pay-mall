@@ -10,15 +10,15 @@
     <el-card class="main-card" shadow="hover">
       <!-- 添加加载状态 -->
       <el-table :data="orders" stripe border v-loading="loading">
-        <el-table-column prop="order_no" label="订单编号" min-width="180">
+        <el-table-column prop="orderNo" label="订单编号" min-width="180">
           <template #default="scope">
-            <el-tag type="info">{{ scope.row.order_no || '-' }}</el-tag>
+            <el-tag type="info">{{ scope.row.orderNo || '-' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="user_id" label="用户ID" width="100" />
-        <el-table-column prop="total_amount" label="订单金额" width="120">
+        <el-table-column prop="userId" label="用户ID" width="100" />
+        <el-table-column prop="totalAmount" label="订单金额" width="120">
           <template #default="scope">
-            <span class="amount">¥{{ (scope.row.total_amount || 0).toFixed(2) }}</span>
+            <span class="amount">¥{{ (scope.row.totalAmount || 0).toFixed(2) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="address" label="收货地址" min-width="200" show-overflow-tooltip />
@@ -29,7 +29,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="scope">
             <template v-if="scope.row.status === 'PAID'">

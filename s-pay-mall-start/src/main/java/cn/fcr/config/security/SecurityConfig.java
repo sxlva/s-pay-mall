@@ -13,6 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * Spring Security 安全配置
@@ -72,6 +73,13 @@ public class SecurityConfig {
                 .antMatchers("/mall-api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
+            // S-02：未认证请求统一返回 401 + 0003 JSON（替代默认 403 空响应），
+            // 前端拦截器可据此清理本地 token 并跳转登录页
+            .exceptionHandling(handling -> handling.authenticationEntryPoint((request, response, authException) -> {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":\"0003\",\"info\":\"未登录或登录已过期\",\"data\":null}");
+            }))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
