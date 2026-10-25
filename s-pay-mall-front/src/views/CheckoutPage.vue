@@ -173,9 +173,9 @@ onUnmounted(() => {
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="productPrice" label="单价" width="100">
+            <el-table-column prop="price" label="单价" width="100">
               <template #default="scope">
-                <span class="price-text">¥{{ scope.row.productPrice.toFixed(2) }}</span>
+                <span class="price-text">¥{{ scope.row.price.toFixed(2) }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="quantity" label="数量" width="80" align="center" />

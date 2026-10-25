@@ -5,7 +5,7 @@
  */
 
 /**
- * 购物车项 - 前端标准接口
+ * 购物车项 - 与后端 UserCartItemRes 字段一一对应（API_CONTRACT §字段一致性，2026-10-19 对齐）
  */
 export interface CartItem {
   /** 购物车项 ID */
@@ -15,43 +15,15 @@ export interface CartItem {
   /** 商品名称 */
   productName: string
   /** 商品单价 */
-  productPrice: number
+  price: number
   /** 购买数量 */
   quantity: number
   /** 是否选中 */
   selected: boolean
-  /** 小计金额（productPrice * quantity） */
+  /** 小计金额（price * quantity） */
   itemAmount: number
   /** 库存数量 */
   stock: number
-}
-
-/**
- * 购物车项 - 后端原始响应接口（兼容多种字段命名）
- * 用于接收后端返回的数据，避免使用 any 类型
- */
-export interface CartItemRaw extends Record<string, unknown> {
-  id?: number | string
-  /** 购物车 ID（后端字段名） */
-  cartId?: number | string
-  /** 购物车项 ID（后端字段名） */
-  itemId?: number | string
-  productId?: number | string
-  productName?: string
-  /** 商品名称（后端字段名） */
-  title?: string
-  price?: number | string
-  productPrice?: number | string
-  /** 商品价格（后端字段名） */
-  skuPrice?: number | string
-  quantity?: number | string
-  /** 数量（后端字段名） */
-  count?: number | string
-  /** 数量（后端字段名） */
-  num?: number | string
-  selected?: boolean
-  itemAmount?: number | string
-  stock?: number | string
 }
 
 /**

@@ -35,7 +35,7 @@
               <h3 class="item-name">{{ item.productName || '未知商品' }}</h3>
               <div class="item-bottom">
                 <!-- null 安全访问：价格兜底为 0 -->
-                <span class="item-price">¥{{ ((item.productPrice || 0)).toFixed(2) }}</span>
+                <span class="item-price">¥{{ ((item.price || 0)).toFixed(2) }}</span>
                 <div class="quantity-control">
                   <el-button
                     size="small"

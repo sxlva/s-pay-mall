@@ -8,35 +8,16 @@
  */
 
 import { mallInstance } from '../utils/axios'
-import type { CartItem, CartItemRaw, CartAddParams, CartUpdateQuantityParams } from '../types/domain/cart'
-
-/**
- * 数据清洗适配器：将后端原始响应转换为前端标准 CartItem 对象
- * 处理字段命名不一致、类型转换、默认值填充等防御性逻辑
- */
-const mapRawToCartItem = (item: CartItemRaw): CartItem => {
-  const safePrice = Number(item.price || item.productPrice || item.skuPrice || 0)
-  const safeQuantity = Number(item.quantity || item.count || item.num || 0)
-
-  return {
-    id: Number(item.id || item.cartId || item.itemId || 0),
-    productId: Number(item.productId || 0),
-    productName: String(item.productName || item.title || '未知商品'),
-    productPrice: safePrice,
-    quantity: safeQuantity,
-    selected: item.selected === undefined ? false : Boolean(item.selected),
-    itemAmount: Number(item.itemAmount || (safePrice * safeQuantity) || 0),
-    stock: Number(item.stock || 0)
-  }
-}
+import type { CartItem, CartAddParams, CartUpdateQuantityParams } from '../types/domain/cart'
 
 /**
  * 获取购物车列表
- * @returns 转换后的购物车项数组
+ * 后端 UserCartItemRes 与 CartItem 字段已一一对齐（API_CONTRACT，2026-10-19），无需映射适配
+ * @returns 购物车项数组
  */
 export const fetchCartItems = async (): Promise<CartItem[]> => {
-  const data = await mallInstance.get('/cart') as CartItemRaw[]
-  return (data || []).map(mapRawToCartItem)
+  const data = await mallInstance.get('/cart') as CartItem[]
+  return data || []
 }
 
 /**

@@ -259,7 +259,7 @@
 | `ProductRes` (common/res) | `types/domain/product.ts ProductRes` | ✅ 一致（2026-10-07 TD-1：后端摘 `@JsonProperty` 统一 camelCase，前端类型同步） | — |
 | `CategoryRes` (common/res) | `types/domain/product.ts CategoryRes` | ✅ 一致 | — |
 | `AdminUserRes` (admin/res) | `types/domain/admin.ts UserAdminVO` | ✅ 一致（2026-10-07 TD-1：双端 camelCase；前端删去后端没有的 `email`/`role`/`role_code`/`create_time`/`update_time` 字段） | — |
-| `UserCartItemRes` (user/res) | `types/domain/cart.ts CartItem` | **`price` vs `productPrice` 命名不一致** | 运行时常一致（映射层中转） |
+| `UserCartItemRes` (user/res) | `types/domain/cart.ts CartItem` | ✅ 一致（2026-10-19：前端 `productPrice` 统一为后端 SSOT 字段 `price`，删除 CartItemRaw 映射兼容层，双端字段一一对应） | — |
 | `UserOrderCreateRes` (user/res) | `types/domain/order.ts OrderCreateResult` | ~~**`orderId` vs `orderNo` 命名不一致**~~ ✅ 已对齐（2026-10-05：api/order.ts `toCreateResult` 统一映射，CheckoutPage 传真实订单号） | — |
 | `UserOrderRes` (user/res) | `types/domain/order.ts Order` | ✅ 基本一致 | — |
 | `UserOrderStockCheckRes` (user/res) | `api/order.ts StockCheckResult` | ~~**前端多余 `stockStatus` 字段**~~ ✅ 已删除（2026-10-05） | — |

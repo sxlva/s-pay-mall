@@ -37,7 +37,8 @@ import java.util.stream.Collectors;
  * 管理后台Controller（mall-api）
  *
  * <p>【DDD 触发层】提供管理后台所有接口，包含用户管理、商品管理、订单管理、统计分析。
- * 无 Spring Security 注解校验，权限由 Gateway/Interceptor 层控制。</p>
+ * 无 Spring Security 方法注解校验，鉴权由 SecurityConfig 的 URL 规则控制
+ * （{@code /mall-api/v1/admin/**} 需 ADMIN 角色，见 SecurityConfig）。</p>
  *
  * @author 傅崇睿
  */
