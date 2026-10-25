@@ -55,7 +55,7 @@ sequenceDiagram
         W->>Redis: SET wechat:access_token:{appid} EX 110min
     end
     W->>WX: HTTP POST /cgi-bin/qrcode/create (带 access_token)
-    WX-->>W: { ticket, expire_seconds=1800 }
+    WX-->>W: { ticket, expire_seconds=2592000 }
     W-->>S: ticket
     S-->>C: ticket
     C-->>F: Response (ticket)
@@ -73,8 +73,9 @@ sequenceDiagram
 
 **② Ticket 的临时性**
 
-- Ticket 由微信 API 生成，有效期 1800s（30 分钟）
-- 扫码后 Ticket 立即失效
+- Ticket 由微信 API 生成，请求有效期 **2592000s（30 天，临时二维码上限，`WeixinGatewayImpl.createQrCodeTicket` L56 请求值）**
+- 扫码后 Ticket 立即失效（微信行为）
+- ⚠️ **安全副产物**：ticket 30 天有效 + 固定 scene_id 意味着二维码图片在 30 天内可被保存重扫，登录安全性完全依赖 Redis 层 5min 一次性 token 窗口。已列入 STUDY_GUIDE 附录 D，并于 2026-10-19 经 C-7b 实验实测确认（重扫会重新签发全新 JWT）
 
 ---
 
@@ -132,7 +133,7 @@ sequenceDiagram
 
 ### 3.1 异步解耦：回调与查询分离
 
-微信扫码是**异步事件**——微信服务器回调我们的接口（WeixinPortalController），但无法主动通知浏览器。前端通过**短轮询（3s 间隔）**检测 Redis 中是否出现 openid，将"扫码事件"与"登录态查询"解耦。
+微信扫码是**异步事件**——微信服务器回调我们的接口（WeixinPortalController），但无法主动通知浏览器。前端通过**短轮询（3s 间隔）**检测 Redis 中是否出现该 ticket 对应的 **JWT 登录凭证**，将"扫码事件"与"登录态查询"解耦。
 
 **关键实现：一次性 Token**
 
@@ -143,7 +144,7 @@ sequenceDiagram
 | 凭证 | 存储位置 | Redis Key | TTL | 说明 |
 |------|----------|-----------|-----|------|
 | accessToken | Redis (StringRedisTemplate) | `wechat:access_token:{appid}` | 110min (6600s) | 提前于微信官方 7200s 续期 |
-| ticket | 微信服务器 | — | 1800s | 微信侧强制，扫码后立即失效 |
+| ticket | 微信服务器 | — | 2592000s（30 天，临时二维码上限） | 微信侧强制，扫码后立即失效 |
 | ticket→JWT 映射 | Redis (StringRedisTemplate) | `{ticket}` (直接作为 key) | 5min (300s) | `WeixinLoginGatewayImpl.saveLoginToken()`，get 后即删 |
 
 ---

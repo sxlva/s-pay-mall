@@ -139,6 +139,15 @@ DLQ 告警监听器（独立 consumer group 订阅 `%DLQ%{group}`）：死信到
 stock-change 组无生产者（TD-9），不配告警。E2E 全量回归通过（Spring 上下文真实启动验证）。
 外部通知渠道（邮件/钉钉）与自动化重放工具仍属生产化二期，维持上述设计。
 
+### U-6 RBAC 权限点（预留设计，未启用）
+
+**现状**：权限模型为"认证 + 单角色点"两级——JWT 登录态（`JwtAuthenticationFilter`）+ `SecurityConfig` L73 唯一角色规则（`/mall-api/v1/admin/**` 需 ADMIN），即"匿名 / 登录用户 / ADMIN"三档。
+DB 存在 `role`、`role_permission`（12 行）、`user_role` 等 RBAC 表，但**运行时代码不读取权限点数据**，属预留死表，易误导维护者，特此登记口径。
+
+**启用路径**（团队出现多类运营角色时再做）：登录时按 `user_role → role_permission → permission` 下发权限码集合入 JWT → 过滤器或 `@PreAuthorize`（`@EnableMethodSecurity` 已预留开启）按权限码校验 → 新增接口必须挂权限点的长期纪律。核心代码约 1~2 天，配套成本（权限点清单、角色分配界面、n 角色 × m 接口测试矩阵）远大于开发本身。
+
+**暂不实现理由**：毕设规模下管理后台用户群即管理员本人，两级模型已覆盖需求；完整 RBAC 属企业级需求，违反"不为架构复杂度引入抽象"原则。
+
 ### 演进顺序建议
 
 U-1 对账 Job（含 NoPayNotifyOrderJob 分布式锁）→ U-2 outbox → U-3 消费记录表 → U-4 异常分类 → U-5 DLQ 告警与重放。

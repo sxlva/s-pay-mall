@@ -72,7 +72,7 @@ flowchart LR
     A5 --> A6["唤起支付宝<br/>AlipayGatewayImpl.generatePayUrl()"]
     A6 --> A7["支付回调<br/>AliPayController.payNotify()<br/>POST /pay-api/v1/alipay/alipay_notify_url"]
     A7 --> A8["RocketMQ 发送<br/>RocketMqOrderEventPublisher<br/>topic: order_paid"]
-    A8 --> A9["异步履约<br/>OrderPaidRocketListener<br/>→ 订单状态推进 + 微信模板消息通知"]
+    A8 --> A9["异步通知编排<br/>OrderPaidRocketListener<br/>→ 幂等确认 + 微信模板消息通知<br/>（状态推进已在回调事务内完成）"]
     A7 -.->|延时消息| A10["超时关单<br/>OrderTimeoutCloseRocketListener<br/>topic: order-timeout-topic"]
     A8 -.->|重试耗尽| A11["死信告警<br/>DlqAlertListeners 订阅 %DLQ%<br/>ERROR 日志 + 人工重放（TD-2）"]
     A10 -.-> A11

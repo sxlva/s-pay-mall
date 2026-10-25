@@ -1,7 +1,7 @@
 # 模块二：订单支付（Order & Pay）
 
 > **领域上下文**：Order Context + Mall Context（聚合 Order + PayOrder）
-> **核心场景**：创建订单、支付宝当面付、回调验签、RocketMQ 异步履约
+> **核心场景**：创建订单、支付宝当面付、回调验签、事务内状态推进 + RocketMQ 异步通知编排
 > **依赖外部**：支付宝开放平台 (Alipay SDK)、RocketMQ
 > **关键性质**：幂等闭环 + 异步解耦 + 状态机保护
 
@@ -13,7 +13,7 @@
 1. 订单的创建、查询、状态流转
 2. 接入支付宝当面付完成支付
 3. 处理支付宝异步回调，RSA2 验签后更新订单状态
-4. 通过 RocketMQ 解耦后置履约（支付成功通知、库存同步、微信模板消息）
+4. 支付回调事务内同步完成订单/支付单状态推进与库存落账（MySQL 条件更新做并发裁判）；RocketMQ 承载支付成功后的异步通知编排（消费幂等确认 + 微信模板消息），库存同步不经 MQ
 
 ---
 
@@ -118,7 +118,7 @@ sequenceDiagram
         MQ->>L: onMessage(PaySuccessMessage)
         Note over L: P0-4 消费幂等守门：SETNX order_paid_notify:{orderNo}
         L->>S: paySuccess(orderNo)
-        Note over S: @Transactional；状态机条件更新守卫，<br/>回调已履约则影响行数 0 直接跳过
+        Note over S: 状态推进已在回调事务内完成（TX 节点）；此处状态机<br/>条件更新影响行数 0 = 幂等确认（canPay 守卫空转），<br/>MQ 实际承担的异步工作为通知编排
         L->>S: sendPaySuccessNotification(orderNo)
         Note over S: P1-3 编排下沉：查订单 → 查 openid → 微信模板消息（best-effort）
         L-->>MQ: ACK
@@ -186,7 +186,7 @@ flowchart LR
 
 | Topic | 发送方 | 消费者 | 消息类型 | 说明 |
 |-------|--------|--------|----------|------|
-| `order_paid` | `RocketMqOrderEventPublisher` | `OrderPaidRocketListener` | `PaySuccessMessage` | 支付成功异步履约 |
+| `order_paid` | `RocketMqOrderEventPublisher` | `OrderPaidRocketListener` | `PaySuccessMessage` | 支付成功异步通知编排（消费幂等确认 + 微信模板消息；状态推进已在回调事务内完成，不经 MQ） |
 | `order-timeout-topic` | `OrderPaymentGatewayImpl` | `OrderTimeoutCloseRocketListener` | `String (orderNo)` | 延时关单（delayLevel=9，30min） |
 | `product-stock-change-topic` | —（仅有消费者，TD-9 考证为有意保留） | `ProductStockChangeRocketListener` | `StockChangeMsgDTO` | 库存变更幂等消费（接入点保留） |
 | `%DLQ%{consumerGroup}` | RocketMQ broker（重试耗尽自动转入） | `DlqAlertListeners`（TD-2，2026-10-07） | 同原消息 | 死信告警：ERROR 日志 + 消息体留痕，供人工重放；覆盖 order-paid / timeout 两个有生产者的组 |
@@ -271,6 +271,8 @@ sequenceDiagram
 逐个调用 `IAlipayQueryGateway.queryTradeSuccess()` 主动向支付宝核实交易状态
 （`code=10000 && tradeStatus=TRADE_SUCCESS` 双重校验），确认支付成功的订单执行补单
 （`changeOrderPaySuccess(orderNo, null)`——补单路径无支付宝交易号，tradeNo 传 null）。
+
+> ⚠️ **已知缺口（STUDY_GUIDE 附录 A-6）**：补单分支（`compensateNoPayNotify`，`NoPayNotifyOrderJob` L90-95）**无逐条 try/catch 隔离**，单条异常会上抛至 `exec` 总 catch（L77-79）中断整轮，兜底关单分支也被跳过；仅兜底关单分支（`compensateStaleUnpaidOrders` L108-115）有逐条隔离。已登记改进项，面试问到 Job 健壮性时如实作答。
 
 ### 8.3 兜底关单补偿（TD-7，2026-10-07）
 
