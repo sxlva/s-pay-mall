@@ -7,6 +7,7 @@ import cn.fcr.infrastructure.dao.auth.IUserBindingDao;
 import cn.fcr.infrastructure.dao.auth.IUserRoleDao;
 import cn.fcr.infrastructure.dao.auth.po.UserBinding;
 import cn.fcr.types.common.Constants;
+import cn.fcr.types.sdk.weixin.SignatureUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
@@ -15,6 +16,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -67,6 +69,10 @@ public class AuthBindMockE2EIT {
     /** 全链路 HTTP 入口（含 Spring Security 过滤链） */
     @Autowired
     private MockMvc mockMvc;
+
+    /** 公众号 Token（S-06）：模拟回调时构造微信协议合法签名 */
+    @Value("${weixin.config.token}")
+    private String weixinToken;
 
     /** JWT 提供方：解析各登录方式签发的 token，断言指向同一 uid */
     @Resource
@@ -299,12 +305,15 @@ public class AuthBindMockE2EIT {
 
     /**
      * 模拟微信服务器扫码回调：向 /pay-api/v1/weixin/portal/receive 发送 SCAN 事件 XML
-     * （POST 入口仅接收不验签，与生产微信服务器行为一致；openid 经 query 传递）
+     * （S-06 修复后 POST 入口验签，此处按微信协议用配置的 token 构造合法签名；openid 经 query 传递）
      *
      * @param openid 微信用户 OpenID
      * @param ticket 场景票据（绑定票据或登录票据，由 SCAN 分流自动判定）
      */
     private void mockWechatScanCallback(String openid, String ticket) throws Exception {
+        String timestamp = String.valueOf(System.currentTimeMillis() / 1000L);
+        String nonce = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        String signature = SignatureUtil.sign(weixinToken, timestamp, nonce);
         String xml = "<xml>"
                 + "<MsgType><![CDATA[event]]></MsgType>"
                 + "<Event><![CDATA[SCAN]]></Event>"
@@ -312,9 +321,9 @@ public class AuthBindMockE2EIT {
                 + "</xml>";
         MvcResult result = mockMvc.perform(post("/pay-api/v1/weixin/portal/receive")
                         .param("openid", openid)
-                        .param("signature", "mock_signature")
-                        .param("timestamp", "1700000000")
-                        .param("nonce", "mock_nonce")
+                        .param("signature", signature)
+                        .param("timestamp", timestamp)
+                        .param("nonce", nonce)
                         .contentType(MediaType.APPLICATION_XML)
                         .content(xml))
                 .andExpect(status().isOk())

@@ -20,6 +20,22 @@ public class SignatureUtil {
      * @return 签名是否匹配
      */
     public static boolean check(String token, String signature, String timestamp, String nonce) {
+        if (signature == null) {
+            return false;
+        }
+        // 将sha1加密后的字符串可与signature对比，标识该请求来源于微信
+        return sign(token, timestamp, nonce).equals(signature.toUpperCase());
+    }
+
+    /**
+     * 按微信协议生成签名（sha1(字典序排序的 token+timestamp+nonce)），供服务端与测试构造合法签名
+     *
+     * @param token     公众号配置的 Token
+     * @param timestamp 时间戳
+     * @param nonce     随机数
+     * @return 大写十六进制签名
+     */
+    public static String sign(String token, String timestamp, String nonce) {
         String[] arr = new String[]{token, timestamp, nonce};
         // 将token、timestamp、nonce三个参数进行字典序排序
         sort(arr);
@@ -27,18 +43,15 @@ public class SignatureUtil {
         for (String s : arr) {
             content.append(s);
         }
-        MessageDigest md;
-        String tmpStr = null;
         try {
-            md = MessageDigest.getInstance("SHA-1");
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
             // 将三个参数字符串拼接成一个字符串进行sha1加密
             byte[] digest = md.digest(content.toString().getBytes());
-            tmpStr = byteToStr(digest);
+            return byteToStr(digest);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            // SHA-1 为 JDK 标准算法，不可能到达
+            throw new IllegalStateException("SHA-1 算法不可用", e);
         }
-        // 将sha1加密后的字符串可与signature对比，标识该请求来源于微信
-        return tmpStr != null && tmpStr.equals(signature.toUpperCase());
     }
 
     /**

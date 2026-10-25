@@ -79,7 +79,8 @@ public class WeixinPortalController {
      * 接收微信公众号消息
      *
      * <p>微信服务器POST消息到此接口，包括关注、扫码等事件。
-     * 根据事件类型分流处理：SCAN事件先尝试绑定再尝试登录。</p>
+     * 根据事件类型分流处理：SCAN事件先尝试绑定再尝试登录。
+     * 2026-10-19（S-06）：入口补充 {@link SignatureUtil#check} 验签，伪造回调直接拒绝。</p>
      *
      * @param requestBody  消息XML内容
      * @param signature    微信加密签名
@@ -99,6 +100,13 @@ public class WeixinPortalController {
                        @RequestParam(name = "encrypt_type", required = false) String encType,
                        @RequestParam(name = "msg_signature", required = false) String msgSignature) {
         try {
+            // S-06 修复：POST 消息接收入口补充验签（2026-10-19 前仅 GET validate 验签，
+            // 伪造 SCAN 回调可为任意 openid 签发 token）；验签失败返回空串，与正常回复语义一致
+            if (StringUtils.isAnyBlank(signature, timestamp, nonce)
+                    || !SignatureUtil.check(token, signature, timestamp, nonce)) {
+                log.warn("微信公众号消息验签失败 [openid={}]", openid);
+                return "";
+            }
             log.info("接收微信公众号信息请求{}开始 {}", openid, requestBody);
             // 消息转换
             MessageTextEntity message = XmlUtil.xmlToBean(requestBody, MessageTextEntity.class);
