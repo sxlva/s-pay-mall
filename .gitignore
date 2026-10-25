@@ -9,6 +9,13 @@ target/
 logs/
 log.path_IS_UNDEFINED/
 temp/
+# 压缩包与临时备份
+*.zip
+*.tar
+*.tar.gz
+*.bak
+*.tmp
+*.swp
 
 # ======= IDE 与系统工具 =======
 .idea/
@@ -21,7 +28,10 @@ Thumbs.db
 
 # ======= 数据与环境配置 =======
 data/
-.env
+# 本地环境变量，不提交真实凭据
+**/.env
+# 环境变量模板允许提交
+!**/.env.example
 
 # ======= Maven =======
 !.mvn/wrapper/maven-wrapper.jar
@@ -34,6 +44,9 @@ docs/dev-ops/mysql/data/
 docs/dev-ops/**/*.log
 docs/dev-ops/**/data/
 docs/dev-ops/**/store/
+# RocketMQ 存储目录被手工重命名后的备份（如 store.bak-20261012，仅本地排查用）
+docs/dev-ops/**/*.bak-*/
+docs/dev-ops/rocketmq/logs/
 
 /docs/2027届毕业设计相关管理文件/
 /docs/thesis_template/
